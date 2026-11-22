@@ -99,6 +99,23 @@ def main():
     if missing:
         fail(f"JavaScript calls methods missing from RushWebBridge: {missing}")
 
+    engine_path = ROOT / "app/src/main/java/com/rush/app/RushDiscoveryEngine.kt"
+    prefs_path = ROOT / "app/src/main/java/com/rush/app/FeedPreferences.kt"
+    if not engine_path.is_file() or not prefs_path.is_file():
+        fail("Missing shared discovery engine or feed preferences")
+    engine = engine_path.read_text(encoding="utf-8")
+    prefs = prefs_path.read_text(encoding="utf-8")
+    if "RushDiscoveryEngine.scoreFeed" not in bridge or "RushDiscoveryEngine.rankSearch" not in bridge:
+        fail("Native bridge is not integrated with shared feed and search ranking")
+    if "fun forYouChannels" not in prefs:
+        fail("For You channel eligibility must use followed sources without a second opt-in")
+    if "ADD TO FOR YOU" in html or "data-recommend-channel" in html:
+        fail("Obsolete separate For You channel opt-in remains in the UI")
+    if "topicQuery" not in html or "function filterTopicNames" not in js:
+        fail("Personalisation topic search is missing")
+    if "fonts.googleapis.com" in html or "fonts.gstatic.com" in html:
+        fail("WebView must not require remote font downloads")
+
     with tempfile.NamedTemporaryFile("w", suffix=".js", encoding="utf-8") as handle:
         handle.write(js)
         handle.flush()

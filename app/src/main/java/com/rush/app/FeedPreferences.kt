@@ -52,6 +52,10 @@ object FeedPreferences {
         "investigation", "report", "review", "guide", "science", "engineering"
     )
 
+    /** Every followed YouTube channel may supply For You candidates; productivity only affects ranking. */
+    fun forYouChannels(sources: List<FeedSource>): List<FeedSource> =
+        sources.filter { it.kind == "channel" }
+
     fun topics(prefs: SharedPreferences): List<String> {
         val stored = runCatching { JSONArray(prefs.getString(TOPICS_KEY, null) ?: "[]") }
             .getOrDefault(JSONArray())
@@ -123,16 +127,9 @@ object FeedPreferences {
         return JSONObject().put("topics", topicArray).put("sources", sourceArray)
     }
 
-    fun rank(title: String, description: String, topics: List<String>): Int {
-        val content = (title + " " + description).lowercase(Locale.ROOT)
-        val topicScore = topics.count { topic ->
-            val term = topic.lowercase(Locale.ROOT)
-            term.isNotBlank() && content.contains(term)
-        } * 8
-        val contextScore = contextTerms.count(content::contains) * 2
-        val lowAttentionPenalty = lowAttentionTerms.count(content::contains) * 7
-        return topicScore + contextScore - lowAttentionPenalty
-    }
+    /** Compatibility wrapper; new recommendation paths use the shared typed scoring engine. */
+    fun rank(title: String, description: String, topics: List<String>): Int =
+        RushDiscoveryEngine.legacyProductivityScore(title, description, topics)
 
     private fun writeSources(prefs: SharedPreferences, sources: List<FeedSource>) {
         val array = JSONArray()

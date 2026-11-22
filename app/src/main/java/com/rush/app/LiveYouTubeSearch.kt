@@ -148,7 +148,6 @@ object LiveYouTubeSearch {
         val thumbnail = item.thumbnails.lastOrNull()?.url.orEmpty()
         return when (item) {
             is StreamInfoItem -> {
-                if (item.isShortFormContent) return null
                 val id = extractVideoIdOrNull(item.url) ?: return null
                 YouTubeSearchResult(
                     videoId = id,

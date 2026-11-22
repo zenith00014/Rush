@@ -19,9 +19,15 @@ Movies and TV are temporarily hidden from the app while a permitted, reliable mo
 
 ## Recommendation behavior
 
-For You only considers channels that the user has selected and explicitly added to the For You pool. Channel selection is separate from following: users can follow a channel without adding it to For You. Selected topics help rank videos across different subject areas, so productive recommendations are not limited to one discipline. Low-focus topics such as memes, pranks and viral clips remain available in topic selection and unrestricted search, but receive a ranking penalty in recommendation feeds.
+For You draws from all followed YouTube channels; following is enough to supply candidates. Productive and informative material is ranked higher, rather than requiring a separate channel eligibility flag. Selected topics help rank videos across different subject areas, so productive recommendations are not limited to one discipline. Low-focus topics such as memes, pranks and viral clips remain available in topic selection and unrestricted search, but receive a ranking penalty in recommendation feeds.
 
 Following collects content from sources the user follows. Music suggestions use followed musicians and recent listening history. News suggestions use selected topics and followed publishers, with contextual/reporting signals prioritized over low-information viral terms. Search remains broader than recommendation feeds and is not filtered by the selected topics or productive-channel pool.
+
+## Discovery and search engine
+
+Rush uses one shared on-device intelligence layer plus dedicated video, news, music, channel and playlist scorers. Shared signals combine selected interests, follows, local history, freshness, metadata completeness and novelty with a section specialist. The two layers are combined for recommendations. Video and news feeds prioritise useful, informative material; music remains taste-led.
+
+Search is deliberately broader than recommendation feeds. It does not filter by selected topics, followed-source status or productivity classification. Search ranking uses BM25-style lexical relevance, title/source/summary field weights, phrase and prefix matching, typo tolerance and a small spam-quality adjustment. Low-focus and entertainment results remain searchable. See `docs/ALGORITHM_ARCHITECTURE.md` for the scoring model and current limitations.
 
 ## Project layout
 

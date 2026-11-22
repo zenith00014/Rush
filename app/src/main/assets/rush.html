@@ -1,14 +1,12 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0E0E0E"><title>RUSH</title>
-<link rel="preconnect" href="https://i.ytimg.com" crossorigin><link rel="preconnect" href="https://news.google.com" crossorigin><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<style>
+<meta name="theme-color" content="#0b1014"><title>RUSH</title>
+<link rel="preconnect" href="https://i.ytimg.com" crossorigin><link rel="preconnect" href="https://news.google.com" crossorigin><style>
 @property --sp{syntax:'<color>';inherits:true;initial-value:#FF6B3D}
-:root{--paper:#0E0E0E;--paper2:#181818;--ink:#F2F2EE;--k:#0A0A0A;--mu:#A8A8A2;--sp:#FF6B3D;--nav:72px;--sa:env(safe-area-inset-bottom,0px);--f:'Archivo',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;--m:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;--spr:cubic-bezier(.2,1.35,.3,1);--sh:4px 4px 0 var(--sp);--r:0px;transition:--sp .5s ease;color-scheme:dark}
+:root{--paper:#0b1014;--paper2:#131b21;--ink:#f2f5f6;--k:#080c0f;--mu:#a5b1b8;--sp:#ff765f;--border:rgba(255,255,255,.12);--nav:68px;--sa:env(safe-area-inset-bottom,0px);--f:system-ui,-apple-system,'Segoe UI',Roboto,'Noto Sans',sans-serif;--m:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;--spr:cubic-bezier(.2,.8,.2,1);--sh:0 10px 28px rgba(0,0,0,.28);--r:16px;color-scheme:dark}
 *{box-sizing:border-box;margin:0}
-html,body{height:100%;background:#cdc6b3;color:var(--ink);font:16px/1.45 var(--f);-webkit-font-smoothing:antialiased}
+html,body{height:100%;background:var(--paper);color:var(--ink);font:16px/1.45 var(--f);-webkit-font-smoothing:antialiased}
 body{display:flex;justify-content:center}
 button,a{font:inherit;color:inherit;background:none;border:0;cursor:pointer;text-decoration:none;-webkit-tap-highlight-color:transparent}
 button{min-height:44px;min-width:44px}
@@ -130,7 +128,7 @@ h2::after{content:"";flex:1;height:2px;background:var(--ink)}
 .mini .ib{width:40px;height:40px;min-height:40px;min-width:40px}
 .mini .rule{grid-column:1/-1;height:10px}
 /* nav dock */
-.nav{position:absolute;left:12px;right:12px;bottom:calc(var(--sa) + 12px);z-index:6;height:var(--nav);display:grid;grid-template-columns:repeat(6,1fr);align-items:center;padding:0 4px;background:var(--paper);border:2px solid var(--ink);border-radius:0;box-shadow:var(--sh)}
+.nav{position:absolute;left:12px;right:12px;bottom:calc(var(--sa) + 12px);z-index:6;height:var(--nav);display:grid;grid-template-columns:repeat(5,1fr);align-items:center;padding:0 4px;background:var(--paper);border:2px solid var(--ink);border-radius:0;box-shadow:var(--sh)}
 .pill{position:absolute;top:6px;bottom:6px;left:var(--lx,0);width:var(--lw,0);background:var(--sp);border:2px solid var(--ink);pointer-events:none;transition:left .6s var(--spr),width .6s var(--spr),background .4s,opacity .2s}
 .nav.s .pill{opacity:0}
 .nav a{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;height:100%;min-height:44px;font:700 12px/1 var(--f);letter-spacing:-.01em}
@@ -238,18 +236,28 @@ h1,h2,.top1 b,.cat b,.tr,.hl b,.wm{text-transform:uppercase}
 .download-track i{display:block;height:100%;background:var(--sp)}
 .library-item .chip:disabled{opacity:.35;pointer-events:none}
 
+
+/* Rush local-first visual refinements */
+html,body{background:var(--paper);color:var(--ink)}
+.app{background:radial-gradient(80% 28% at 100% 0,rgba(255,118,95,.13),transparent),var(--paper)}
+.btn,.ib,.chip,.card,.nav,.mini,.si,.seg,.source-card,.video-player-tools,.a,.cat{border-radius:var(--r)}
+.nav{border:1px solid var(--border);background:rgba(19,27,33,.94);box-shadow:0 8px 26px rgba(0,0,0,.3)}
+.card,.source-card,.video-player-tools{border:1px solid var(--border);background:var(--paper2);box-shadow:0 8px 26px rgba(0,0,0,.18)}
+.btn{box-shadow:0 5px 16px rgba(255,118,95,.16)}
+.ib{box-shadow:none;border:1px solid var(--border)}
+.chip{border-width:1px;border-color:var(--border)}
+.a{border:0}
 </style></head>
 <body>
 <div class="app">
 <header class="top">
     <div class="wm" aria-label="Rush">rush<i></i></div>
     <div>
-      <button class="ib" id="topicsShortcut" aria-label="Choose feed topics">☷</button>
-      <button class="me ib" id="profileShortcut" aria-label="Manage followed sources">◎</button>
+      <button class="ib" id="searchShortcut" data-open-search aria-label="Search all Rush">⌕</button>
+      <button class="ib" id="topicsShortcut" aria-label="Personalise Rush">☷</button>
     </div>
   </header>
-  <div class="tk" aria-hidden="true"><div>RUSH &#10022; YOUR SOURCES &#10022; YOUR TOPICS &#10022; YOUR TASTE &#10022; RUSH</div></div>
-  <main id="sc"><div id="v"></div></main>
+<main id="sc"><div id="v"></div></main>
   <section class="mini" id="mini" aria-label="Now playing" inert>
     <div class="a" id="ma"><img alt="" hidden></div>
     <div><b id="mt"></b><span id="ms"></span></div>
@@ -297,9 +305,9 @@ function sourceButton(kind,id,name,label){
  return '<button class="chip source-follow" data-follow-kind="'+esc(kind)+'" data-source-id="'+esc(id)+'" data-source-name="'+esc(name)+'">'+(found?'FOLLOWING':(label||'FOLLOW'))+'</button>';
 }
 function channelCard(x){
- const found=sourceFor('channel',x.id),selected=!!(found&&found.productive);
- return '<article class="source-card"><img src="'+esc(x.thumbnail)+'" alt="" loading="lazy"><div class="source-info"><b>'+esc(x.name)+'</b><span>'+esc(x.subscribers||'YouTube channel')+'</span><p>'+esc(x.description||'')+'</p><div class="source-actions">'+sourceButton('channel',x.id,x.name,'FOLLOW')+'<button class="chip" data-recommend-channel data-source-id="'+esc(x.id)+'" data-source-name="'+esc(x.name)+'" aria-pressed="'+selected+'">'+(selected?'IN FOR YOU':'ADD TO FOR YOU')+'</button></div></div></article>';
+ return '<article class="source-card"><img src="'+esc(x.thumbnail)+'" alt="" loading="lazy"><div class="source-info"><b>'+esc(x.name)+'</b><span>'+esc(x.subscribers||'YouTube channel')+'</span><p>'+esc(x.description||'')+'</p><div class="source-actions">'+sourceButton('channel',x.id,x.name,'FOLLOW')+'</div></div></article>';
 }
+
 function mediaActions(x,isMusic){
  const id=esc(x.id),title=esc(x.title),creator=esc(isMusic?(x.artist||x.creator):(x.artist||x.creator)),thumb=esc(x.thumbnail);
  return '<div class="result-actions"><button class="chip" data-save-item data-id="'+id+'" data-title="'+title+'" data-creator="'+creator+'" data-music="'+isMusic+'" data-thumbnail="'+thumb+'">SAVE</button>'+
@@ -358,11 +366,29 @@ function renderSearchPage(){
  '<div class="chips search-filters"><button class="chip" data-search-filter="all" aria-pressed="true">All</button><button class="chip" data-search-filter="videos" aria-pressed="false">Videos</button><button class="chip" data-search-filter="music" aria-pressed="false">Music</button><button class="chip" data-search-filter="news" aria-pressed="false">News</button><button class="chip" data-search-filter="channels" aria-pressed="false">Channels</button><button class="chip" data-search-filter="playlists" aria-pressed="false">Playlists</button></div>'+
  '<p class="meta pad" id="unifiedStatus">Search is broad. Recommendation rules do not restrict these results.</p><div id="unifiedResults"></div><div id="publicPlaylistContent"></div>';
 }
+function filterTopicNames(topics,query){
+ const q=String(query||'').trim().toLocaleLowerCase();
+ return topics.filter(topic=>!q||topic.toLocaleLowerCase().includes(q));
+}
+function updateTopicOptions(){
+ const input=$('#topicQuery'),query=input?input.value:'';
+ const visible=new Set(filterTopicNames(TOPICS,query));
+ const buttons=[...document.querySelectorAll('[data-topic]')];
+ let shown=0;
+ buttons.forEach(button=>{const show=visible.has(button.dataset.topic);button.hidden=!show;if(show)shown++});
+ const empty=$('#topicNoResults');if(empty)empty.hidden=shown>0;
+ const status=$('#topicStatus');
+ if(status)status.textContent=buttons.filter(b=>b.getAttribute('aria-pressed')==='true').length+' selected · '+TOPICS.length+' interests';
+}
 function renderTopicsPage(){
- return pageTop('Your topics','personalize recommendations')+
- '<p class="pad meta">Choose any subjects you care about. Low-focus topics remain searchable, but receive less weight in recommendations.</p><div class="topics-grid" id="topicOptions">'+TOPICS.map((t,i)=>'<button class="chip topic-chip" data-topic="'+esc(t)+'" aria-pressed="'+selectedTopics().includes(t)+'">'+esc(t)+'</button>').join('')+'</div>'+
- '<div class="feed-actions"><button class="btn k" data-save-topics>SAVE TOPICS</button><span class="meta" id="topicStatus">'+selectedTopics().length+' topics selected</span></div>'+
- '<h2>Followed sources</h2><p class="meta pad">Follow any channel, publisher or musician. YouTube channels need the “Add to For You” flag to enter the productive recommendation pool.</p><div id="followedSources"></div>';
+ return pageTop('Personalise','your interests and followed sources')+
+ '<p class="pad meta">Choose subjects you care about. Recommendations prioritise useful, informative material; every subject remains available in Search.</p>'+
+ '<label class="si">'+ic('search')+'<input id="topicQuery" type="search" maxlength="80" placeholder="Search interests" aria-label="Search interests" autocomplete="off"></label>'+
+ '<div class="meta pad" id="topicStatus" aria-live="polite">'+selectedTopics().length+' selected · '+TOPICS.length+' interests</div>'+
+ '<div class="topics-grid" id="topicOptions">'+TOPICS.map(t=>'<button class="chip topic-chip" data-topic="'+esc(t)+'" aria-pressed="'+selectedTopics().includes(t)+'">'+esc(t)+'</button>').join('')+'</div>'+
+ '<p class="meta pad" id="topicNoResults" aria-live="polite" hidden>No interests match that search.</p>'+
+ '<div class="feed-actions"><button class="btn k" data-save-topics>SAVE INTERESTS</button></div>'+
+ '<h2>Followed sources</h2><p class="meta pad">Follow any channel, publisher or musician. Followed YouTube channels can all supply For You candidates; productive and informative items rank higher.</p><div id="followedSources"></div>';
 }
 const R={home:renderHome,videos:renderVideoPage,music:renderMusicPage,news:renderNewsPage,search:renderSearchPage,topics:renderTopicsPage,library:renderLibraryPage};
 
@@ -425,7 +451,7 @@ function refreshLibrary(){
  if(page==='library')loadLibrary();
 }
 
-const NAV=[['home','Home','home'],['videos','Videos','vid'],['music','Music','music'],['news','News','news'],['search','Search','search'],['library','Library','follow']];
+const NAV=[['home','Home','home'],['videos','Videos','vid'],['music','Music','music'],['news','News','news'],['library','Library','follow']];
 $('#nav').innerHTML='<i class="pill"></i>'+NAV.map(([key,label,icon])=>'<a href="#'+key+'" data-k="'+key+'">'+ic(icon)+'<span>'+label+'</span></a>').join('');
 function navPosition(){
  const active=$('#nav a[aria-current]'),nav=$('#nav');if(!active)return;
@@ -438,17 +464,17 @@ function indicator(){
 function renderSources(){
  const root=$('#followedSources');if(!root)return;
  root.innerHTML=prefs.sources.length?prefs.sources.map(s=>{
-  return '<article class="source-card"><div class="source-info"><b>'+esc(s.name)+'</b><span>'+esc(s.kind)+(s.kind==='channel'?(s.productive?' · included in For You':' · Following only'):' · Following')+'</span><div class="source-actions">'+
-   (s.kind==='channel'?'<button class="chip" data-recommend-channel data-source-id="'+esc(s.id)+'" data-source-name="'+esc(s.name)+'" aria-pressed="'+!!s.productive+'">'+(s.productive?'REMOVE FROM FOR YOU':'ADD TO FOR YOU')+'</button>':'')+
+  return '<article class="source-card"><div class="source-info"><b>'+esc(s.name)+'</b><span>'+esc(s.kind)+' · Following</span><div class="source-actions">'+
    '<button class="chip" data-unfollow-kind="'+esc(s.kind)+'" data-source-id="'+esc(s.id)+'">UNFOLLOW</button></div></div></article>';
  }).join(''):'<p class="meta pad">You are not following any sources yet. Search for channels, publishers or musicians to add them.</p>';
 }
+
 function applyPrefs(data){
  if(data&&data.topics&&data.sources)prefs=data;
  const root=$('#topicOptions');
  if(root)root.querySelectorAll('[data-topic]').forEach(b=>b.setAttribute('aria-pressed',selectedTopics().includes(b.dataset.topic)));
- const status=$('#topicStatus');if(status)status.textContent=selectedTopics().length+' topics selected';
- renderSources();
+ const status=$('#topicStatus');if(status)status.textContent=selectedTopics().length+' selected · '+TOPICS.length+' interests';
+ renderSources();updateTopicOptions();
 }
 function loadFeedPreferences(){
  try{if(window.RushNative){const raw=RushNative.getFeedPreferences();if(raw)applyPrefs(JSON.parse(raw))}}catch(e){}
@@ -457,6 +483,7 @@ function go(){
  page=(location.hash||'#home').slice(1);
  if(!R[page])page='home';
  $('#v').innerHTML=R[page]();
+ if(page==='topics')updateTopicOptions();
  document.querySelectorAll('#nav a').forEach(a=>a.dataset.k===page?a.setAttribute('aria-current','page'):a.removeAttribute('aria-current'));
  $('#sc').scrollTop=0;navPosition();indicator();loadFeedPreferences();
  if(window.RushNative){RushNative.loadCurrentPlayback();
@@ -547,7 +574,7 @@ function updateCurrentPlayback(data){
  }
 }
 function renderPreferencePage(){
- applyPrefs(prefs);renderSources();
+ applyPrefs(prefs);renderSources();updateTopicOptions();
 }
 function handleFollow(kind,id,name,productive){
  if(!window.RushNative)return;
@@ -559,6 +586,7 @@ function refreshCurrentPage(){
  if(page==='search')renderSearchResults();
  if(page==='library')renderLibraryContent();
 }
+document.addEventListener('input',e=>{if(e.target&&e.target.id==='topicQuery')updateTopicOptions()});
 document.addEventListener('click',e=>{
  const b=e.target.closest('button');if(!b)return;
  if(b.id==='topicsShortcut'||b.hasAttribute('data-open-topics')||b.id==='profileShortcut'){location.hash='#topics';return}
@@ -591,7 +619,7 @@ document.addEventListener('click',e=>{
  if(b.hasAttribute('data-open-search')){location.hash='#search';return}
  if(b.dataset.tab){homeTab=b.dataset.tab;$('#v').innerHTML=R.home();indicator();loadHomeFeed();return}
  if(b.hasAttribute('data-save-topics')){saveTopics();return}
- if(b.dataset.topic){const on=b.getAttribute('aria-pressed')!=='true';b.setAttribute('aria-pressed',String(on));return}
+ if(b.dataset.topic){const on=b.getAttribute('aria-pressed')!=='true';b.setAttribute('aria-pressed',String(on));updateTopicOptions();return}
  if(b.hasAttribute('data-unified-search')){runUnifiedSearch();return}
  if(b.dataset.searchFilter){unifiedMode=b.dataset.searchFilter;document.querySelectorAll('[data-search-filter]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));const publicRoot=$('#publicPlaylistContent');if(publicRoot)publicRoot.innerHTML='';renderSearchResults();return}
  if(b.hasAttribute('data-public-playlist-open')){
@@ -611,7 +639,6 @@ document.addEventListener('click',e=>{
  if(b.hasAttribute('data-news-search')){const q=$('#newsQuery')?.value.trim();if(q&&window.RushNative)RushNative.searchNews(q);return}
  if(b.dataset.newsCategory){document.querySelectorAll('[data-news-category]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));if(b.dataset.newsCategory==='Personalized')RushNative.loadPersonalizedNews();else if(window.RushNative)RushNative.loadNews(b.dataset.newsCategory);return}
  if(b.dataset.followKind){if(sourceExists(b.dataset.followKind,b.dataset.sourceId))RushNative.unfollowSource(b.dataset.followKind,b.dataset.sourceId);else handleFollow(b.dataset.followKind,b.dataset.sourceId,b.dataset.sourceName,false);return}
- if(b.hasAttribute('data-recommend-channel')){const source=sourceFor('channel',b.dataset.sourceId);if(window.RushNative)RushNative.setChannelRecommended(b.dataset.sourceId,b.dataset.sourceName,!(source&&source.productive));return}
  if(b.dataset.unfollowKind){if(window.RushNative)RushNative.unfollowSource(b.dataset.unfollowKind,b.dataset.sourceId);return}
  if(b.dataset.videoId){const d=b.dataset;const host=$('#videoPlayerHost');if(host){host.scrollIntoView({behavior:RM?'auto':'smooth',block:'start'});host.innerHTML='<span>LOADING VIDEO…</span>'}const status=$('#videoPlaybackStatus');if(status)status.textContent='Preparing video…';if(window.RushNative)RushNative.playVideo(d.videoId,d.title,d.creator,d.thumbnail);return}
  if(b.dataset.track){const d=b.dataset;const status=$('#musicStatus');if(status)status.textContent='Preparing track…';if(window.RushNative)RushNative.playMusic(d.track,d.title,d.artist,d.thumbnail);return}
