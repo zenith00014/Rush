@@ -266,8 +266,9 @@ class OfflineDownloadWorker(
         cancellationHandle = coroutineContext[Job]?.invokeOnCompletion { cause ->
             if (cause != null) activeCall?.cancel()
         }
-            activeCall = CLIENT.newCall(requestFor(url))
-            var response = activeCall!!.execute()
+            val initialCall = CLIENT.newCall(requestFor(url))
+            activeCall = initialCall
+            var response = initialCall.execute()
             if (response.code == 403 || response.code == 410) {
                 response.close()
                 val details = runCatching { JSONObject(metadata.readText()) }.getOrNull()
@@ -284,8 +285,9 @@ class OfflineDownloadWorker(
                 if (refreshed.extension != extension) return@withContext Result.failure()
                 details.put("sourceUrl", refreshed.url).put("quality", refreshed.qualityLabel)
                 metadata.writeText(details.toString())
-                activeCall = CLIENT.newCall(requestFor(refreshed.url))
-                response = activeCall!!.execute()
+                val refreshedCall = CLIENT.newCall(requestFor(refreshed.url))
+                activeCall = refreshedCall
+                response = refreshedCall.execute()
             }
             response.use { response ->
                 if (!response.isSuccessful) {

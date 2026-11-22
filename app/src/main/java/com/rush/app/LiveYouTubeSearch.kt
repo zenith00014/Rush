@@ -133,7 +133,7 @@ object LiveYouTubeSearch {
                 lastError = error
             }
         }
-        if (found.isEmpty() && nextCursors.isEmpty() && lastError != null) throw lastError!!
+        if (found.isEmpty() && nextCursors.isEmpty()) lastError?.let { throw it }
         return YouTubeSearchPage(found.values.take(40), saveCursors(nextCursors))
     }
 

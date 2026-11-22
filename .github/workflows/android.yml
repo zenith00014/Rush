@@ -50,8 +50,8 @@ jobs:
       - name: Validate WebView and native bridge
         run: python3 scripts/validate_rush_html.py
 
-      - name: Run unit tests and build debug APK
-        run: gradle --no-daemon --stacktrace :app:testDebugUnitTest :app:assembleDebug
+      - name: Run Android Lint, unit tests and build debug APK
+        run: gradle --no-daemon --stacktrace :app:lintDebug :app:testDebugUnitTest :app:assembleDebug
 
       - name: Verify APK output
         run: |
