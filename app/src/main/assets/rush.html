@@ -716,6 +716,16 @@ setInterval(()=>{
   else if(!on)line.dataset.visible='0';
  });
 },350);
+let nativeVideoPositionPending=false;
+const contentScroller=$('#sc');
+if(contentScroller)contentScroller.addEventListener('scroll',()=>{
+ if(nativeVideoPositionPending||page!=='videos'||!window.RushNative)return;
+ nativeVideoPositionPending=true;
+ requestAnimationFrame(()=>{
+  nativeVideoPositionPending=false;
+  if(page==='videos'&&window.RushNative)RushNative.updateVideoPosition();
+ });
+},{passive:true});
 window.addEventListener('hashchange',go);
 window.addEventListener('resize',()=>{navPosition();indicator();if(window.RushNative&&page==='videos')RushNative.updateVideoPosition()});
 loadPrefs();
