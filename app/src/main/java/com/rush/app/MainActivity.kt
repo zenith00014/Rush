@@ -59,6 +59,7 @@ private fun androidx.media3.ui.PlayerView.prepareForPlayback(
 
 private data class Pick(val id:String,val title:String,val creator:String,val music:Boolean,val colors:List<Color>,val reason:String,val localPath:String?=null,val sourceId:String?=null)
 private data class SubscribedChannel(val id:String,val title:String,val subscriberCount:String)
+@OptIn(androidx.media3.common.util.UnstableApi::class)
 class MainActivity:ComponentActivity(){
  private val openDownloadsRequest=androidx.compose.runtime.mutableIntStateOf(0)
  private val pipModeState=androidx.compose.runtime.mutableStateOf(false)

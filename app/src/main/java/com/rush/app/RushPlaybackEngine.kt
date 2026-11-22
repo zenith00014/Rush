@@ -4,6 +4,8 @@
  * Licensed under the GNU General Public License, version 3 or (at your option) any later version.
  * See THIRD_PARTY_NOTICES.md and LICENSES/LibreTube-GPL-3.0-or-later.txt.
  */
+@file:OptIn(androidx.media3.common.util.UnstableApi::class)
+
 package com.rush.app
 
 import okhttp3.RequestBody.Companion.toRequestBody

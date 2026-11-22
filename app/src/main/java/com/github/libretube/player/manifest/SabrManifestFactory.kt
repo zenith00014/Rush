@@ -1,6 +1,8 @@
 /*
  * Converts NewPipeExtractor metadata into the LibreTube SABR manifest model.
  */
+@file:OptIn(androidx.media3.common.util.UnstableApi::class)
+
 package com.github.libretube.player.manifest
 
 import android.net.Uri

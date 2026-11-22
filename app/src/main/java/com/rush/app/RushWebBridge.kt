@@ -13,6 +13,7 @@ import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 
+@OptIn(androidx.media3.common.util.UnstableApi::class)
 class RushWebBridge(
     private val activity: MainActivity,
     private val webView: WebView

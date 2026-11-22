@@ -21,6 +21,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+@OptIn(androidx.media3.common.util.UnstableApi::class)
 class RushPlaybackService : MediaSessionService() {
     private val STREAM_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:153.0) Gecko/20100101 Firefox/153.0"
     private var mediaSession: MediaSession? = null
