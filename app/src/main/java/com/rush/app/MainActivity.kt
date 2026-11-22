@@ -279,8 +279,9 @@ class MainActivity:ComponentActivity(){
     override fun onPageFinished(view:android.webkit.WebView,url:String?){
      super.onPageFinished(view,url)
      webPageLoaded=true
-     if(pendingOpenDownloads){
+     if(pendingOpenDownloads||intent.getBooleanExtra("open_downloads",false)){
       pendingOpenDownloads=false
+      intent.removeExtra("open_downloads")
       openDownloadsFromNotification()
      }
     }
@@ -305,7 +306,10 @@ class MainActivity:ComponentActivity(){
  override fun onNewIntent(intent:android.content.Intent){
   super.onNewIntent(intent)
   setIntent(intent)
-  if(intent.getBooleanExtra("open_downloads",false))openDownloadsFromNotification()
+  if(intent.getBooleanExtra("open_downloads",false)){
+   intent.removeExtra("open_downloads")
+   openDownloadsFromNotification()
+  }
  }
  override fun onPictureInPictureModeChanged(isInPictureInPictureMode:Boolean,newConfig:android.content.res.Configuration){
   super.onPictureInPictureModeChanged(isInPictureInPictureMode,newConfig)
