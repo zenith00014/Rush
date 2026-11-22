@@ -20,6 +20,9 @@ android {
     }
 
     buildFeatures { compose = true; buildConfig = true }
+    testOptions {
+        unitTests { isIncludeAndroidResources = true }
+    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -50,6 +53,9 @@ dependencies {
     implementation("com.github.libre-tube:NewPipeExtractor:894ae973d29b7c26502c72834bad636a72e345ca")
     implementation("com.google.protobuf:protobuf-javalite:4.33.5")
     debugImplementation("androidx.compose.ui:ui-tooling")
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("androidx.test:core:1.6.1")
+    testImplementation("org.robolectric:robolectric:4.14.1")
 }
 
 protobuf {
