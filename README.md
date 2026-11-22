@@ -11,7 +11,7 @@ Rush is an Android media and discovery app built with Kotlin, AndroidX Media3 an
 - User-selected topics across learning, culture, entertainment and low-focus/viral categories
 - For You recommendations limited to YouTube channels the user explicitly includes in the productive-channel pool
 - News discovery and publisher-aware suggestions using topic relevance, reporting/context signals and followed publishers
-- Broad search across videos, music, news and YouTube channels; recommendation scoring is not applied as a search restriction
+- Broad search across videos, music, news, YouTube channels and public video playlists; playlist tracks can be browsed and queued locally, and recommendation scoring is not applied as a search restriction
 - Public video playlists, local playlists, watch/listening history and offline downloads
 - Media3 background playback, notifications, app-private downloads and Picture-in-Picture
 

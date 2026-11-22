@@ -92,6 +92,36 @@ class RushWebBridge(
     }
 
     @JavascriptInterface
+    fun searchPlaylists(query: String) {
+        val term = query.trim().take(200)
+        if (term.isBlank()) return
+        activity.lifecycleScope.launch {
+            try {
+                val playlists = withContext(Dispatchers.IO) {
+                    LiveYouTubeSearch.search(term, playlists = true)
+                        .filter { it.isCollection && it.collectionId.isNotBlank() }
+                        .distinctBy { it.collectionId }
+                        .take(30)
+                }
+                val payload = JSONArray().apply {
+                    playlists.forEach { playlist ->
+                        put(JSONObject()
+                            .put("id", playlist.collectionId)
+                            .put("title", playlist.title)
+                            .put("creator", playlist.creator)
+                            .put("videoCount", playlist.videoCount.ifBlank { playlist.duration })
+                            .put("thumbnail", playlist.thumbnailUrl))
+                    }
+                }
+                publish("rushPlaylistSearchResults", payload.toString())
+            } catch (error: Exception) {
+                publish("rushPlaylistSearchError", JSONObject()
+                    .put("message", playbackErrorMessage(error, "Playlist search failed.")).toString())
+            }
+        }
+    }
+
+    @JavascriptInterface
     fun loadHomeFeed(mode: String) {
         val prefs = activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)
         activity.lifecycleScope.launch {
@@ -777,6 +807,89 @@ class RushWebBridge(
         }
     }
 
+
+    @JavascriptInterface
+    fun browsePublicPlaylist(playlistId: String, playlistTitle: String) {
+        val cleanId = playlistId.trim().take(128)
+        if (!cleanId.matches(Regex("[A-Za-z0-9_-]{3,128}"))) {
+            publish("rushPublicPlaylistError", JSONObject().put("message", "Invalid YouTube playlist ID.").toString())
+            return
+        }
+        activity.lifecycleScope.launch {
+            try {
+                val videos = withContext(Dispatchers.IO) {
+                    LiveYouTubeSearch.browseVideoPlaylist(cleanId)
+                        .filter { it.videoId.matches(Regex("[A-Za-z0-9_-]{11}")) }
+                        .take(100)
+                }
+                val payload = JSONArray().apply {
+                    videos.forEach { video ->
+                        put(JSONObject()
+                            .put("id", video.videoId)
+                            .put("title", video.title)
+                            .put("creator", video.creator)
+                            .put("duration", video.duration)
+                            .put("thumbnail", video.thumbnailUrl))
+                    }
+                }
+                publish("rushPublicPlaylistResults", JSONObject()
+                    .put("id", cleanId)
+                    .put("title", playlistTitle.trim().take(300).ifBlank { "YouTube playlist" })
+                    .put("items", payload)
+                    .put("count", videos.size).toString())
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                publish("rushPublicPlaylistError", JSONObject()
+                    .put("message", playbackErrorMessage(error, "Could not open this playlist.")).toString())
+            }
+        }
+    }
+
+    @JavascriptInterface
+    fun queuePublicPlaylist(playlistTitle: String, rawItems: String) {
+        if (rawItems.length > 180_000) {
+            publish("rushLibraryError", JSONObject().put("message", "This playlist is too large to queue at once.").toString())
+            return
+        }
+        val array = runCatching { JSONArray(rawItems) }.getOrElse {
+            publish("rushLibraryError", JSONObject().put("message", "Playlist data could not be read.").toString())
+            return
+        }
+        val entries = buildList {
+            for (index in 0 until minOf(array.length(), 50)) {
+                val item = array.optJSONObject(index) ?: continue
+                val id = item.optString("id").trim()
+                val title = item.optString("title").trim().take(300)
+                if (!id.matches(Regex("[A-Za-z0-9_-]{11}")) || title.isBlank()) continue
+                add(id to JSONObject()
+                    .put("title", title)
+                    .put("creator", item.optString("creator").trim().take(200))
+                    .put("thumbnail", item.optString("thumbnail").take(2048)))
+            }
+        }.distinctBy { it.first }
+        if (entries.isEmpty()) {
+            publish("rushLibraryError", JSONObject().put("message", "This playlist contains no playable videos.").toString())
+            return
+        }
+        val prefs = activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)
+        entries.forEach { (id, item) ->
+            LocalLibrary.rememberItem(
+                prefs,
+                id,
+                item.optString("title"),
+                item.optString("creator"),
+                false,
+                item.optString("thumbnail"),
+                id
+            )
+        }
+        QueueStore.replace(prefs, entries.map { it.first })
+        publish("rushLibraryData", LocalLibrary.load(prefs).toString())
+        publish("rushPlaylistQueued", JSONObject()
+            .put("title", playlistTitle.trim().take(300).ifBlank { "YouTube playlist" })
+            .put("count", entries.size).toString())
+    }
 
     @JavascriptInterface
     fun loadLibrary() {

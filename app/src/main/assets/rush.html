@@ -276,9 +276,11 @@ const ic=n=>'<svg class="ic'+(FILL.includes(n)?' f':'')+'" viewBox="0 0 24 24" a
 const PAL=['#FF6B3D','#4D7DFF','#D8FF3F','#35E0E0','#B58CFF','#3DDC84'];
 const TOPICS=['Science','Technology','AI and machine learning','Programming','Cybersecurity','History','Geography','Education','Languages','Literature','Books','Philosophy','Psychology','Mathematics','Space','Engineering','Economics','Business','Startups','Personal finance','Investing','Politics','Current affairs','World news','Environment','Climate','Health','Medicine','Fitness','Sports','Football','Basketball','Cricket','Esports','Gaming','Game development','Design','Art','Photography','Architecture','Fashion','Beauty','Makeup','Cooking','Food','Travel','Cars','Motorcycles','Nature','Wildlife','Pets','Gardening','Home improvement','Music','Music production','Classical music','Hip-hop','K-pop','Film analysis','Anime','Manga','Podcasts','Documentaries','Vlogs','Comedy','Memes','Viral clips','Celebrity gossip','Pranks','Internet drama','Rage bait','Reality TV','Shorts','ASMR','Luxury','Shopping','Product reviews','Relationships','Parenting','Lifestyle','Meditation','Self-improvement','Romance','Horror','Internet culture','Streaming','Live streams','Board games','Collecting','Crafts'];
 const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const safeUrl=v=>/^https:\/\/[^\s"'<>]+$/i.test(String(v||''))?String(v):'';
 let prefs={topics:['Science','Technology','History','Education','Design','Engineering','Economics','Culture','Environment','Sports','Music','Health','Language','Business','Art','Documentaries'],sources:[]};
 let page='home',homeTab='fy',unifiedMode='all',unifiedQuery='',mediaState={hasItem:false,isMusic:false,isVideo:false,isPlaying:false,title:'',artist:'',artwork:''};
-const unifiedData={videos:[],music:[],news:[],channels:[]};
+const unifiedData={videos:[],music:[],news:[],channels:[],playlists:[]};
+let publicPlaylistData=null;
 const selectedTopics=()=>prefs.topics||[];
 function loadPrefs(){
  try{if(window.RushNative){const raw=RushNative.getFeedPreferences();if(raw)prefs=JSON.parse(raw)}}catch(e){}
@@ -304,6 +306,9 @@ function mediaActions(x,isMusic){
   '<button class="chip" data-queue-item data-id="'+id+'" data-title="'+title+'" data-creator="'+creator+'" data-music="'+isMusic+'" data-thumbnail="'+thumb+'">QUEUE</button>'+
   '<button class="chip" data-download-media data-id="'+id+'" data-title="'+title+'" data-creator="'+creator+'" data-music="'+isMusic+'">DOWNLOAD</button>'+
   (isMusic?'<button class="chip" data-download-mp3 data-id="'+id+'" data-title="'+title+'" data-creator="'+creator+'">MP3</button>':'')+'</div>';
+}
+function playlistRow(x){
+ return '<article class="source-card"><img src="'+esc(safeUrl(x.thumbnail))+'" alt="" loading="lazy"><div class="source-info"><b>'+esc(x.title)+'</b><span>'+esc(x.creator||'YouTube')+' · '+esc(x.videoCount||'Playlist')+'</span><div class="result-actions"><button class="chip" data-public-playlist-open data-playlist-id="'+esc(x.id)+'" data-playlist-title="'+esc(x.title)+'">VIEW PLAYLIST</button></div></div></article>';
 }
 function videoRow(x){
  return '<div class="result-wrap"><button class="row n" data-video-id="'+esc(x.id)+'" data-title="'+esc(x.title)+'" data-creator="'+esc(x.artist||x.creator)+'" data-thumbnail="'+esc(x.thumbnail)+'"><img src="'+esc(x.thumbnail)+'" alt="" loading="lazy"><div><b>'+esc(x.title)+'</b><span>'+esc(x.artist||x.creator||'YouTube')+' · '+esc(x.duration||'')+'</span></div>'+ic('play')+'</button>'+mediaActions(x,false)+'</div>';
@@ -349,9 +354,9 @@ function renderNewsPage(){
 }
 function renderSearchPage(){
  return pageTop('Search','open discovery')+
- '<label class="si">'+ic('search')+'<input id="q" type="search" placeholder="Search videos, music, news, channels or artists" aria-label="Search all Rush" autocomplete="off"></label><button class="btn" data-unified-search>SEARCH ALL SOURCES</button>'+
- '<div class="chips search-filters"><button class="chip" data-search-filter="all" aria-pressed="true">All</button><button class="chip" data-search-filter="videos" aria-pressed="false">Videos</button><button class="chip" data-search-filter="music" aria-pressed="false">Music</button><button class="chip" data-search-filter="news" aria-pressed="false">News</button><button class="chip" data-search-filter="channels" aria-pressed="false">Channels</button></div>'+
- '<p class="meta pad" id="unifiedStatus">Search is broad. Recommendation rules do not restrict these results.</p><div id="unifiedResults"></div>';
+ '<label class="si">'+ic('search')+'<input id="q" type="search" placeholder="Search videos, music, news, channels, playlists or artists" aria-label="Search all Rush" autocomplete="off"></label><button class="btn" data-unified-search>SEARCH ALL SOURCES</button>'+
+ '<div class="chips search-filters"><button class="chip" data-search-filter="all" aria-pressed="true">All</button><button class="chip" data-search-filter="videos" aria-pressed="false">Videos</button><button class="chip" data-search-filter="music" aria-pressed="false">Music</button><button class="chip" data-search-filter="news" aria-pressed="false">News</button><button class="chip" data-search-filter="channels" aria-pressed="false">Channels</button><button class="chip" data-search-filter="playlists" aria-pressed="false">Playlists</button></div>'+
+ '<p class="meta pad" id="unifiedStatus">Search is broad. Recommendation rules do not restrict these results.</p><div id="unifiedResults"></div><div id="publicPlaylistContent"></div>';
 }
 function renderTopicsPage(){
  return pageTop('Your topics','personalize recommendations')+
@@ -487,10 +492,11 @@ function renderSearchResults(){
   videos:unifiedData.videos,
   music:unifiedData.music,
   news:unifiedData.news,
-  channels:unifiedData.channels
+  channels:unifiedData.channels,
+  playlists:unifiedData.playlists
  };
- const names={videos:'Videos',music:'Music',news:'News',channels:'YouTube channels'};
- const renderers={videos:items=>items.map(videoRow).join(''),music:items=>items.map(musicRow).join(''),news:items=>items.map(newsCard).join(''),channels:items=>items.map(channelCard).join('')};
+ const names={videos:'Videos',music:'Music',news:'News',channels:'YouTube channels',playlists:'Public YouTube playlists'};
+ const renderers={videos:items=>items.map(videoRow).join(''),music:items=>items.map(musicRow).join(''),news:items=>items.map(newsCard).join(''),channels:items=>items.map(channelCard).join(''),playlists:items=>items.map(playlistRow).join('')};
  root.innerHTML=Object.keys(groups).filter(k=>unifiedMode==='all'||unifiedMode===k).map(k=>{
   const items=groups[k];return section(names[k]+' · '+items.length,renderers[k](items));
  }).join('')||'<p class="meta pad">No results in this category.</p>';
@@ -502,7 +508,9 @@ function runUnifiedSearch(){
  unifiedQuery=q;Object.keys(unifiedData).forEach(k=>unifiedData[k]=[]);
  const status=$('#unifiedStatus');if(status)status.textContent='Searching YouTube, YouTube Music and news sources…';
  $('#unifiedResults').innerHTML='';
- if(window.RushNative){RushNative.searchVideos(q);RushNative.searchMusic(q);RushNative.searchNews(q);RushNative.searchChannels(q)}
+ const publicRoot=$('#publicPlaylistContent');if(publicRoot)publicRoot.innerHTML='';
+ publicPlaylistData=null;
+ if(window.RushNative){RushNative.searchVideos(q);RushNative.searchMusic(q);RushNative.searchNews(q);RushNative.searchChannels(q);RushNative.searchPlaylists(q)}
 }
 function updateMini(){
  const mini=$('#mini');if(!mini)return;
@@ -585,7 +593,17 @@ document.addEventListener('click',e=>{
  if(b.hasAttribute('data-save-topics')){saveTopics();return}
  if(b.dataset.topic){const on=b.getAttribute('aria-pressed')!=='true';b.setAttribute('aria-pressed',String(on));return}
  if(b.hasAttribute('data-unified-search')){runUnifiedSearch();return}
- if(b.dataset.searchFilter){unifiedMode=b.dataset.searchFilter;document.querySelectorAll('[data-search-filter]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));renderSearchResults();return}
+ if(b.dataset.searchFilter){unifiedMode=b.dataset.searchFilter;document.querySelectorAll('[data-search-filter]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));const publicRoot=$('#publicPlaylistContent');if(publicRoot)publicRoot.innerHTML='';renderSearchResults();return}
+ if(b.hasAttribute('data-public-playlist-open')){
+  const root=$('#publicPlaylistContent');if(root)root.innerHTML='<p class="meta pad">Loading playlist…</p>';
+  if(window.RushNative)RushNative.browsePublicPlaylist(b.dataset.playlistId,b.dataset.playlistTitle||'YouTube playlist');
+  return
+ }
+ if(b.hasAttribute('data-queue-public-playlist')){
+  const items=(publicPlaylistData?.items||[]).slice(0,50).map(x=>({id:x.id,title:x.title,creator:x.creator,thumbnail:x.thumbnail}));
+  if(window.RushNative&&items.length)RushNative.queuePublicPlaylist(publicPlaylistData.title||'YouTube playlist',JSON.stringify(items));
+  return
+ }
  if(b.hasAttribute('data-video-search')){const q=$('#videoQuery')?.value.trim();if(q&&window.RushNative){$('#videoStatus').textContent='Searching YouTube…';$('#videoResults').innerHTML='';RushNative.searchVideos(q)}return}
  if(b.hasAttribute('data-channel-search')){const q=$('#channelQuery')?.value.trim();if(q&&window.RushNative){$('#channelStatus').textContent='Searching channels…';$('#channelResults').innerHTML='';RushNative.searchChannels(q)}return}
  if(b.hasAttribute('data-music-search')){const q=$('#musicQuery')?.value.trim();if(q&&window.RushNative){$('#musicStatus').textContent='Searching YouTube Music…';$('#musicResults').innerHTML='';RushNative.searchMusic(q)}return}
@@ -624,6 +642,17 @@ window.rushFeedPreferencesError=error=>{const t=$('#topicStatus');if(t)t.textCon
 window.rushCurrentPlayback=updateCurrentPlayback;
 window.rushHomeFeedResults=renderFeedResults;
 window.rushChannelSearchResults=items=>{renderChannels(items);if(page==='search'){unifiedData.channels=items;renderSearchResults()}};
+window.rushPlaylistSearchResults=items=>{unifiedData.playlists=items||[];renderSearchResults()};
+window.rushPlaylistSearchError=error=>{const s=$('#unifiedStatus');if(s)s.textContent=error.message||'Playlist search failed.'};
+window.rushPublicPlaylistResults=data=>{
+ publicPlaylistData=data||{items:[]};
+ const root=$('#publicPlaylistContent');if(!root||page!=='search')return;
+ const items=publicPlaylistData.items||[];
+ root.innerHTML='<section class="feed-section"><h2>'+esc(publicPlaylistData.title||'YouTube playlist')+' · '+items.length+'</h2><div class="feed-actions"><button class="chip" data-queue-public-playlist>QUEUE FIRST '+Math.min(50,items.length)+'</button><span class="meta">Up to 100 videos loaded from this public playlist.</span></div>'+(items.length?items.map(videoRow).join(''):'<p class="meta pad">No playable videos were found in this playlist.</p>')+'</section>';
+};
+window.rushPublicPlaylistError=error=>{const root=$('#publicPlaylistContent');if(root)root.innerHTML='<p class="meta pad">'+esc(error.message||'Could not open this playlist.')+'</p>'};
+window.rushPlaylistQueued=data=>{const s=$('#unifiedStatus');if(s)s.textContent=(data.count||0)+' playlist videos added to your local queue. Open Library → Queue to play them.'};
+
 window.rushChannelSearchError=error=>{const s=$('#channelStatus')||$('#unifiedStatus');if(s)s.textContent=error.message||'Channel search failed.'};
 window.rushVideoSearchResults=items=>{
  unifiedData.videos=items;renderSearchResults();

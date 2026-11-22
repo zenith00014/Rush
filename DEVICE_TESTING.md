@@ -16,6 +16,7 @@ Install `app-debug.apk` from the CI artifact. The app uses application ID `com.r
 ## Search and channels
 
 - Search for a broad topic rather than an exact title.
+- Search public YouTube playlists, open one, inspect its videos, queue the first 50 tracks, and play them from Library → Queue.
 - Search for a channel, open its details, confirm description/subscriber/upload information where available, and open a recent upload.
 - Subscribe to the channel, then refresh the subscriptions feed.
 
