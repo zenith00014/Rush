@@ -52,14 +52,18 @@ class RushWebBridge(
     @JavascriptInterface
     fun setChannelRecommended(id: String, name: String, enabled: Boolean) {
         val prefs = activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)
-        runCatching { FeedPreferences.setProductive(prefs, id, name, enabled) }
+        runCatching {
+            require(id.isNotBlank() && id.length <= 256) { "Invalid channel ID." }
+            require(name.isNotBlank() && name.length <= 160) { "Invalid channel name." }
+            FeedPreferences.setProductive(prefs, id, name, enabled)
+        }
             .onSuccess { publish("rushFeedPreferences", FeedPreferences.asJson(prefs).toString()) }
             .onFailure { publish("rushFeedPreferencesError", JSONObject().put("message", it.message ?: "Could not update this channel.").toString()) }
     }
 
     @JavascriptInterface
     fun searchChannels(query: String) {
-        val term = query.trim()
+        val term = query.trim().take(200)
         if (term.isEmpty()) return
         activity.lifecycleScope.launch {
             try {
@@ -333,6 +337,7 @@ class RushWebBridge(
                 val metadata = item?.mediaMetadata
                 val hasItem = item != null
                 val audioOnly = metadata?.extras?.getBoolean(PlaybackMetadata.AUDIO_ONLY, false) == true
+                val sourceId = metadata?.extras?.getString(PlaybackMetadata.SOURCE).orEmpty()
                 publish("rushCurrentPlayback", JSONObject()
                     .put("hasItem", hasItem)
                     .put("isMusic", hasItem && audioOnly)
@@ -342,6 +347,8 @@ class RushWebBridge(
                     .put("artist", metadata?.artist?.toString().orEmpty())
                     .put("artwork", metadata?.artworkUri?.toString().orEmpty())
                     .put("mediaId", item?.mediaId.orEmpty())
+                    .put("sourceId", sourceId)
+                    .put("isOffline", item?.localConfiguration?.uri?.scheme == "file")
                     .put("position", controller.currentPosition)
                     .put("duration", controller.duration).toString())
             }.onFailure {
@@ -369,7 +376,7 @@ class RushWebBridge(
 
     @JavascriptInterface
     fun searchMusic(query: String) {
-        val term = query.trim()
+        val term = query.trim().take(200)
         if (term.isEmpty()) return
         activity.lifecycleScope.launch {
             try {
@@ -437,6 +444,7 @@ class RushWebBridge(
                     val entry = history.optJSONObject(index) ?: continue
                     if (entry.optString("id") != videoId && updatedHistory.length() < 50) updatedHistory.put(entry)
                 }
+                LocalLibrary.rememberPlayback(prefs, videoId, title, artist, true, thumbnail, videoId)
                 prefs.edit()
                     .putString("music_last_id", videoId)
                     .putString("music_last_title", title)
@@ -487,7 +495,7 @@ class RushWebBridge(
 
     @JavascriptInterface
     fun searchVideos(query: String) {
-        val term = query.trim()
+        val term = query.trim().take(200)
         if (term.isEmpty()) return
         activity.lifecycleScope.launch {
             try {
@@ -539,6 +547,7 @@ class RushWebBridge(
                 controller.setMediaItem(item)
                 controller.prepare()
                 controller.play()
+                LocalLibrary.rememberPlayback(prefs, videoId, title, creator, false, thumbnail, videoId)
                 activity.runOnUiThread { activity.showNativeVideo(controller) }
                 publish("rushVideoPlaybackState", JSONObject().put("state", "playing")
                     .put("title", title).put("creator", creator).put("captionTracks", subtitleConfigs.size).toString())
@@ -642,14 +651,14 @@ class RushWebBridge(
 
     @JavascriptInterface
     fun searchNews(query: String) {
-        val term = query.trim()
+        val term = query.trim().take(200)
         if (term.isNotEmpty()) fetchNews(term)
     }
 
     @JavascriptInterface
     fun openNews(url: String) {
-        val uri = runCatching { android.net.Uri.parse(url) }.getOrNull() ?: return
-        if (uri.scheme != "https") return
+        val uri = runCatching { android.net.Uri.parse(url.trim().take(4096)) }.getOrNull() ?: return
+        if (uri.scheme != "https" || uri.host.isNullOrBlank() || uri.userInfo != null) return
         activity.runOnUiThread {
             runCatching {
                 activity.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, uri))
@@ -764,6 +773,409 @@ class RushWebBridge(
                 publish("rushMusicPlaybackState", JSONObject()
                     .put("state", if (player.isPlaying) "playing" else "paused")
                     .put("title", player.mediaMetadata.title?.toString().orEmpty()).toString())
+            }
+        }
+    }
+
+
+    @JavascriptInterface
+    fun loadLibrary() {
+        val prefs = activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)
+        publish("rushLibraryData", LocalLibrary.load(prefs).toString())
+    }
+
+    @JavascriptInterface
+    fun saveLibraryItem(id: String, title: String, creator: String, isMusic: Boolean, thumbnail: String) {
+        val cleanId = id.trim().take(256)
+        if (cleanId.isBlank()) return
+        val prefs = activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)
+        runCatching {
+            LocalLibrary.save(prefs, cleanId, title, creator, isMusic, thumbnail, cleanId)
+        }.onSuccess {
+            publish("rushLibraryData", LocalLibrary.load(prefs).toString())
+        }.onFailure {
+            publish("rushLibraryError", JSONObject().put("message", it.message ?: "Could not save this item.").toString())
+        }
+    }
+
+    @JavascriptInterface
+    fun removeSavedLibraryItem(id: String) {
+        val prefs = activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)
+        LocalLibrary.unsave(prefs, id)
+        publish("rushLibraryData", LocalLibrary.load(prefs).toString())
+    }
+
+    @JavascriptInterface
+    fun removeHistoryItem(id: String) {
+        val prefs = activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)
+        LocalLibrary.removeFromHistory(prefs, id)
+        publish("rushLibraryData", LocalLibrary.load(prefs).toString())
+    }
+
+    @JavascriptInterface
+    fun clearPlaybackHistory() {
+        val prefs = activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)
+        LocalLibrary.clearHistory(prefs)
+        publish("rushLibraryData", LocalLibrary.load(prefs).toString())
+    }
+
+    @JavascriptInterface
+    fun queueLibraryItem(id: String, title: String, creator: String, isMusic: Boolean, thumbnail: String) {
+        val cleanId = id.trim().take(256)
+        if (cleanId.isBlank()) return
+        val prefs = activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)
+        LocalLibrary.rememberItem(prefs, cleanId, title, creator, isMusic, thumbnail, cleanId)
+        val queue = QueueStore.add(prefs, cleanId)
+        publish("rushLibraryData", LocalLibrary.load(prefs).toString())
+        publish("rushQueueUpdated", JSONObject().put("size", queue.size).toString())
+    }
+
+    @JavascriptInterface
+    fun removeQueueItem(index: Int) {
+        val prefs = activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)
+        if (index in 0..499) QueueStore.removeAt(prefs, index)
+        publish("rushLibraryData", LocalLibrary.load(prefs).toString())
+    }
+
+    @JavascriptInterface
+    fun moveQueueItem(fromIndex: Int, toIndex: Int) {
+        val prefs = activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)
+        if (fromIndex in 0..499 && toIndex in 0..499) QueueStore.move(prefs, fromIndex, toIndex)
+        publish("rushLibraryData", LocalLibrary.load(prefs).toString())
+    }
+
+    @JavascriptInterface
+    fun clearPlaybackQueue() {
+        val prefs = activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)
+        QueueStore.clear(prefs)
+        publish("rushLibraryData", LocalLibrary.load(prefs).toString())
+    }
+
+    @JavascriptInterface
+    fun createLibraryPlaylist(name: String) {
+        val prefs = activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)
+        runCatching { PlaylistStore.create(prefs, name.take(80)) }
+            .onSuccess { publish("rushLibraryData", LocalLibrary.load(prefs).toString()) }
+            .onFailure { publish("rushLibraryError", JSONObject().put("message", it.message ?: "Could not create the playlist.").toString()) }
+    }
+
+    @JavascriptInterface
+    fun addLibraryItemToPlaylist(
+        playlistId: String,
+        id: String,
+        title: String,
+        creator: String,
+        isMusic: Boolean,
+        thumbnail: String
+    ) {
+        val cleanId = id.trim().take(256)
+        if (playlistId.isBlank() || cleanId.isBlank()) return
+        val prefs = activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)
+        runCatching {
+            LocalLibrary.rememberItem(prefs, cleanId, title, creator, isMusic, thumbnail, cleanId)
+            PlaylistStore.add(prefs, playlistId.take(64), cleanId)
+        }.onSuccess {
+            publish("rushLibraryData", LocalLibrary.load(prefs).toString())
+        }.onFailure {
+            publish("rushLibraryError", JSONObject().put("message", it.message ?: "Could not add this item.").toString())
+        }
+    }
+
+    @JavascriptInterface
+    fun removeLibraryItemFromPlaylist(playlistId: String, id: String) {
+        val prefs = activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)
+        PlaylistStore.remove(prefs, playlistId.take(64), id.trim().take(256))
+        publish("rushLibraryData", LocalLibrary.load(prefs).toString())
+    }
+
+    @JavascriptInterface
+    fun deleteLibraryPlaylist(playlistId: String) {
+        val prefs = activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)
+        PlaylistStore.delete(prefs, playlistId.take(64))
+        publish("rushLibraryData", LocalLibrary.load(prefs).toString())
+    }
+
+    @JavascriptInterface
+    fun playLibraryQueue() {
+        activity.lifecycleScope.launch {
+            val prefs = activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)
+            val ids = QueueStore.load(prefs).take(50)
+            if (ids.isEmpty()) {
+                publish("rushLibraryError", JSONObject().put("message", "Your queue is empty.").toString())
+                return@launch
+            }
+            try {
+                val metadata = runCatching {
+                    JSONObject(prefs.getString("item_metadata", "{}") ?: "{}")
+                }.getOrDefault(JSONObject())
+                val queue = ArrayList<MediaItem>()
+                var skipped = 0
+                for (id in ids) {
+                    val entry = metadata.optJSONObject(id)
+                    if (entry == null) {
+                        skipped++
+                        continue
+                    }
+                    val title = entry.optString("title").take(300)
+                    val creator = entry.optString("creator").take(200)
+                    val isMusic = entry.optBoolean("music")
+                    val localPath = entry.optString("localPath")
+                    val localFile = java.io.File(localPath)
+                    val sourceId = entry.optString("sourceId").ifBlank { id }
+                    val thumbnail = entry.optString("thumbnail")
+                    val resolved = if (localFile.isFile) null else withContext(Dispatchers.IO) {
+                        resolvePlaybackMedia(
+                            sourceId,
+                            audioOnly = isMusic,
+                            maxHeight = if (isMusic) null else prefs.getInt("video_quality", 0).takeIf { it > 0 },
+                            maxAudioBitrate = if (isMusic) prefs.getInt("audio_quality", 160).takeIf { it > 0 } else null,
+                            preferMp4 = !isMusic && prefs.getBoolean("download_mp4", false),
+                            preferDash = !isMusic && !prefs.getBoolean("download_mp4", false),
+                            allowDashFallback = !isMusic && !prefs.getBoolean("download_mp4", false)
+                        )
+                    }
+                    val uri = if (localFile.isFile) android.net.Uri.fromFile(localFile)
+                        else android.net.Uri.parse(resolved!!.url)
+                    val subtitleConfigs = resolved?.subtitles.orEmpty().map { subtitle ->
+                        MediaItem.SubtitleConfiguration.Builder(android.net.Uri.parse(subtitle.url))
+                            .setMimeType(subtitle.mimeType)
+                            .setLanguage(subtitle.languageTag)
+                            .setLabel(subtitle.label)
+                            .build()
+                    }
+                    val itemMetadata = MediaMetadata.Builder()
+                        .setTitle(title)
+                        .setArtist(creator)
+                        .apply { if (thumbnail.startsWith("https://")) setArtworkUri(android.net.Uri.parse(thumbnail)) }
+                        .setExtras(PlaybackMetadata.extras(sourceId, isMusic, 0, false))
+                        .build()
+                    queue += MediaItem.Builder()
+                        .setMediaId(id)
+                        .setUri(uri)
+                        .apply { resolved?.mimeType?.let(::setMimeType) }
+                        .setMediaMetadata(itemMetadata)
+                        .setSubtitleConfigurations(subtitleConfigs)
+                        .build()
+                }
+                if (queue.isEmpty()) throw java.io.IOException("No items in this queue could be prepared.")
+                val controller = getController()
+                controller.setMediaItems(queue)
+                controller.prepare()
+                controller.play()
+                if (!controller.currentMediaItem?.mediaMetadata?.extras?.getBoolean(PlaybackMetadata.AUDIO_ONLY, false).orFalse()) {
+                    activity.runOnUiThread { activity.showNativeVideo(controller) }
+                } else {
+                    activity.hideNativeVideo()
+                }
+                publish("rushQueuePlayback", JSONObject()
+                    .put("state", "playing")
+                    .put("count", queue.size)
+                    .put("skipped", skipped).toString())
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                publish("rushQueuePlayback", JSONObject()
+                    .put("state", "error")
+                    .put("message", playbackErrorMessage(error, "Could not play this queue.")).toString())
+            }
+        }
+    }
+
+    @JavascriptInterface
+    fun downloadMedia(
+        id: String,
+        title: String,
+        creator: String,
+        isAudio: Boolean,
+        transcodeToMp3: Boolean
+    ) {
+        val sourceId = id.trim().take(256)
+        if (!sourceId.matches(Regex("[A-Za-z0-9_-]{11}"))) return
+        if (transcodeToMp3 && !isAudio) return
+        activity.lifecycleScope.launch {
+            publish("rushDownloadAction", JSONObject().put("state", "resolving").put("title", title.take(300)).toString())
+            try {
+                val prefs = activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)
+                val maxHeight = if (isAudio) null else prefs.getInt("video_quality", 0).takeIf { it > 0 }
+                val maxAudioBitrate = if (isAudio) prefs.getInt("audio_quality", 160).takeIf { it > 0 } else null
+                val preferMp4 = !isAudio && prefs.getBoolean("download_mp4", false)
+                val resolved = withContext(Dispatchers.IO) {
+                    resolvePlaybackMedia(
+                        sourceId,
+                        audioOnly = isAudio,
+                        maxHeight = maxHeight,
+                        maxAudioBitrate = maxAudioBitrate,
+                        preferMp4 = preferMp4,
+                        preferDash = !isAudio && !preferMp4,
+                        allowDashFallback = !isAudio && !preferMp4
+                    )
+                }
+                val workId = withContext(Dispatchers.IO) {
+                    OfflineDownloads.enqueue(
+                        activity.applicationContext,
+                        sourceId,
+                        title.take(300),
+                        creator.take(200),
+                        isAudio,
+                        resolved,
+                        maxHeight,
+                        maxAudioBitrate,
+                        transcodeToMp3,
+                        preferMp4
+                    )
+                }
+                publish("rushDownloadAction", JSONObject()
+                    .put("state", "queued")
+                    .put("title", title.take(300))
+                    .put("workId", workId.toString()).toString())
+                loadDownloads()
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                publish("rushDownloadAction", JSONObject()
+                    .put("state", "error")
+                    .put("message", playbackErrorMessage(error, "Could not start this download.")).toString())
+            }
+        }
+    }
+
+    @JavascriptInterface
+    fun loadDownloads() {
+        activity.lifecycleScope.launch {
+            try {
+                val snapshot = withContext(Dispatchers.IO) {
+                    val downloads = OfflineDownloads.list(activity.applicationContext)
+                    val works = runCatching { OfflineDownloads.workInfos(activity.applicationContext) }.getOrDefault(emptyList())
+                    val bytes = OfflineDownloads.storageBytes(activity.applicationContext)
+                    Triple(downloads, works, bytes)
+                }
+                val workById = snapshot.second.mapNotNull { work ->
+                    val id = work.tags.firstOrNull { it.startsWith(OfflineDownloads.WORK_TAG + ":") }
+                        ?.substringAfter(":")
+                    id?.let { it to work }
+                }.toMap()
+                val array = JSONArray().apply {
+                    snapshot.first.forEach { media ->
+                        val work = workById[media.id]
+                        put(JSONObject()
+                            .put("id", media.id)
+                            .put("sourceId", media.sourceId)
+                            .put("title", media.title)
+                            .put("creator", media.creator)
+                            .put("isAudio", media.isAudio)
+                            .put("extension", media.extension)
+                            .put("quality", media.quality)
+                            .put("complete", media.complete)
+                            .put("size", media.file.length())
+                            .put("progress", work?.progress?.getInt("progress", 0) ?: if (media.complete) 100 else 0)
+                            .put("stage", work?.progress?.getString("stage").orEmpty())
+                            .put("state", work?.state?.name ?: if (media.complete) "SUCCEEDED" else "NONE")
+                        )
+                    }
+                }
+                publish("rushDownloadsData", JSONObject()
+                    .put("items", array)
+                    .put("count", snapshot.first.size)
+                    .put("bytes", snapshot.third).toString())
+            } catch (error: Exception) {
+                publish("rushDownloadsError", JSONObject().put("message", error.message ?: "Could not load offline downloads.").toString())
+            }
+        }
+    }
+
+    @JavascriptInterface
+    fun cancelDownload(id: String) {
+        val cleanId = id.trim().take(64)
+        if (!cleanId.matches(Regex("[A-Fa-f0-9-]{16,64}"))) return
+        OfflineDownloads.cancel(activity.applicationContext, cleanId)
+        loadDownloads()
+    }
+
+    @JavascriptInterface
+    fun resumeDownload(id: String) {
+        val cleanId = id.trim().take(64)
+        if (cleanId.isBlank()) return
+        activity.lifecycleScope.launch {
+            try {
+                val media = withContext(Dispatchers.IO) {
+                    OfflineDownloads.list(activity.applicationContext).firstOrNull { it.id == cleanId }
+                } ?: throw java.io.IOException("This download could not be found.")
+                OfflineDownloads.resume(activity.applicationContext, media)
+                publish("rushDownloadAction", JSONObject().put("state", "queued").put("title", media.title).toString())
+                loadDownloads()
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                publish("rushDownloadsError", JSONObject().put("message", error.message ?: "Could not resume this download.").toString())
+            }
+        }
+    }
+
+    @JavascriptInterface
+    fun deleteDownload(id: String) {
+        val cleanId = id.trim().take(64)
+        if (cleanId.isBlank()) return
+        activity.lifecycleScope.launch {
+            try {
+                val media = withContext(Dispatchers.IO) {
+                    OfflineDownloads.list(activity.applicationContext).firstOrNull { it.id == cleanId }
+                } ?: return@launch
+                OfflineDownloads.delete(activity.applicationContext, media)
+                loadDownloads()
+            } catch (error: Exception) {
+                publish("rushDownloadsError", JSONObject().put("message", error.message ?: "Could not delete this download.").toString())
+            }
+        }
+    }
+
+    @JavascriptInterface
+    fun playDownloaded(id: String) {
+        val cleanId = id.trim().take(64)
+        if (cleanId.isBlank()) return
+        activity.lifecycleScope.launch {
+            try {
+                val media = withContext(Dispatchers.IO) {
+                    OfflineDownloads.list(activity.applicationContext).firstOrNull { it.id == cleanId && it.complete }
+                } ?: throw java.io.IOException("This file is not available offline.")
+                val controller = getController()
+                val mime = when (media.extension.lowercase()) {
+                    "mp3" -> "audio/mpeg"
+                    "m4a", "mp4" -> if (media.isAudio) "audio/mp4" else "video/mp4"
+                    "webm" -> if (media.isAudio) "audio/webm" else "video/webm"
+                    else -> if (media.isAudio) "audio/*" else "video/*"
+                }
+                val metadata = MediaMetadata.Builder()
+                    .setTitle(media.title)
+                    .setArtist(media.creator)
+                    .setExtras(PlaybackMetadata.extras(media.sourceId.ifBlank { media.id }, media.isAudio, 0, false))
+                    .build()
+                val item = MediaItem.Builder()
+                    .setMediaId("offline:${media.id}")
+                    .setUri(android.net.Uri.fromFile(media.file))
+                    .setMimeType(mime)
+                    .setMediaMetadata(metadata)
+                    .build()
+                controller.setMediaItem(item)
+                controller.prepare()
+                controller.play()
+                if (media.isAudio) activity.hideNativeVideo()
+                else activity.runOnUiThread { activity.showNativeVideo(controller) }
+                publish("rushCurrentPlayback", JSONObject()
+                    .put("hasItem", true)
+                    .put("isMusic", media.isAudio)
+                    .put("isVideo", !media.isAudio)
+                    .put("isPlaying", true)
+                    .put("title", media.title)
+                    .put("artist", media.creator)
+                    .put("artwork", "")
+                    .put("mediaId", "offline:${media.id}")
+                    .put("sourceId", media.sourceId)
+                    .put("isOffline", true).toString())
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                publish("rushDownloadAction", JSONObject().put("state", "error")
+                    .put("message", error.message ?: "Could not play this download.").toString())
             }
         }
     }
