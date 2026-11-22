@@ -50,8 +50,21 @@ jobs:
       - name: Validate WebView and native bridge
         run: python3 scripts/validate_rush_html.py
 
-      - name: Run Android Lint, unit tests and build debug APK
-        run: gradle --no-daemon --stacktrace :app:lintDebug :app:testDebugUnitTest :app:assembleDebug
+      - name: Run Android Lint
+        run: |
+          set +e
+          gradle --no-daemon --stacktrace :app:lintDebug
+          lint_status=$?
+          report="app/build/intermediates/lint_intermediate_text_report/debug/lintReportDebug/lint-results-debug.txt"
+          if [ -f "$report" ]; then
+            cat "$report"
+          else
+            echo "Lint text report was not generated at $report"
+          fi
+          exit "$lint_status"
+
+      - name: Run unit tests and build debug APK
+        run: gradle --no-daemon --stacktrace :app:testDebugUnitTest :app:assembleDebug
 
       - name: Verify APK output
         run: |
