@@ -1,3 +1,5 @@
+@file:OptIn(androidx.media3.common.util.UnstableApi::class)
+
 package com.rush.app
 
 import com.github.libretube.player.RushMediaSourceFactory
