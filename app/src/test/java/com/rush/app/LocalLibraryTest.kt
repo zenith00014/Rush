@@ -9,8 +9,10 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
+@Config(sdk = [35])
 class LocalLibraryTest {
     private lateinit var prefs: android.content.SharedPreferences
 
@@ -70,7 +72,7 @@ class LocalLibraryTest {
         assertEquals(0, data.getJSONArray("history").length())
         assertEquals(1, data.getJSONArray("saved").length())
         LocalLibrary.clearHistory(prefs)
-        assertFalse(LocalLibrary.load(prefs).getJSONArray("saved").isEmpty())
+        assertTrue(LocalLibrary.load(prefs).getJSONArray("saved").length() > 0)
     }
 
     @Test
