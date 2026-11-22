@@ -59,7 +59,7 @@ private fun androidx.media3.ui.PlayerView.prepareForPlayback(
 
 private data class Pick(val id:String,val title:String,val creator:String,val music:Boolean,val colors:List<Color>,val reason:String,val localPath:String?=null,val sourceId:String?=null)
 private data class SubscribedChannel(val id:String,val title:String,val subscriberCount:String)
-@OptIn(androidx.media3.common.util.UnstableApi::class)
+@androidx.annotation.OptIn(markerClass = [androidx.media3.common.util.UnstableApi::class])
 class MainActivity:ComponentActivity(){
  private val openDownloadsRequest=androidx.compose.runtime.mutableIntStateOf(0)
  private val pipModeState=androidx.compose.runtime.mutableStateOf(false)
@@ -1037,7 +1037,9 @@ private suspend fun queueLocalPickMp3Downloads(context:Context,tracks:List<Pick>
   dismissButton={TextButton(onClick={showCreate=false;playlistName=""}){Text("Cancel")}}
  )
 }
-@Composable private fun RushPlayer(item:Pick,light:Boolean,back:()->Unit,queue:List<Pick>,onTrackChanged:(String)->Unit,isInPipMode:Boolean=false){
+@Composable
+@androidx.annotation.OptIn(markerClass = [androidx.media3.common.util.UnstableApi::class])
+private fun RushPlayer(item:Pick,light:Boolean,back:()->Unit,queue:List<Pick>,onTrackChanged:(String)->Unit,isInPipMode:Boolean=false){
  val context=androidx.compose.ui.platform.LocalContext.current;val scope=rememberCoroutineScope()
  val playerPrefs=remember(context){context.getSharedPreferences("rush_prefs",Context.MODE_PRIVATE)}
  var playingPick by remember(item.id){mutableStateOf(item)}
