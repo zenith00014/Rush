@@ -1,6 +1,7 @@
 package com.github.libretube.player.manifest
 import java.util.concurrent.ConcurrentHashMap
 
+@androidx.annotation.OptIn(markerClass = [androidx.media3.common.util.UnstableApi::class])
 object SabrManifestStore {
     private val manifests = ConcurrentHashMap<String, SabrManifest>()
     fun put(videoId: String, manifest: SabrManifest) {
