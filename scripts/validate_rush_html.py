@@ -80,7 +80,7 @@ def main():
 
     js = "\n".join(parser.scripts)
     native_methods = set(re.findall(
-        r"@JavascriptInterface\\s+fun\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*\\(",
+        r"@JavascriptInterface\s+fun\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(",
         bridge,
     ))
     called_methods = set(re.findall(
