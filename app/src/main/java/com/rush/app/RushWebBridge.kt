@@ -992,6 +992,7 @@ class RushWebBridge(
         val sourceId = id.trim().take(256)
         if (!sourceId.matches(Regex("[A-Za-z0-9_-]{11}"))) return
         if (transcodeToMp3 && !isAudio) return
+        activity.requestDownloadNotificationPermission()
         activity.lifecycleScope.launch {
             publish("rushDownloadAction", JSONObject().put("state", "resolving").put("title", title.take(300)).toString())
             try {
