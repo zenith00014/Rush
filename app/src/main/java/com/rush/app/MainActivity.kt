@@ -1040,7 +1040,7 @@ private suspend fun queueLocalPickMp3Downloads(context:Context,tracks:List<Pick>
   androidx.media3.session.MediaController.Builder(context, token).buildAsync()
  }
  DisposableEffect(controllerFuture) {
-  controllerFuture.addListener({ controller = runCatching { controllerFuture.get() }.getOrNull() }, context.mainExecutor)
+  controllerFuture.addListener({ controller = runCatching { controllerFuture.get() }.getOrNull() }, androidx.core.content.ContextCompat.getMainExecutor(context))
   onDispose { androidx.media3.session.MediaController.releaseFuture(controllerFuture) }
  }
  var url by remember(item.id){mutableStateOf((item.sourceId?.takeIf{it.matches(Regex("[A-Za-z0-9_-]{11}"))}?:item.id.takeIf{it.matches(Regex("[A-Za-z0-9_-]{11}"))}).orEmpty())};var audio by remember(item.id){mutableStateOf(item.music)}
