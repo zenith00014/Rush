@@ -21,11 +21,12 @@ object LocalLibrary {
         creator: String,
         isMusic: Boolean,
         thumbnail: String = "",
-        sourceId: String = id
+        sourceId: String = id,
+        localPath: String = ""
     ) {
         val cleanId = id.trim().take(256)
         if (cleanId.isBlank()) return
-        saveMetadata(prefs, cleanId, title, creator, isMusic, thumbnail, sourceId)
+        saveMetadata(prefs, cleanId, title, creator, isMusic, thumbnail, sourceId, localPath)
         val history = history(prefs).filterNot { it == cleanId }
         val updated = (listOf(cleanId) + history).take(200)
         prefs.edit()
@@ -41,11 +42,12 @@ object LocalLibrary {
         creator: String,
         isMusic: Boolean,
         thumbnail: String = "",
-        sourceId: String = id
+        sourceId: String = id,
+        localPath: String = ""
     ) {
         val cleanId = id.trim().take(256)
         if (cleanId.isBlank()) return
-        saveMetadata(prefs, cleanId, title, creator, isMusic, thumbnail, sourceId)
+        saveMetadata(prefs, cleanId, title, creator, isMusic, thumbnail, sourceId, localPath)
     }
 
     fun save(
@@ -55,11 +57,12 @@ object LocalLibrary {
         creator: String,
         isMusic: Boolean,
         thumbnail: String = "",
-        sourceId: String = id
+        sourceId: String = id,
+        localPath: String = ""
     ) {
         val cleanId = id.trim().take(256)
         require(cleanId.isNotBlank()) { "A media ID is required." }
-        saveMetadata(prefs, cleanId, title, creator, isMusic, thumbnail, sourceId)
+        saveMetadata(prefs, cleanId, title, creator, isMusic, thumbnail, sourceId, localPath)
         val updated = prefs.getStringSet(SAVED_KEY, emptySet()).orEmpty().toMutableSet()
         updated += cleanId
         prefs.edit().putStringSet(SAVED_KEY, updated).apply()
@@ -128,7 +131,8 @@ object LocalLibrary {
         creator: String,
         isMusic: Boolean,
         thumbnail: String,
-        sourceId: String
+        sourceId: String,
+        localPath: String
     ) {
         val root = runCatching {
             JSONObject(prefs.getString(METADATA_KEY, "{}") ?: "{}")
@@ -139,7 +143,8 @@ object LocalLibrary {
             .put("creator", creator.trim().take(200))
             .put("music", isMusic)
             .put("thumbnail", thumbnail.take(2048))
-            .put("sourceId", sourceId.trim().take(256)))
+            .put("sourceId", sourceId.trim().take(256))
+            .apply { if (localPath.isNotBlank()) put("localPath", localPath.take(4096)) })
         prefs.edit().putString(METADATA_KEY, root.toString()).apply()
     }
 }
