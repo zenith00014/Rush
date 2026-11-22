@@ -366,7 +366,8 @@ class MainActivity:ComponentActivity(){
  val ink=if(light)Color(0xFF241B32) else paper;val muted=if(light)Color(0xFF70677D) else mutedDark
  MaterialTheme(colorScheme=if(light)lightColorScheme(primary=magenta,background=bg,surface=surface,onSurface=ink)else darkColorScheme(primary=magenta,secondary=magenta,background=bg,surface=surface,onSurface=ink,onPrimary=bgDark),shapes=Shapes(extraSmall=RoundedCornerShape(0.dp),small=RoundedCornerShape(0.dp),medium=RoundedCornerShape(0.dp),large=RoundedCornerShape(0.dp),extraLarge=RoundedCornerShape(0.dp))){
   Surface(Modifier.fillMaxSize(),color=bg){Column(Modifier.fillMaxSize()){
-   if(active!=null)RushPlayer(active!!,light,{active=null;playbackQueue=emptyList()},playbackQueue,{id->
+   val activePick=active
+    if(activePick!=null)RushPlayer(activePick,light,{active=null;playbackQueue=emptyList()},playbackQueue,{id->
     history=listOf(id)+history.filterNot{it==id}
     persistHistory(prefs,history)
    },isInPipMode)
@@ -543,12 +544,15 @@ private fun persistPickMetadata(prefs:android.content.SharedPreferences,pick:Pic
  var playlists by remember{mutableStateOf(PlaylistStore.load(prefs))}
  var playlistTarget by remember{mutableStateOf<YouTubeSearchResult?>(null)}
  var newPlaylistName by remember{mutableStateOf("")}
- if(selectedChannel!=null) {
-  ChannelDetails(selectedChannel!!,ink,muted,surface,{selectedChannel=null},play)
- } else if(selectedMusicCollection!=null) {
-  CollectionDetails(selectedMusicCollection!!,ink,muted,surface,{selectedMusicCollection=null},play,enqueue,store)
- } else if(selectedVideoPlaylist!=null) {
-  CollectionDetails(selectedVideoPlaylist!!,ink,muted,surface,{selectedVideoPlaylist=null},play,enqueue,store)
+ val channelToShow=selectedChannel
+  val musicCollectionToShow=selectedMusicCollection
+  val videoPlaylistToShow=selectedVideoPlaylist
+  if(channelToShow!=null) {
+  ChannelDetails(channelToShow,ink,muted,surface,{selectedChannel=null},play)
+ } else if(musicCollectionToShow!=null) {
+  CollectionDetails(musicCollectionToShow,ink,muted,surface,{selectedMusicCollection=null},play,enqueue,store)
+ } else if(videoPlaylistToShow!=null) {
+  CollectionDetails(videoPlaylistToShow,ink,muted,surface,{selectedVideoPlaylist=null},play,enqueue,store)
  } else {
   Column(Modifier.fillMaxSize().padding(16.dp)) {
    Text("Search YouTube",color=ink,fontSize=20.sp,fontWeight=FontWeight.Bold)
@@ -623,7 +627,14 @@ private fun persistPickMetadata(prefs:android.content.SharedPreferences,pick:Pic
     Column(verticalArrangement=Arrangement.spacedBy(6.dp)){
      OutlinedTextField(value=newPlaylistName,onValueChange={newPlaylistName=it},label={Text("New playlist name")},singleLine=true)
      if(playlists.isEmpty())Text("Create your first playlist above.",color=muted,fontSize=11.sp)
-     playlists.forEach{playlist->TextButton(onClick={store(playlistTarget!!);playlists=PlaylistStore.add(prefs,playlist.id,playlistTarget!!.videoId);playlistTarget=null}){Text("Add to ${playlist.name}",color=ink)}}
+     playlists.forEach{playlist->TextButton(onClick={
+       val target=playlistTarget
+       if(target!=null){
+        store(target)
+        playlists=PlaylistStore.add(prefs,playlist.id,target.videoId)
+        playlistTarget=null
+       }
+      }){Text("Add to ${playlist.name}",color=ink)}}
     }
    },
    confirmButton={TextButton(onClick={
@@ -1276,7 +1287,7 @@ private suspend fun queueLocalPickMp3Downloads(context:Context,tracks:List<Pick>
       if(queued.music)queuedQuality.takeIf{it>0} else null,
       queuedMp4,!queued.music&&!queuedMp4,!queued.music&&!queuedMp4
      ) else null
-     val uri=localFile?.toURI()?.toString()?:resolved!!.url
+     val uri=localFile?.toURI()?.toString() ?: (resolved?.url ?: throw java.io.IOException("Could not resolve this queued item."))
      val subtitleConfigs=resolved?.subtitles.orEmpty().map{subtitle->
       androidx.media3.common.MediaItem.SubtitleConfiguration.Builder(android.net.Uri.parse(subtitle.url))
        .setMimeType(subtitle.mimeType)
@@ -1400,7 +1411,7 @@ private suspend fun queueLocalPickMp3Downloads(context:Context,tracks:List<Pick>
     try{
      var resolvedQuality=""
      val mediaItem=if(localFileAvailable){
-      androidx.media3.common.MediaItem.Builder().setMediaId(playingPick.id).setUri(java.io.File(playingPick.localPath!!).toURI().toString()).setMediaMetadata(playingPick.toMediaMetadata()).build()
+      androidx.media3.common.MediaItem.Builder().setMediaId(playingPick.id).setUri((playingPick.localPath?.let{java.io.File(it)}?.takeIf{it.isFile} ?: throw java.io.IOException("The downloaded file is no longer available.")).toURI().toString()).setMediaMetadata(playingPick.toMediaMetadata()).build()
      }else{
       val resolved=withContext(Dispatchers.IO){resolvePlaybackMedia(url,audio,if(audio)null else quality.takeIf{it>0},if(audio)quality.takeIf{it>0} else null,!audio&&mp4Format,!audio&&!mp4Format,!audio&&!mp4Format,forceRefresh=true)}
       resolvedQuality=resolved.qualityLabel
