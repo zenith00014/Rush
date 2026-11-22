@@ -34,6 +34,20 @@ object LocalLibrary {
             .apply()
     }
 
+    fun rememberItem(
+        prefs: SharedPreferences,
+        id: String,
+        title: String,
+        creator: String,
+        isMusic: Boolean,
+        thumbnail: String = "",
+        sourceId: String = id
+    ) {
+        val cleanId = id.trim().take(256)
+        if (cleanId.isBlank()) return
+        saveMetadata(prefs, cleanId, title, creator, isMusic, thumbnail, sourceId)
+    }
+
     fun save(
         prefs: SharedPreferences,
         id: String,
