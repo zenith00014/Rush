@@ -25,7 +25,9 @@ Following collects content from sources the user follows. Music suggestions use 
 
 ## Project layout
 
-- `app/src/main/java/com/rush/app/`: Android application, playback, download, search and preference integration
+- `app/src/main/java/com/rush/app/`: Android application, WebView bridge, local library, playback, downloads, search and preference integration
+- `app/src/test/java/com/rush/app/`: regression tests for local library, playlists, queue and feed preferences
+- `scripts/validate_rush_html.py`: checks the WebView shell, HTML IDs, embedded JavaScript syntax and native bridge method references
 - `app/src/main/java/com/github/libretube/`: LibreTube-derived adaptive playback implementation
 - `app/src/main/assets/`: local WebView application and proof-of-origin helper assets
 - `app/src/main/proto/`: protocol schemas used by the adaptive playback implementation
@@ -37,10 +39,11 @@ The WebView asset is part of the current application UI and is not safe to delet
 
 ## Build locally
 
-Requirements: JDK 17, Android SDK 35 and Gradle 8.9.
+Requirements: JDK 17, Android SDK Platform 36, Android Build Tools 36.0.0 and Gradle 8.11.1 (Android Gradle Plugin 8.9.2).
 
 ```bash
-gradle --no-daemon :app:assembleDebug
+python3 scripts/validate_rush_html.py
+gradle --no-daemon :app:testDebugUnitTest :app:assembleDebug
 ```
 
 APK output: `app/build/outputs/apk/debug/app-debug.apk`.
