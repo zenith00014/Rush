@@ -11,6 +11,7 @@ import org.schabi.newpipe.extractor.stream.AudioStream
 import org.schabi.newpipe.extractor.stream.StreamInfo
 import org.schabi.newpipe.extractor.stream.VideoStream
 
+@androidx.annotation.OptIn(markerClass = [androidx.media3.common.util.UnstableApi::class])
 object SabrManifestFactory {
     fun from(videoId: String, info: StreamInfo, audioOnly: Boolean = false): SabrManifest? {
         val serverUrl = info.serverAbrStreamingUrl.takeIf { it.isNotBlank() } ?: return null
