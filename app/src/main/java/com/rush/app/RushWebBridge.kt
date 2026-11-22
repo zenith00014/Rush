@@ -952,7 +952,7 @@ class RushWebBridge(
                     queue += MediaItem.Builder()
                         .setMediaId(id)
                         .setUri(uri)
-                        .apply { resolved?.mimeType?.let(::setMimeType) }
+                        .apply { resolved?.mimeType?.let { setMimeType(it) } }
                         .setMediaMetadata(itemMetadata)
                         .setSubtitleConfigurations(subtitleConfigs)
                         .build()
@@ -962,7 +962,7 @@ class RushWebBridge(
                 controller.setMediaItems(queue)
                 controller.prepare()
                 controller.play()
-                if (!controller.currentMediaItem?.mediaMetadata?.extras?.getBoolean(PlaybackMetadata.AUDIO_ONLY, false).orFalse()) {
+                if (controller.currentMediaItem?.mediaMetadata?.extras?.getBoolean(PlaybackMetadata.AUDIO_ONLY, false) != true) {
                     activity.runOnUiThread { activity.showNativeVideo(controller) }
                 } else {
                     activity.hideNativeVideo()
