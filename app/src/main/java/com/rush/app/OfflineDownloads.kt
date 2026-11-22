@@ -138,7 +138,7 @@ object OfflineDownloads {
     suspend fun resume(context: Context, media: OfflineMedia): UUID? {
         if (media.complete) return null
         val resolved = withContext(Dispatchers.IO) {
-            LibreTubePlayback.resolveMedia(
+            RushPlaybackEngine.resolveMedia(
                 media.sourceId.ifBlank { media.id },
                 media.isAudio,
                 media.maxHeight,
@@ -274,7 +274,7 @@ class OfflineDownloadWorker(
                     ?: return@withContext Result.failure()
                 val sourceId = details.optString("sourceId")
                 if (sourceId.isBlank()) return@withContext Result.failure()
-                val refreshed = LibreTubePlayback.resolveMedia(
+                val refreshed = RushPlaybackEngine.resolveMedia(
                     sourceId,
                     details.optBoolean("isAudio"),
                     details.optInt("maxHeight", 0).takeIf { it > 0 },
@@ -408,7 +408,7 @@ class OfflineDownloadWorker(
             ?: sourceId
         var manifest = com.github.libretube.player.manifest.SabrManifestStore.get(videoId)
         if (manifest == null) {
-            val refreshed = LibreTubePlayback.resolveMedia(sourceId, true, maxAudioBitrate = maxBitrate)
+            val refreshed = RushPlaybackEngine.resolveMedia(sourceId, true, maxAudioBitrate = maxBitrate)
             if (!refreshed.url.startsWith("rush-sabr://") || refreshed.extension != extension) {
                 details.put("sourceUrl", refreshed.url)
                     .put("extension", refreshed.extension)
