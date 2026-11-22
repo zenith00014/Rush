@@ -53,6 +53,7 @@ data class OfflineMedia(
     val sourceId: String = ""
 )
 
+@androidx.annotation.OptIn(markerClass = [androidx.media3.common.util.UnstableApi::class])
 object OfflineDownloads {
     const val WORK_TAG = "rush-offline-download"
     private const val DIRECTORY = "offline-media"
@@ -222,6 +223,7 @@ object OfflineDownloads {
         UUID.nameUUIDFromBytes(key.toByteArray()).toString().replace("-", "")
 }
 
+@androidx.annotation.OptIn(markerClass = [androidx.media3.common.util.UnstableApi::class])
 class OfflineDownloadWorker(
     context: Context,
     parameters: WorkerParameters
