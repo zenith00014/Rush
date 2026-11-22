@@ -23,7 +23,7 @@ suspend fun resolvePlaybackMedia(
     for (attempt in 0..2) {
         try {
             return withContext(Dispatchers.IO) {
-                LibreTubePlayback.resolveMedia(
+                RushPlaybackEngine.resolveMedia(
                     input,
                     audioOnly,
                     maxHeight,
