@@ -24,6 +24,7 @@ import java.util.concurrent.ConcurrentHashMap
 data class ResolvedMedia(val url: String, val extension: String, val mimeType: String, val qualityLabel: String, val subtitles: List<ResolvedSubtitle> = emptyList())
 data class ResolvedSubtitle(val url: String, val languageTag: String, val label: String, val mimeType: String)
 
+@androidx.annotation.OptIn(markerClass = [androidx.media3.common.util.UnstableApi::class])
 object RushPlaybackEngine {
     @Volatile private var initialized = false
     private data class CachedStreamInfo(val fetchedAtMs: Long, val info: StreamInfo)
