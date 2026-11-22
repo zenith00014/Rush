@@ -366,15 +366,16 @@ function renderLibraryPage(){
  '<div class="chips library-tabs">'+[['saved','Saved'],['history','History'],['playlists','Playlists'],['queue','Queue'],['downloads','Downloads']].map(([key,label])=>'<button class="chip" data-library-view="'+key+'" aria-pressed="'+(libraryView===key)+'">'+label+'</button>').join('')+'</div>'+
  '<p class="meta pad" id="libraryStatus">Your collection is stored on this device.</p><div id="libraryContent"></div>';
 }
-function libraryMediaRow(id,kind){
+function libraryMediaRow(id,kind,playlistId){
  const item=libraryData.items&&libraryData.items[id];if(!item)return '';
  const isMusic=!!item.music,thumb=item.thumbnail||'';
  const play='<button class="chip" data-play-library-item data-id="'+esc(id)+'" data-music="'+isMusic+'">PLAY</button>';
  const queue='<button class="chip" data-queue-item data-id="'+esc(id)+'" data-title="'+esc(item.title)+'" data-creator="'+esc(item.creator)+'" data-music="'+isMusic+'" data-thumbnail="'+esc(thumb)+'">QUEUE</button>';
  const save=kind==='saved'?'<button class="chip" data-unsave-item data-id="'+esc(id)+'">REMOVE</button>':'<button class="chip" data-save-item data-id="'+esc(id)+'" data-title="'+esc(item.title)+'" data-creator="'+esc(item.creator)+'" data-music="'+isMusic+'" data-thumbnail="'+esc(thumb)+'">SAVE</button>';
  const history=kind==='history'?'<button class="chip" data-remove-history data-id="'+esc(id)+'">REMOVE HISTORY</button>':'';
+ const removePlaylist=kind==='playlist'?'<button class="chip" data-remove-playlist-item data-playlist-id="'+esc(playlistId||'')+'" data-id="'+esc(id)+'">REMOVE FROM PLAYLIST</button>':'';
  const playlistButtons=(libraryData.playlists||[]).map(p=>'<button class="chip" data-playlist-add data-playlist-id="'+esc(p.id)+'" data-id="'+esc(id)+'" data-title="'+esc(item.title)+'" data-creator="'+esc(item.creator)+'" data-music="'+isMusic+'" data-thumbnail="'+esc(thumb)+'">+ '+esc(p.name)+'</button>').join('');
- return '<article class="library-item"><div class="library-item-main"><div class="a library-art" style="background-image:url(\''+esc(thumb)+'\')"></div><div class="library-copy"><b>'+esc(item.title||'Untitled media')+'</b><span>'+esc(item.creator||'YouTube')+' · '+(isMusic?'MUSIC':'VIDEO')+'</span></div></div><div class="result-actions">'+play+queue+save+history+'</div>'+(playlistButtons?'<div class="result-actions playlist-quick-add">'+playlistButtons+'</div>':'')+'</article>';
+ return '<article class="library-item"><div class="library-item-main"><div class="a library-art" style="background-image:url(\''+esc(thumb)+'\')"></div><div class="library-copy"><b>'+esc(item.title||'Untitled media')+'</b><span>'+esc(item.creator||'YouTube')+' · '+(isMusic?'MUSIC':'VIDEO')+'</span></div></div><div class="result-actions">'+play+queue+save+history+removePlaylist+'</div>'+(playlistButtons?'<div class="result-actions playlist-quick-add">'+playlistButtons+'</div>':'')+'</article>';
 }
 function renderLibraryContent(){
  const root=$('#libraryContent');if(!root)return;
@@ -387,7 +388,7 @@ function renderLibraryContent(){
  }else if(libraryView==='playlists'){
   html='<div class="feed-actions"><input class="library-input" id="newPlaylistName" maxlength="80" placeholder="New playlist name" aria-label="New playlist name"><button class="btn k" data-create-playlist>CREATE PLAYLIST</button></div>';
   html+=(libraryData.playlists||[]).length?(libraryData.playlists||[]).map(p=>{
-   const tracks=(p.items||[]).map(id=>libraryMediaRow(id,'playlist')).join('');
+   const tracks=(p.items||[]).map(id=>libraryMediaRow(id,'playlist',p.id)).join('');
    return '<section class="library-playlist"><div class="playlist-heading"><div><b>'+esc(p.name)+'</b><span>'+(p.items||[]).length+' items</span></div><div class="result-actions"><button class="chip" data-play-playlist data-playlist-id="'+esc(p.id)+'">PLAY ALL</button><button class="chip" data-delete-playlist data-playlist-id="'+esc(p.id)+'">DELETE</button></div></div>'+(tracks||'<p class="meta pad">Add saved items to this playlist from Saved or History.</p>')+'</section>';
   }).join(''):'<div class="empty-state"><b>No playlists</b><p>Create a local playlist, then add saved videos and music to it.</p></div>';
  }else if(libraryView==='queue'){
@@ -558,6 +559,7 @@ document.addEventListener('click',e=>{
  if(b.hasAttribute('data-save-item')){const d=b.dataset;if(window.RushNative)RushNative.saveLibraryItem(d.id,d.title||'',d.creator||'',d.music==='true',d.thumbnail||'');return}
  if(b.hasAttribute('data-unsave-item')){if(window.RushNative)RushNative.removeSavedLibraryItem(b.dataset.id);return}
  if(b.hasAttribute('data-remove-history')){if(window.RushNative)RushNative.removeHistoryItem(b.dataset.id);return}
+ if(b.hasAttribute('data-remove-playlist-item')){if(window.RushNative)RushNative.removeLibraryItemFromPlaylist(b.dataset.playlistId,b.dataset.id);return}
  if(b.hasAttribute('data-queue-item')){const d=b.dataset;if(window.RushNative)RushNative.queueLibraryItem(d.id,d.title||'',d.creator||'',d.music==='true',d.thumbnail||'');return}
  if(b.hasAttribute('data-playlist-add')){const d=b.dataset;if(window.RushNative)RushNative.addLibraryItemToPlaylist(d.playlistId,d.id,d.title||'',d.creator||'',d.music==='true',d.thumbnail||'');return}
  if(b.hasAttribute('data-delete-playlist')){if(window.RushNative)RushNative.deleteLibraryPlaylist(b.dataset.playlistId);return}
@@ -663,6 +665,9 @@ window.rushNewsResults=items=>{
  const status=$('#newsStatus');if(status)status.textContent=items.length+' articles · ranked by your topics and publisher follows';
 };
 window.rushMusicLyricsLoading=window.rushMusicLyricsLoading;
+setInterval(()=>{
+ if(page==='library'&&libraryView==='downloads'&&window.RushNative)RushNative.loadDownloads();
+},2000);
 setInterval(()=>{
  if(page!=='music'||!window._rushLyrics?.length||!window.RushNative||!mediaState.isMusic)return;
  const pos=RushNative.musicPosition()/1000;let active=-1;
