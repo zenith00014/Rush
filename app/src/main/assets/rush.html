@@ -219,7 +219,8 @@ h1,h2,.top1 b,.cat b,.tr,.hl b,.wm{text-transform:uppercase}
 .library-tabs .chip[aria-pressed="true"]{background:var(--sp);color:var(--k)}
 .library-item,.library-playlist{margin:10px 16px;padding:12px;border:2px solid var(--ink);background:var(--paper2);box-shadow:var(--sh)}
 .library-item-main{display:flex;align-items:center;gap:12px;min-width:0}
-.library-art{width:58px;height:58px;flex:none;background-size:cover;background-position:center}
+.library-art{width:58px;height:58px;flex:none;object-fit:cover;display:block;background:var(--paper2)}
+.mini .a img{width:100%;height:100%;object-fit:cover;display:block}
 .library-copy{flex:1;min-width:0}
 .library-copy b{display:block;font-size:15px;line-height:1.18;overflow-wrap:anywhere}
 .library-copy span,.library-copy em{display:block;margin-top:4px;font:10px var(--m);font-style:normal;color:var(--mu);overflow-wrap:anywhere}
@@ -250,7 +251,7 @@ h1,h2,.top1 b,.cat b,.tr,.hl b,.wm{text-transform:uppercase}
   <div class="tk" aria-hidden="true"><div>RUSH &#10022; YOUR SOURCES &#10022; YOUR TOPICS &#10022; YOUR TASTE &#10022; RUSH</div></div>
   <main id="sc"><div id="v"></div></main>
   <section class="mini" id="mini" aria-label="Now playing" inert>
-    <div class="a" id="ma"></div>
+    <div class="a" id="ma"><img alt="" hidden></div>
     <div><b id="mt"></b><span id="ms"></span></div>
     <button class="ib p" id="mp" data-act="toggle" aria-label="Play or pause"></button>
     <button class="ib" data-act="open" aria-label="Open player">↗</button>
@@ -368,14 +369,14 @@ function renderLibraryPage(){
 }
 function libraryMediaRow(id,kind,playlistId){
  const item=libraryData.items&&libraryData.items[id];if(!item)return '';
- const isMusic=!!item.music,thumb=item.thumbnail||'';
+ const isMusic=!!item.music,rawThumb=item.thumbnail||'',thumb=/^https:\/\/[^\s"'<>]+$/i.test(rawThumb)?rawThumb:'';
  const play='<button class="chip" data-play-library-item data-id="'+esc(id)+'" data-music="'+isMusic+'">PLAY</button>';
  const queue='<button class="chip" data-queue-item data-id="'+esc(id)+'" data-title="'+esc(item.title)+'" data-creator="'+esc(item.creator)+'" data-music="'+isMusic+'" data-thumbnail="'+esc(thumb)+'">QUEUE</button>';
  const save=kind==='saved'?'<button class="chip" data-unsave-item data-id="'+esc(id)+'">REMOVE</button>':'<button class="chip" data-save-item data-id="'+esc(id)+'" data-title="'+esc(item.title)+'" data-creator="'+esc(item.creator)+'" data-music="'+isMusic+'" data-thumbnail="'+esc(thumb)+'">SAVE</button>';
  const history=kind==='history'?'<button class="chip" data-remove-history data-id="'+esc(id)+'">REMOVE HISTORY</button>':'';
  const removePlaylist=kind==='playlist'?'<button class="chip" data-remove-playlist-item data-playlist-id="'+esc(playlistId||'')+'" data-id="'+esc(id)+'">REMOVE FROM PLAYLIST</button>':'';
  const playlistButtons=(libraryData.playlists||[]).map(p=>'<button class="chip" data-playlist-add data-playlist-id="'+esc(p.id)+'" data-id="'+esc(id)+'" data-title="'+esc(item.title)+'" data-creator="'+esc(item.creator)+'" data-music="'+isMusic+'" data-thumbnail="'+esc(thumb)+'">+ '+esc(p.name)+'</button>').join('');
- return '<article class="library-item"><div class="library-item-main"><div class="a library-art" style="background-image:url(\''+esc(thumb)+'\')"></div><div class="library-copy"><b>'+esc(item.title||'Untitled media')+'</b><span>'+esc(item.creator||'YouTube')+' · '+(isMusic?'MUSIC':'VIDEO')+'</span></div></div><div class="result-actions">'+play+queue+save+history+removePlaylist+'</div>'+(playlistButtons?'<div class="result-actions playlist-quick-add">'+playlistButtons+'</div>':'')+'</article>';
+ return '<article class="library-item"><div class="library-item-main"><img class="a library-art" src="'+esc(thumb)+'" alt="" loading="lazy"><div class="library-copy"><b>'+esc(item.title||'Untitled media')+'</b><span>'+esc(item.creator||'YouTube')+' · '+(isMusic?'MUSIC':'VIDEO')+'</span></div></div><div class="result-actions">'+play+queue+save+history+removePlaylist+'</div>'+(playlistButtons?'<div class="result-actions playlist-quick-add">'+playlistButtons+'</div>':'')+'</article>';
 }
 function renderLibraryContent(){
  const root=$('#libraryContent');if(!root)return;
@@ -510,7 +511,11 @@ function updateMini(){
  if(!show)return;
  $('#mt').textContent=mediaState.title||'Now playing';
  $('#ms').textContent=(mediaState.isMusic?'MUSIC':(mediaState.isVideo?'VIDEO':'MEDIA'))+(mediaState.artist?' · '+mediaState.artist:'');
- const a=$('#ma');if(a)a.style.backgroundImage=mediaState.artwork?'url("'+esc(mediaState.artwork)+'")':'none';
+ const a=$('#ma'),img=a&&a.querySelector('img'),artwork=mediaState.artwork||'';
+ if(img){
+  if(/^https:\/\/[^\s"'<>]+$/i.test(artwork)){img.src=artwork;img.hidden=false}
+  else{img.removeAttribute('src');img.hidden=true}
+ }
  $('#mp').innerHTML=ic(mediaState.isPlaying?'pause':'play');
 }
 function updateCurrentPlayback(data){
@@ -549,7 +554,11 @@ function refreshCurrentPage(){
 document.addEventListener('click',e=>{
  const b=e.target.closest('button');if(!b)return;
  if(b.id==='topicsShortcut'||b.hasAttribute('data-open-topics')||b.id==='profileShortcut'){location.hash='#topics';return}
- if(b.dataset.libraryView){libraryView=b.dataset.libraryView;renderLibraryContent();if(libraryView==='downloads'&&window.RushNative)RushNative.loadDownloads();return}
+ if(b.dataset.libraryView){
+  libraryView=b.dataset.libraryView;renderLibraryContent();
+  if(window.RushNative){RushNative.loadLibrary();if(libraryView==='downloads')RushNative.loadDownloads()}
+  return
+ }
  if(b.hasAttribute('data-create-playlist')){const name=$('#newPlaylistName')?.value.trim();if(name&&window.RushNative)RushNative.createLibraryPlaylist(name);return}
  if(b.hasAttribute('data-clear-history')){if(window.RushNative)RushNative.clearPlaybackHistory();return}
  if(b.hasAttribute('data-clear-queue')){if(window.RushNative)RushNative.clearPlaybackQueue();return}
