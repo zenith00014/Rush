@@ -13,7 +13,6 @@ import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import com.rush.app.BuildConfig
 import androidx.annotation.MainThread
-import com.rush.app.BuildConfig
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
