@@ -126,6 +126,7 @@ class MainActivity:ComponentActivity(){
    }.also { nativeVideoView=it }
    view.player=player
    if(view.parent==null)rootLayout.addView(view,android.widget.FrameLayout.LayoutParams(1,1))
+   setPipEligible(true)
    updateNativeVideoPosition()
   }
  }
@@ -134,11 +135,11 @@ class MainActivity:ComponentActivity(){
   webView.post {
    webView.evaluateJavascript("""(function(){var e=document.getElementById('videoPlayerHost');if(!e)return null;var r=e.getBoundingClientRect();return JSON.stringify({x:r.left,y:r.top,w:r.width,h:r.height,visible:r.bottom>0&&r.top<window.innerHeight});})()"""){raw->
     runCatching {
-     if(raw==null||raw=="null"){nativeVideoView?.visibility=android.view.View.GONE;return@runCatching}
+     if(raw==null||raw=="null"){nativeVideoView?.visibility=android.view.View.GONE;setPipEligible(false);return@runCatching}
      val jsonText=org.json.JSONTokener(raw).nextValue() as? String ?: return@runCatching
      val rect=org.json.JSONObject(jsonText)
      val view=nativeVideoView?:return@runCatching
-     if(!rect.optBoolean("visible",false)){view.visibility=android.view.View.GONE;return@runCatching}
+     if(!rect.optBoolean("visible",false)){view.visibility=android.view.View.GONE;setPipEligible(false);return@runCatching}
      val density=resources.displayMetrics.density
      val webLocation=IntArray(2);val rootLocation=IntArray(2)
      webView.getLocationOnScreen(webLocation);rootLayout.getLocationOnScreen(rootLocation)
@@ -149,9 +150,11 @@ class MainActivity:ComponentActivity(){
      val params=(view.layoutParams as? android.widget.FrameLayout.LayoutParams)
       ?:android.widget.FrameLayout.LayoutParams(width,height)
      params.width=width;params.height=height;params.leftMargin=left;params.topMargin=top
-     params.gravity=android.view.Gravity.TOP or android.view.Gravity.LEFT
+     params.gravity=android.view.Gravity.TOP or android.view.Gravity.START
      view.layoutParams=params
      view.visibility=android.view.View.VISIBLE
+     updatePipAspectRatio(width,height)
+     setPipEligible(true)
     }.onFailure { android.util.Log.w("RUSH","Could not align native player with media slot",it) }
    }
   }
@@ -204,37 +207,35 @@ class MainActivity:ComponentActivity(){
  }
  fun hideNativeVideo() {
   nativeVideoRequested=false
+  setPipEligible(false)
   if(nativeVideoFullscreen)setNativeVideoFullscreen(false)
   runOnUiThread { nativeVideoView?.visibility=android.view.View.GONE }
  }
+ private fun buildPipParams():android.app.PictureInPictureParams {
+  val builder=android.app.PictureInPictureParams.Builder().setAspectRatio(pipAspectRatio)
+  if(android.os.Build.VERSION.SDK_INT>=31)builder.setAutoEnterEnabled(pipEligible.value)
+  nativeVideoView?.let { view ->
+   val sourceRect=android.graphics.Rect()
+   if(view.isShown&&view.getGlobalVisibleRect(sourceRect)&&!sourceRect.isEmpty)builder.setSourceRectHint(sourceRect)
+  }
+  return builder.build()
+ }
  fun setPipEligible(eligible:Boolean){
   pipEligible.value=eligible
-  if(android.os.Build.VERSION.SDK_INT>=26){
-   val builder=android.app.PictureInPictureParams.Builder().setAspectRatio(pipAspectRatio)
-   if(android.os.Build.VERSION.SDK_INT>=31)builder.setAutoEnterEnabled(eligible)
-   setPictureInPictureParams(builder.build())
-  }
+  setPictureInPictureParams(buildPipParams())
  }
  fun updatePipAspectRatio(width:Int,height:Int){
-  if(android.os.Build.VERSION.SDK_INT<26||width<=0||height<=0)return
+  if(width<=0||height<=0)return
   val ratio=(width.toFloat()/height).coerceIn(1f/2.39f,2.39f)
   pipAspectRatio=android.util.Rational((ratio*1000).toInt().coerceAtLeast(1),1000)
-  if(pipEligible.value){
-   val builder=android.app.PictureInPictureParams.Builder().setAspectRatio(pipAspectRatio)
-   if(android.os.Build.VERSION.SDK_INT>=31)builder.setAutoEnterEnabled(true)
-   setPictureInPictureParams(builder.build())
-  }
+  if(pipEligible.value)setPictureInPictureParams(buildPipParams())
  }
  fun enterPlayerPip(){
-  if(android.os.Build.VERSION.SDK_INT>=26&&pipEligible.value){
-   val builder=android.app.PictureInPictureParams.Builder().setAspectRatio(pipAspectRatio)
-   if(android.os.Build.VERSION.SDK_INT>=31)builder.setAutoEnterEnabled(true)
-   enterPictureInPictureMode(builder.build())
-  }
+  if(pipEligible.value)enterPictureInPictureMode(buildPipParams())
  }
  override fun onUserLeaveHint(){
   super.onUserLeaveHint()
-  if(android.os.Build.VERSION.SDK_INT>=26&&android.os.Build.VERSION.SDK_INT<31&&pipEligible.value)enterPlayerPip()
+  if(android.os.Build.VERSION.SDK_INT<31&&pipEligible.value)enterPlayerPip()
  }
  @SuppressLint("SetJavaScriptEnabled")
  override fun onCreate(savedInstanceState:Bundle?){
