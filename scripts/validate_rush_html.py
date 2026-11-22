@@ -79,12 +79,20 @@ def main():
         fail("No inline JavaScript was found")
 
     js = "\n".join(parser.scripts)
-    native_methods = set(re.findall(
-        r"@JavascriptInterface\s+fun\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(",
-        bridge,
-    ))
+    native_methods = set()
+    bridge_lines = bridge.splitlines()
+    for index, line in enumerate(bridge_lines):
+        if "@JavascriptInterface" not in line:
+            continue
+        for declaration in bridge_lines[index + 1:index + 5]:
+            if "fun " in declaration:
+                method_name = declaration.split("fun ", 1)[1].split("(", 1)[0].strip()
+                if method_name:
+                    native_methods.add(method_name)
+                break
+
     called_methods = set(re.findall(
-        r"\\bRushNative\\.([A-Za-z_][A-Za-z0-9_]*)\\s*\\(",
+        "RushNative[.]([A-Za-z_][A-Za-z0-9_]*)[(]",
         js,
     ))
     missing = sorted(called_methods - native_methods)
