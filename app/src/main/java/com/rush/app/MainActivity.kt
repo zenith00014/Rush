@@ -161,11 +161,9 @@ class MainActivity:ComponentActivity(){
    if(enabled) {
     previousRequestedOrientation=requestedOrientation
     requestedOrientation=android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-    window.decorView.systemUiVisibility=(android.view.View.SYSTEM_UI_FLAG_FULLSCREEN
-     or android.view.View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-     or android.view.View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-     or android.view.View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-     or android.view.View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION)
+    val insetsController=WindowInsetsControllerCompat(window,window.decorView)
+    insetsController.systemBarsBehavior=WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+    insetsController.hide(WindowInsetsCompat.Type.systemBars())
     nativeVideoView?.apply {
      layoutParams=android.widget.FrameLayout.LayoutParams(
       android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
@@ -195,7 +193,7 @@ class MainActivity:ComponentActivity(){
     exit.bringToFront()
    } else {
     fullscreenExitButton?.visibility=android.view.View.GONE
-    window.decorView.systemUiVisibility=0
+    WindowInsetsControllerCompat(window,window.decorView).show(WindowInsetsCompat.Type.systemBars())
     requestedOrientation=previousRequestedOrientation
     webView.post { updateNativeVideoPosition() }
    }
@@ -238,12 +236,17 @@ class MainActivity:ComponentActivity(){
  @SuppressLint("SetJavaScriptEnabled")
  override fun onCreate(savedInstanceState:Bundle?){
   super.onCreate(savedInstanceState)
-  window.statusBarColor=android.graphics.Color.rgb(14,14,14)
-  window.navigationBarColor=android.graphics.Color.rgb(14,14,14)
-  window.decorView.systemUiVisibility=0
+  WindowCompat.setDecorFitsSystemWindows(window,false)
+  window.statusBarColor=android.graphics.Color.TRANSPARENT
+  window.navigationBarColor=android.graphics.Color.TRANSPARENT
+  if(android.os.Build.VERSION.SDK_INT>=29)window.isNavigationBarContrastEnforced=false
+  WindowInsetsControllerCompat(window,window.decorView).apply {
+   isAppearanceLightStatusBars=false
+   isAppearanceLightNavigationBars=false
+  }
   rootLayout=android.widget.FrameLayout(this)
   webView=android.webkit.WebView(this).apply{
-   setBackgroundColor(android.graphics.Color.rgb(205,198,179))
+   setBackgroundColor(android.graphics.Color.rgb(14,14,14))
    isVerticalScrollBarEnabled=false
    isHorizontalScrollBarEnabled=false
    overScrollMode=android.view.View.OVER_SCROLL_NEVER
@@ -252,7 +255,36 @@ class MainActivity:ComponentActivity(){
    settings.loadsImagesAutomatically=true
    settings.blockNetworkImage=false
    settings.cacheMode=android.webkit.WebSettings.LOAD_DEFAULT
-   webViewClient=android.webkit.WebViewClient()
+   settings.allowFileAccess=false
+   settings.allowContentAccess=false
+   settings.allowFileAccessFromFileURLs=false
+   settings.allowUniversalAccessFromFileURLs=false
+   settings.mixedContentMode=android.webkit.WebSettings.MIXED_CONTENT_NEVER_ALLOW
+   settings.javaScriptCanOpenWindowsAutomatically=false
+   settings.setSupportMultipleWindows(false)
+   settings.safeBrowsingEnabled=true
+   webViewClient=object:android.webkit.WebViewClient(){
+    override fun shouldOverrideUrlLoading(
+     view:android.webkit.WebView,
+     request:android.webkit.WebResourceRequest
+    ):Boolean {
+     val uri=request.url
+     return !(uri.scheme.equals("https",true)&&uri.host.equals("rush.local",true))
+    }
+    override fun onReceivedSslError(
+     view:android.webkit.WebView,
+     handler:android.webkit.SslErrorHandler,
+     error:android.net.http.SslError
+    ){handler.cancel()}
+    override fun onPageFinished(view:android.webkit.WebView,url:String?){
+     super.onPageFinished(view,url)
+     webPageLoaded=true
+     if(pendingOpenDownloads){
+      pendingOpenDownloads=false
+      openDownloadsFromNotification()
+     }
+    }
+   }
    webChromeClient=android.webkit.WebChromeClient()
    rushWebBridge=RushWebBridge(this@MainActivity,this)
    addJavascriptInterface(rushWebBridge,"RushNative")
@@ -273,7 +305,7 @@ class MainActivity:ComponentActivity(){
  override fun onNewIntent(intent:android.content.Intent){
   super.onNewIntent(intent)
   setIntent(intent)
-  if(intent.getBooleanExtra("open_downloads",false))webView.evaluateJavascript("location.hash='#videos'",null)
+  if(intent.getBooleanExtra("open_downloads",false))openDownloadsFromNotification()
  }
  override fun onPictureInPictureModeChanged(isInPictureInPictureMode:Boolean,newConfig:android.content.res.Configuration){
   super.onPictureInPictureModeChanged(isInPictureInPictureMode,newConfig)
