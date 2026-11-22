@@ -244,7 +244,14 @@ class MainActivity:ComponentActivity(){
    isAppearanceLightStatusBars=false
    isAppearanceLightNavigationBars=false
   }
-  rootLayout=android.widget.FrameLayout(this)
+  rootLayout=android.widget.FrameLayout(this).apply {
+   setOnApplyWindowInsetsListener { view, windowInsets ->
+    val safeInsets=WindowInsetsCompat.toWindowInsetsCompat(windowInsets,view)
+     .getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout())
+    view.setPadding(safeInsets.left,safeInsets.top,safeInsets.right,safeInsets.bottom)
+    windowInsets
+   }
+  }
   webView=android.webkit.WebView(this).apply{
    setBackgroundColor(android.graphics.Color.rgb(14,14,14))
    isVerticalScrollBarEnabled=false
@@ -294,6 +301,7 @@ class MainActivity:ComponentActivity(){
    android.widget.FrameLayout.LayoutParams.MATCH_PARENT,android.widget.FrameLayout.LayoutParams.MATCH_PARENT))
   webView.setOnScrollChangeListener { _,_,_,_,_-> updateNativeVideoPosition() }
   setContentView(rootLayout)
+  androidx.core.view.ViewCompat.requestApplyInsets(rootLayout)
   val html=assets.open("rush.html").bufferedReader().use{it.readText()}
   webView.loadDataWithBaseURL("https://rush.local/",html,"text/html","UTF-8",null)
   onBackPressedDispatcher.addCallback(this,object:androidx.activity.OnBackPressedCallback(true){
