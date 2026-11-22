@@ -81,6 +81,9 @@ class MainActivity:ComponentActivity(){
   if(!granted)android.widget.Toast.makeText(this,"Downloads will continue, but Android notifications are disabled.",android.widget.Toast.LENGTH_LONG).show()
  }
  fun requestDownloadNotificationPermission(){
+  runOnUiThread { requestDownloadNotificationPermissionOnMainThread() }
+ }
+ private fun requestDownloadNotificationPermissionOnMainThread(){
   if(android.os.Build.VERSION.SDK_INT<33)return
   val permission=android.Manifest.permission.POST_NOTIFICATIONS
   if(androidx.core.content.ContextCompat.checkSelfPermission(this,permission)==android.content.pm.PackageManager.PERMISSION_GRANTED)return
