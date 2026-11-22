@@ -117,7 +117,7 @@ object LiveYouTubeSearch {
     }
 
     private fun searchWithNewPipe(query: String, filters: List<String>, music: Boolean): YouTubeSearchPage {
-        LibreTubePlayback.initialize()
+        RushPlaybackEngine.initialize()
         val service = ServiceList.YouTube
         val found = LinkedHashMap<String, YouTubeSearchResult>()
         val nextCursors = ArrayList<SearchCursor>()
@@ -199,7 +199,7 @@ object LiveYouTubeSearch {
     }
 
     fun channelDetails(channel: YouTubeSearchResult): YouTubeSearchResult {
-        LibreTubePlayback.initialize()
+        RushPlaybackEngine.initialize()
         val url = if (channel.channelId.startsWith("http", ignoreCase = true)) channel.channelId
             else "https://www.youtube.com/channel/" + channel.channelId
         val info = ChannelInfo.getInfo(ServiceList.YouTube, url)
