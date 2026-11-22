@@ -1,5 +1,3 @@
-@file:OptIn(androidx.media3.common.util.UnstableApi::class)
-
 package com.rush.app
 
 import android.webkit.JavascriptInterface
