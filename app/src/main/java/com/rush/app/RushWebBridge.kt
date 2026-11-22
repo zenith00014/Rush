@@ -783,6 +783,39 @@ class RushWebBridge(
         val prefs = activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)
         publish("rushLibraryData", LocalLibrary.load(prefs).toString())
     }
+    
+    @JavascriptInterface
+    fun playLibraryItem(id: String) {
+        val cleanId = id.trim().take(256)
+        if (cleanId.isBlank()) return
+        activity.lifecycleScope.launch {
+            try {
+                val prefs = activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)
+                val entry = runCatching {
+                    JSONObject(prefs.getString("item_metadata", "{}") ?: "{}").optJSONObject(cleanId)
+                }.getOrNull() ?: throw java.io.IOException("This item is no longer in your library.")
+                val localPath = entry.optString("localPath")
+                val downloaded = if (localPath.isNotBlank()) withContext(Dispatchers.IO) {
+                    OfflineDownloads.list(activity.applicationContext)
+                        .firstOrNull { it.complete && it.file.absolutePath == localPath }
+                } else null
+                if (downloaded != null) {
+                    playDownloaded(downloaded.id)
+                    return@launch
+                }
+                val sourceId = entry.optString("sourceId").ifBlank { cleanId }
+                val title = entry.optString("title").take(300)
+                val creator = entry.optString("creator").take(200)
+                val thumbnail = entry.optString("thumbnail").take(2048)
+                if (entry.optBoolean("music")) playMusic(sourceId, title, creator, thumbnail)
+                else playVideo(sourceId, title, creator, thumbnail)
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                publish("rushLibraryError", JSONObject().put("message", playbackErrorMessage(error, "Could not play this library item.")).toString())
+            }
+        }
+    }
 
     @JavascriptInterface
     fun saveLibraryItem(id: String, title: String, creator: String, isMusic: Boolean, thumbnail: String) {
@@ -896,6 +929,19 @@ class RushWebBridge(
     }
 
     @JavascriptInterface
+    fun playLibraryPlaylist(playlistId: String) {
+        val prefs = activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)
+        val playlist = PlaylistStore.load(prefs).firstOrNull { it.id == playlistId.take(64) }
+        if (playlist == null || playlist.itemIds.isEmpty()) {
+            publish("rushLibraryError", JSONObject().put("message", "This playlist is empty or unavailable.").toString())
+            return
+        }
+        QueueStore.replace(prefs, playlist.itemIds)
+        publish("rushLibraryData", LocalLibrary.load(prefs).toString())
+        playLibraryQueue()
+    }
+
+    @JavascriptInterface
     fun playLibraryQueue() {
         activity.lifecycleScope.launch {
             val prefs = activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)
@@ -962,6 +1008,16 @@ class RushWebBridge(
                 controller.setMediaItems(queue)
                 controller.prepare()
                 controller.play()
+                queue.firstOrNull()?.let { first ->
+                    metadata.optJSONObject(first.mediaId)?.let { entry ->
+                        LocalLibrary.rememberPlayback(
+                            prefs, first.mediaId, entry.optString("title"), entry.optString("creator"),
+                            entry.optBoolean("music"), entry.optString("thumbnail"),
+                            entry.optString("sourceId").ifBlank { first.mediaId },
+                            entry.optString("localPath")
+                        )
+                    }
+                }
                 if (controller.currentMediaItem?.mediaMetadata?.extras?.getBoolean(PlaybackMetadata.AUDIO_ONLY, false) != true) {
                     activity.runOnUiThread { activity.showNativeVideo(controller) }
                 } else {
@@ -1159,6 +1215,12 @@ class RushWebBridge(
                 controller.setMediaItem(item)
                 controller.prepare()
                 controller.play()
+                val prefs = activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)
+                val sourceId = media.sourceId.ifBlank { media.id }
+                LocalLibrary.rememberPlayback(
+                    prefs, sourceId, media.title, media.creator, media.isAudio, "", sourceId,
+                    media.file.absolutePath
+                )
                 if (media.isAudio) activity.hideNativeVideo()
                 else activity.runOnUiThread { activity.showNativeVideo(controller) }
                 publish("rushCurrentPlayback", JSONObject()
