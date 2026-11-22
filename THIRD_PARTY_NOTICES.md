@@ -18,7 +18,7 @@ Rush also adapts LibreTube's BotGuard WebView proof-of-origin token implementati
 - `app/src/main/java/com/rush/app/potoken/JavaScriptUtil.kt`
 - `app/src/main/assets/po_token.html`
 
-The playback adapter in `app/src/main/java/com/rush/app/AdaptivePlayback.kt` is an adaptation for Rush's Compose UI. Token generation is attempted when the WebView provider is available; extraction continues without a token if BotGuard initialization fails. It uses NewPipeExtractor to resolve YouTube audio and video streams, then Media3 to play the resolved URL.
+The playback adapter in `app/src/main/java/com/rush/app/RushPlaybackEngine.kt` is an adaptation for Rush's Compose UI. Token generation is attempted when the WebView provider is available; extraction continues without a token if BotGuard initialization fails. It uses NewPipeExtractor to resolve YouTube audio and video streams, then Media3 to play the resolved URL.
 
 The NewPipeExtractor dependency is provided by the LibreTube project's NewPipeExtractor fork.
 
