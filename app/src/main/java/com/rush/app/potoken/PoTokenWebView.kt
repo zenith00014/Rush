@@ -11,6 +11,7 @@ import android.os.Looper
 import android.util.Log
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
+import com.rush.app.BuildConfig
 import androidx.annotation.MainThread
 import com.rush.app.BuildConfig
 import okhttp3.MediaType.Companion.toMediaType
@@ -60,7 +61,7 @@ class PoTokenWebView private constructor(
      */
     private fun loadHtmlAndObtainBotguard(context: Context) {
         if (BuildConfig.DEBUG) {
-            Log.d(TAG, "loadHtmlAndObtainBotguard() called")
+            if (BuildConfig.DEBUG) Log.d(TAG, "Loading proof-of-origin helper page")
         }
 
         CoroutineScope(Dispatchers.IO).launch(exceptionHandler) {
@@ -92,7 +93,7 @@ class PoTokenWebView private constructor(
     @JavascriptInterface
     fun downloadAndRunBotguard() {
         if (BuildConfig.DEBUG) {
-            Log.d(TAG, "downloadAndRunBotguard() called")
+            if (BuildConfig.DEBUG) Log.d(TAG, "Starting proof-of-origin initialization")
         }
 
         CoroutineScope(Dispatchers.IO).launch(exceptionHandler) {
@@ -153,7 +154,7 @@ class PoTokenWebView private constructor(
                     "this.integrityToken = $integrityToken"
                 ) {
                     if (BuildConfig.DEBUG) {
-                        Log.d(TAG, "initialization finished, expiration=${expirationTimeInSeconds}s")
+                        if (BuildConfig.DEBUG) Log.d(TAG, "Proof-of-origin initialization finished; expires in ${expirationTimeInSeconds}s")
                     }
                     generatorContinuation.resume(this@PoTokenWebView)
                 }
@@ -165,7 +166,7 @@ class PoTokenWebView private constructor(
     //region Obtaining poTokens
     suspend fun generatePoToken(identifier: String): String {
         if (BuildConfig.DEBUG) {
-            Log.d(TAG, "generatePoToken() called with identifier $identifier")
+            if (BuildConfig.DEBUG) Log.d(TAG, "Generating proof-of-origin token")
         }
         return suspendCancellableCoroutine { continuation ->
             poTokenContinuations[identifier] = continuation
@@ -210,7 +211,7 @@ class PoTokenWebView private constructor(
     @JavascriptInterface
     fun onObtainPoTokenResult(identifier: String, poTokenU8: String) {
         if (BuildConfig.DEBUG) {
-            Log.d(TAG, "Generated poToken (before decoding): identifier=$identifier poTokenU8=$poTokenU8")
+            if (BuildConfig.DEBUG) Log.d(TAG, "Proof-of-origin response received (${poTokenU8.length} bytes)")
         }
         val poToken = try {
             u8ToBase64(poTokenU8)
@@ -220,7 +221,7 @@ class PoTokenWebView private constructor(
         }
 
         if (BuildConfig.DEBUG) {
-            Log.d(TAG, "Generated poToken: identifier=$identifier poToken=$poToken")
+            if (BuildConfig.DEBUG) Log.d(TAG, "Proof-of-origin token generated successfully")
         }
         poTokenContinuations.remove(identifier)?.resume(poToken)
     }
