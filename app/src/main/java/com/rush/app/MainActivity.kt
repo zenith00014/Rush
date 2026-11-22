@@ -240,8 +240,6 @@ class MainActivity:ComponentActivity(){
  override fun onCreate(savedInstanceState:Bundle?){
   super.onCreate(savedInstanceState)
   WindowCompat.setDecorFitsSystemWindows(window,false)
-  window.statusBarColor=android.graphics.Color.TRANSPARENT
-  window.navigationBarColor=android.graphics.Color.TRANSPARENT
   if(android.os.Build.VERSION.SDK_INT>=29)window.isNavigationBarContrastEnforced=false
   WindowInsetsControllerCompat(window,window.decorView).apply {
    isAppearanceLightStatusBars=false
@@ -267,8 +265,6 @@ class MainActivity:ComponentActivity(){
    settings.cacheMode=android.webkit.WebSettings.LOAD_DEFAULT
    settings.allowFileAccess=false
    settings.allowContentAccess=false
-   settings.allowFileAccessFromFileURLs=false
-   settings.allowUniversalAccessFromFileURLs=false
    settings.mixedContentMode=android.webkit.WebSettings.MIXED_CONTENT_NEVER_ALLOW
    settings.javaScriptCanOpenWindowsAutomatically=false
    settings.setSupportMultipleWindows(false)
