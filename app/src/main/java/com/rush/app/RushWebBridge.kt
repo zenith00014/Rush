@@ -1096,8 +1096,13 @@ class RushWebBridge(
                             allowDashFallback = !isMusic && !prefs.getBoolean("download_mp4", false)
                         )
                     }
-                    val uri = if (localFile.isFile) android.net.Uri.fromFile(localFile)
-                        else android.net.Uri.parse(resolved!!.url)
+                    val uri = if (localFile.isFile) {
+                        android.net.Uri.fromFile(localFile)
+                    } else {
+                        android.net.Uri.parse(
+                            resolved?.url ?: throw java.io.IOException("Could not resolve this queued item.")
+                        )
+                    }
                     val subtitleConfigs = resolved?.subtitles.orEmpty().map { subtitle ->
                         MediaItem.SubtitleConfiguration.Builder(android.net.Uri.parse(subtitle.url))
                             .setMimeType(subtitle.mimeType)
