@@ -1,5 +1,3 @@
-@OptIn(UnstableApi::class)
-package com.github.libretube.player.manifest
+@file:androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 
-import androidx.annotation.OptIn
-import androidx.media3.common.util.UnstableApi
+package com.github.libretube.player.manifest
