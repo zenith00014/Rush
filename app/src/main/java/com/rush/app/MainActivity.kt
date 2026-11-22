@@ -73,6 +73,39 @@ class MainActivity:ComponentActivity(){
  private var nativeVideoFullscreen=false
  private var previousRequestedOrientation=android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
  private var fullscreenExitButton:android.widget.TextView?=null
+ private var webPageLoaded=false
+ private var pendingOpenDownloads=false
+ private val notificationPermissionLauncher=registerForActivityResult(
+  androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+ ){ granted ->
+  if(!granted)android.widget.Toast.makeText(this,"Downloads will continue, but Android notifications are disabled.",android.widget.Toast.LENGTH_LONG).show()
+ }
+ fun requestDownloadNotificationPermission(){
+  if(android.os.Build.VERSION.SDK_INT<33)return
+  val permission=android.Manifest.permission.POST_NOTIFICATIONS
+  if(androidx.core.content.ContextCompat.checkSelfPermission(this,permission)==android.content.pm.PackageManager.PERMISSION_GRANTED)return
+  val prefs=getSharedPreferences("rush_prefs",MODE_PRIVATE)
+  val requestedBefore=prefs.getBoolean("notification_permission_requested",false)
+  when{
+   androidx.core.app.ActivityCompat.shouldShowRequestPermissionRationale(this,permission)->{
+    android.app.AlertDialog.Builder(this)
+     .setTitle("Download notifications")
+     .setMessage("Allow notifications to see download progress and completion while Rush works in the background.")
+     .setPositiveButton("Continue"){_,_->notificationPermissionLauncher.launch(permission)}
+     .setNegativeButton("Not now",null)
+     .show()
+   }
+   !requestedBefore->{
+    prefs.edit().putBoolean("notification_permission_requested",true).apply()
+    notificationPermissionLauncher.launch(permission)
+   }
+   else->android.widget.Toast.makeText(this,"Enable notifications in Android Settings to see download progress.",android.widget.Toast.LENGTH_LONG).show()
+  }
+ }
+ private fun openDownloadsFromNotification(){
+  if(!webPageLoaded){pendingOpenDownloads=true;return}
+  webView.evaluateJavascript("window.rushOpenDownloads ? window.rushOpenDownloads() : (location.hash='#library')",null)
+ }
  @androidx.media3.common.util.UnstableApi
  fun showNativeVideo(player: androidx.media3.common.Player) {
   nativeVideoRequested=true
