@@ -899,10 +899,11 @@ class RushWebBridge(
                                 else -> null
                             }.orEmpty()
                             val mediaType = parser.getAttributeValue(null, "type").orEmpty()
-                            if (candidate.startsWith("https://") &&
+                            val imageUrl = candidate.let { if (it.startsWith("//")) "https:$it" else it }
+                            if (imageUrl.startsWith("https://") &&
                                 (mediaTag == "thumbnail" || mediaTag == "img" || mediaType.startsWith("image/") ||
-                                    candidate.substringBefore('?').substringAfterLast('.').lowercase() in setOf("jpg", "jpeg", "png", "webp", "gif"))) {
-                                thumbnail = candidate
+                                    imageUrl.substringBefore('?').substringAfterLast('.').lowercase() in setOf("jpg", "jpeg", "png", "webp", "gif"))) {
+                                thumbnail = imageUrl
                             }
                         }
                     }
@@ -920,8 +921,8 @@ class RushWebBridge(
                     org.xmlpull.v1.XmlPullParser.END_TAG -> {
                         if (parser.name == "item") {
                             if (thumbnail.isBlank()) {
-                                val imageTag = Regex("""(?is)<img\\b[^>]*>""").find(description)?.value.orEmpty()
-                                thumbnail = Regex("""(?is)\\b(?:src|data-src)\\s*=\\s*["']([^"']+)["']""")
+                                val imageTag = Regex("""(?is)<img\b[^>]*>""").find(description)?.value.orEmpty()
+                                thumbnail = Regex("""(?is)\b(?:src|data-src)\s*=\s*["']([^"']+)["']""")
                                     .find(imageTag)?.groupValues?.getOrNull(1).orEmpty()
                             }
                             if (thumbnail.startsWith("//")) thumbnail = "https:$thumbnail"
