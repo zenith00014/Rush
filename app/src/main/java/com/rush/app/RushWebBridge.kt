@@ -159,7 +159,7 @@ class RushWebBridge(
             val topicFilter = mode.takeIf { it.startsWith("topic:", true) }
                 ?.substringAfter(":")?.trim()?.takeIf { it in FeedPreferences.allTopics(prefs) }
             val following = mode.equals("following", true)
-            val selectedChannels = FeedPreferences.forYouChannels(sources)
+            val selectedChannels = if (topicFilter == null) FeedPreferences.forYouChannels(sources) else emptyList()
             val topicVideoQueries = topicFilter?.let { listOf("$it explained OR documentary OR analysis") }
                 ?: RushDiscoveryEngine.videoDiscoveryQueries(profile.topics, following)
 
@@ -237,7 +237,7 @@ class RushWebBridge(
                         }
                     }
 
-                    sources.filter { it.kind == "artist" }.take(3).forEach { source ->
+                    sources.filter { it.kind == "artist" }.take(if (topicFilter == null) 3 else 0).forEach { source ->
                         runCatching {
                             LiveYouTubeSearch.search(source.name, music = true).forEach itemLoop@{ item ->
                                 if (item.videoId.isBlank()) return@itemLoop
@@ -259,10 +259,10 @@ class RushWebBridge(
                         }
                     }
 
-                    val newsQueries = if (following) {
-                        sources.filter { it.kind == "news" }.take(3).map { it.name }
-                    } else {
-                        (profile.topics.take(2) + sources.filter { it.kind == "news" }.take(2).map { it.name }).distinct()
+                    val newsQueries = when {
+                        topicFilter != null -> listOf(topicFilter)
+                        following -> sources.filter { it.kind == "news" }.take(3).map { it.name }
+                        else -> (profile.topics.take(2) + sources.filter { it.kind == "news" }.take(2).map { it.name }).distinct()
                     }
                     newsQueries.forEach { query ->
                         runCatching {
