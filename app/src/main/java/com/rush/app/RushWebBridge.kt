@@ -899,9 +899,11 @@ class RushWebBridge(
                                 else -> null
                             }.orEmpty()
                             val mediaType = parser.getAttributeValue(null, "type").orEmpty()
+                            val mediaMedium = parser.getAttributeValue(null, "medium").orEmpty()
                             val imageUrl = candidate.let { if (it.startsWith("//")) "https:$it" else it }
                             if (imageUrl.startsWith("https://") &&
                                 (mediaTag == "thumbnail" || mediaTag == "img" || mediaType.startsWith("image/") ||
+                                    mediaMedium.equals("image", ignoreCase = true) ||
                                     imageUrl.substringBefore('?').substringAfterLast('.').lowercase() in setOf("jpg", "jpeg", "png", "webp", "gif"))) {
                                 thumbnail = imageUrl
                             }
