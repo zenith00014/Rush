@@ -633,7 +633,7 @@ function renderNewsPage(){
 }
 function renderSearchPage(){
  return pageTop('Search','open discovery')+
- '<label class="si">'+ic('search')+'<input id="q" type="search" placeholder="Search videos, music, news, channels, playlists or artists" aria-label="Search Rush" autocomplete="off"><button class="search-submit" type="button" data-search-submit aria-label="Search">'+ic('search')+'</button></label>'+
+ '<div class="si" role="search">'+ic('search')+'<input id="q" type="search" placeholder="Search videos, music, news, channels, playlists or artists" aria-label="Search Rush" autocomplete="off"><button class="search-submit" type="button" data-search-submit aria-label="Search">'+ic('search')+'</button></div>'+
  '<div class="search-sort"><label for="searchSort">Sort by</label><select id="searchSort" aria-label="Sort search results"><option value="relevance">Relevance</option><option value="uploadDate">Upload date</option><option value="viewCount">View count</option><option value="duration">Duration</option></select></div>'+
  '<div class="chips search-filters"><button class="chip" data-search-filter="all" aria-pressed="true">All</button><button class="chip" data-search-filter="videos" aria-pressed="false">Videos</button><button class="chip" data-search-filter="music" aria-pressed="false">Music</button><button class="chip" data-search-filter="news" aria-pressed="false">News</button><button class="chip" data-search-filter="channels" aria-pressed="false">Channels</button><button class="chip" data-search-filter="playlists" aria-pressed="false">Playlists</button></div>'+
  '<p class="meta pad" id="unifiedStatus">Enter a search above to discover videos, music, news and sources.</p><div id="unifiedResults"></div><div id="publicPlaylistContent"></div>';
