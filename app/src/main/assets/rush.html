@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0b1014"><title>RUSH</title>
+<meta name="theme-color" content="#15171b"><title>RUSH</title>
 <link rel="preconnect" href="https://i.ytimg.com" crossorigin><link rel="preconnect" href="https://news.google.com" crossorigin><style>
 @property --sp{syntax:'<color>';inherits:true;initial-value:#FF6B3D}
 :root{--paper:#0b1014;--paper2:#131b21;--ink:#f2f5f6;--k:#080c0f;--mu:#a5b1b8;--sp:#ff765f;--border:rgba(255,255,255,.12);--nav:68px;--sa:env(safe-area-inset-bottom,0px);--f:system-ui,-apple-system,'Segoe UI',Roboto,'Noto Sans',sans-serif;--m:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;--spr:cubic-bezier(.2,.8,.2,1);--sh:0 10px 28px rgba(0,0,0,.28);--r:16px;color-scheme:dark}
@@ -291,6 +291,151 @@ html,body{background:var(--paper);color:var(--ink)}
 .seg button{border-radius:14px!important}
 .seg i{border-radius:14px!important}
 .bi{background:#131b21!important;box-shadow:none!important}
+
+/* Integrated comic-print Rush interface. Keeps the app's native actions and screen structure intact. */
+:root{
+  --paper:#15171b;--paper2:#1f2228;--ink:#f6f8f9;--mu:#b9c5cc;--k:#080c0f;
+  --sp:#ffd000;--border:rgba(255,255,255,.22);--r:0px;
+  --cf:#ffd000;--cv:#2563ff;--cm:#b02cff;--cn:#00e676;--cs:#00e0ff;--cd:#ff1f6e;
+  --sh:4px 4px 0 rgba(0,0,0,.58);
+}
+html,body{background:var(--paper);color:var(--ink)}
+.app{
+  background:
+    linear-gradient(115deg,transparent 38%,rgba(255,255,255,.035) 50%,transparent 62%),
+    radial-gradient(82% 38% at 12% 0,rgba(255,255,255,.055),transparent 70%),
+    linear-gradient(0deg,rgba(0,0,0,.32),transparent 50%),var(--paper);
+}
+.app::before{
+  opacity:.065;
+  background:
+    radial-gradient(rgba(255,255,255,.5) 1px,transparent 1.6px) 0 0/6px 6px,
+    radial-gradient(80% 34% at 8% 0,rgba(255,255,255,.4),transparent 70%);
+}
+.app[data-page="home"]{--sp:var(--cf)}
+.app[data-page="videos"]{--sp:var(--cv)}
+.app[data-page="music"]{--sp:var(--cm)}
+.app[data-page="player"]{--sp:var(--cm)}
+.app[data-page="news"]{--sp:var(--cn)}
+.app[data-page="search"]{--sp:var(--cs)}
+.app[data-page="topics"],.app[data-page="library"]{--sp:var(--cd)}
+.top{
+  background:linear-gradient(rgba(44,48,56,.9),rgba(21,23,27,.86));
+  border-bottom:2px solid var(--ink);
+  box-shadow:0 4px 0 rgba(0,0,0,.32);
+}
+.wm{font:900 30px/1 var(--f);letter-spacing:-.065em;text-shadow:2px 2px 0 color-mix(in srgb,var(--sp) 68%,#000)}
+.wm i{width:12px;height:12px;background:var(--sp);border:2px solid var(--ink)}
+.pt{padding:12px 16px 8px}
+.pt h1{font:900 clamp(40px,12vw,62px)/.86 var(--f);letter-spacing:-.055em;text-shadow:2px 2px 0 color-mix(in srgb,var(--sp) 66%,#000)}
+.pt em.stk{border:2px solid var(--ink);background:var(--sp);color:var(--k);font-weight:900;box-shadow:3px 3px 0 rgba(0,0,0,.6)}
+.btn,.ib,.chip{
+  border:2px solid var(--ink)!important;border-radius:0!important;
+  transition:transform .2s cubic-bezier(.2,.8,.2,1),box-shadow .2s;
+  -webkit-backdrop-filter:blur(12px) saturate(1.35);backdrop-filter:blur(12px) saturate(1.35);
+}
+.btn,.btn.k,.btn.o{
+  background-color:var(--sp)!important;color:var(--k)!important;
+  font-weight:900;letter-spacing:.045em;text-transform:uppercase;
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.5),inset 0 -3px 0 rgba(0,0,0,.24),3px 3px 0 rgba(0,0,0,.62),3px 3px 0 1px var(--ink);
+}
+.ib{background:rgba(255,255,255,.1);box-shadow:inset 0 1px 0 rgba(255,255,255,.28),3px 3px 0 rgba(0,0,0,.62),3px 3px 0 1px var(--ink)}
+.ib.p{background:var(--sp)!important;color:var(--k)!important}
+.chip{
+  background:rgba(255,255,255,.075);color:var(--ink);
+  font:700 11px var(--m);letter-spacing:.035em;text-transform:uppercase;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.23),2px 2px 0 rgba(0,0,0,.55);
+}
+.chip[aria-pressed="true"],.topic-chip[aria-pressed="true"],.search-filters .chip[aria-pressed="true"],.library-tabs .chip[aria-pressed="true"]{
+  background-color:var(--sp)!important;color:var(--k)!important;border-color:var(--ink)!important;
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.42),inset 0 -2px 0 rgba(0,0,0,.22),2px 2px 0 rgba(0,0,0,.58);
+}
+.btn:active,.ib:active,.chip:active{transform:translate(2px,2px);box-shadow:none}
+h2{font-weight:900;letter-spacing:-.025em}
+h2::after{height:2px;background:var(--ink)}
+.stk{border:2px solid var(--ink);border-radius:0;background:var(--sp);color:var(--k);font:800 10px var(--m);padding:3px 6px;box-shadow:2px 2px 0 rgba(0,0,0,.5)}
+.a{border:2px solid var(--ink);border-radius:0;box-shadow:3px 3px 0 rgba(0,0,0,.62),inset 0 0 0 1px rgba(255,255,255,.22)}
+.a::after{
+  content:"";position:absolute;inset:0;pointer-events:none;mix-blend-mode:multiply;
+  background:radial-gradient(rgba(0,0,0,.38) 1.1px,transparent 1.6px) 0 0/6px 6px;
+  -webkit-mask:linear-gradient(135deg,#000,transparent 66%);mask:linear-gradient(135deg,#000,transparent 66%);
+}
+.seg{
+  border:2px solid var(--ink)!important;border-radius:0!important;
+  background:linear-gradient(145deg,#2b2f37,#1a1d22)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.14),3px 3px 0 rgba(0,0,0,.5);
+}
+.seg button{border-radius:0!important;font-weight:800}
+.seg button[aria-selected="true"]{color:var(--k)!important}
+.seg i{border-radius:0!important;background:var(--sp)!important;box-shadow:inset 0 2px 0 rgba(255,255,255,.45),inset 0 -2px 0 rgba(0,0,0,.25)}
+.feed-actions{align-items:center;gap:8px}
+.home-feed-toolbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:8px 16px 4px}
+.home-feed-filters{display:flex;gap:7px;min-width:0;overflow-x:auto;scrollbar-width:none;flex:1}
+.home-feed-filters::-webkit-scrollbar{display:none}
+.home-feed-toolbar>[data-refresh-feed]{flex:none}
+.feed-section{
+  margin:16px 12px 22px;padding:10px;
+  border:2px solid var(--ink);
+  background:linear-gradient(145deg,#2b2f37 0%,#202329 52%,#181a1f 100%);
+  box-shadow:4px 4px 0 rgba(0,0,0,.58),0 12px 22px rgba(0,0,0,.24);
+}
+.feed-section h2{padding:7px 4px 12px;margin:0 0 8px;border-bottom:2px solid var(--ink)}
+.feed-section h2::after{display:none}
+.feed-mixed-item{
+  --card-accent:var(--sp);position:relative;margin:9px 2px;padding:8px;
+  border:1px solid rgba(255,255,255,.24);border-left:5px solid var(--card-accent);
+  background:linear-gradient(145deg,#30343c,#1a1d22);
+  box-shadow:3px 3px 0 rgba(0,0,0,.52);
+}
+.feed-mixed-item[data-kind="video"]{--card-accent:var(--cv)}
+.feed-mixed-item[data-kind="music"]{--card-accent:var(--cm)}
+.feed-mixed-item[data-kind="news"]{--card-accent:var(--cn)}
+.feed-mixed-item .result-wrap{margin:0;background:transparent;box-shadow:none;border:0}
+.feed-mixed-item .row,.feed-mixed-item .news-open{background:transparent}
+.feed-mixed-item .row.n{border:0}
+.feed-mixed-item .news-card{margin:0;padding:0;background:transparent;border:0;box-shadow:none}
+.feed-mixed-item .result-actions{padding:5px 2px 0}
+.result-wrap,.source-card,.music-now,.news-card,.library-item,.library-playlist,.video-player-tools,.empty-state{
+  border-radius:0!important;border:1px solid rgba(255,255,255,.22);
+  box-shadow:3px 3px 0 rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.09);
+  background:linear-gradient(145deg,#2b2f37,#1c1f25);
+}
+.row,.row.n{border-radius:0!important}
+.row img,.news-thumb,.library-art{border:2px solid var(--ink);border-radius:0!important;box-shadow:2px 2px 0 rgba(0,0,0,.5)}
+.news-card{border-left:5px solid var(--cn);padding:9px}
+.news-copy b,.source-info>b,.library-copy b{font-weight:850;line-height:1.25}
+.source-card{border-left:5px solid var(--sp);padding:10px}
+.library-item,.library-playlist{padding:9px;margin:9px 12px}
+.top .ib{border:2px solid var(--ink)}
+.mini{
+  border-block:2px solid var(--ink);border-radius:0;
+  background:linear-gradient(rgba(48,52,60,.94),rgba(27,30,35,.94));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 -4px 0 rgba(0,0,0,.25);
+}
+.mini .a{border:2px solid var(--ink);border-radius:0}
+.nav{
+  border-top:2px solid var(--ink);border-radius:0;
+  background:linear-gradient(rgba(44,48,56,.95),rgba(21,23,27,.97));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.2);
+}
+.nav a{border-radius:0;color:var(--mu);font-weight:800;letter-spacing:.02em}
+.nav a[aria-current="page"]{color:var(--sp);border-top-color:var(--sp);text-shadow:0 0 8px color-mix(in srgb,var(--sp) 52%,transparent)}
+.nav .pill{border-radius:0!important;background:var(--sp)!important;box-shadow:inset 0 2px 0 rgba(255,255,255,.42),3px 3px 0 rgba(0,0,0,.58)}
+.player-screen{padding-bottom:24px}
+.player-art{border:2px solid var(--ink);border-radius:0!important;box-shadow:6px 6px 0 var(--sp)}
+.player-track,.player-controls,.player-utilities,.player-lyrics{border-radius:0!important}
+.player-lyrics .lyrics-panel{border:2px solid var(--ink);background:#1f2228;border-radius:0}
+.player-lyrics .lyric-line.active{color:var(--sp);text-shadow:1px 1px 0 rgba(0,0,0,.8)}
+.empty-state{margin:12px;padding:18px;border:2px dashed var(--ink);text-align:center}
+#homeFeedStatus{min-height:18px}
+@media(max-width:380px){
+  .home-feed-toolbar{align-items:stretch;flex-direction:column}
+  .home-feed-toolbar>[data-refresh-feed]{align-self:flex-end}
+}
+@media(prefers-reduced-motion:reduce){
+  .btn,.ib,.chip,.feed-mixed-item{transition:none!important}
+}
+
 </style></head>
 <body>
 <div class="app">
@@ -388,11 +533,13 @@ function section(title,body){
 function pageTop(title,kicker){
  return '<header class="pt"><h1>'+title+'</h1><em class="stk">'+kicker+'</em></header>';
 }
+let homeFilter='all',homeFeedData={videos:[],music:[],news:[],message:''};
 function renderHome(){
  return pageTop('Home','your feed')+
  '<div class="seg" role="tablist"><i></i><button role="tab" data-tab="fy" aria-selected="'+(homeTab==='fy')+'">For you</button><button role="tab" data-tab="fo" aria-selected="'+(homeTab==='fo')+'">Following</button></div>'+
+ '<div class="home-feed-toolbar"><div class="home-feed-filters">'+[['all','All'],['videos','Videos'],['music','Music'],['news','News']].map(([key,label])=>'<button class="chip" data-home-filter="'+key+'" aria-pressed="'+(homeFilter===key)+'">'+label+'</button>').join('')+'</div><button class="chip" data-refresh-feed aria-label="Refresh feed">↻ Refresh</button></div>'+
  '<div class="feed-actions"><button class="chip" data-open-topics>CHOOSE TOPICS</button><button class="chip" data-open-search>FIND CHANNELS & SOURCES</button></div>'+
- '<p class="meta pad" id="homeFeedStatus">Building your feed…</p><div id="homeFeedResults"></div>';
+ '<p class="meta pad" id="homeFeedStatus" aria-live="polite">Building your feed…</p><div id="homeFeedResults"></div>';
 }
 function renderVideoPage(){
  return pageTop('Videos','full-screen playback')+
@@ -542,6 +689,7 @@ function loadFeedPreferences(){
 }
 function go(){
  page=(location.hash||'#home').slice(1);if(!R[page])page='home';
+ $('.app').dataset.page=page;
  $('#v').innerHTML=R[page]();
  if(page==='topics')updateTopicOptions();
  const activePage=page==='player'?'music':page;
@@ -562,15 +710,46 @@ function loadHomeFeed(){
  const status=$('#homeFeedStatus');if(status)status.textContent=homeTab==='fy'?'Finding a mix of videos, music and news for you…':'Loading posts from sources you follow…';
  if(window.RushNative)RushNative.loadHomeFeed(homeTab==='fy'?'forYou':'following');
 }
+function mixHomeFeedItems(videos,music,articles){
+ const pools={video:videos||[],music:music||[],news:articles||[]};
+ if(homeFilter!=='all'){
+  const key=homeFilter==='videos'?'video':homeFilter;
+  return (pools[key]||[]).map(item=>({kind:key,item}));
+ }
+ const order=['video','video','music','news'],positions={video:0,music:0,news:0};
+ const total=pools.video.length+pools.music.length+pools.news.length;
+ const mixed=[];let cursor=0;
+ while(mixed.length<total){
+  let picked=false;
+  for(let attempt=0;attempt<order.length;attempt++){
+   const kind=order[cursor++%order.length];
+   if(positions[kind]<(pools[kind]||[]).length){
+    mixed.push({kind,item:pools[kind][positions[kind]++]});picked=true;break;
+   }
+  }
+  if(!picked)break;
+ }
+ return mixed;
+}
 function renderFeedResults(data){
  if(page!=='home')return;
+ homeFeedData=Object.assign({videos:[],music:[],news:[],message:''},data||{});
  const root=$('#homeFeedResults'),status=$('#homeFeedStatus');if(!root)return;
- const videos=(data.videos||[]),music=(data.music||[]),news=(data.news||[]);
- const v=videos.map(videoRow).join(''),m=music.map(musicRow).join(''),n=news.map(newsCard).join('');
- root.innerHTML=(v?section(homeTab==='fy'?'Recommended for your interests':'Latest from followed channels',v):'')+
- (m?section('Music from artists you follow',m):'')+(n?section('News from publishers you follow',n):'')+
- (!v&&!m&&!n?'<div class="empty-state"><b>'+esc(data.message||'No recommendations yet.')+'</b><p>Follow channels, musicians or publishers and choose topics to shape your feed. Search stays open to every kind of content.</p><button class="btn k" data-open-search>FIND SOURCES</button></div>':'');
- if(status)status.textContent=data.message||((videos.length+music.length+news.length)+' items · '+(homeTab==='fy'?'For You recommendations':'Following'));
+ const videos=homeFeedData.videos||[],music=homeFeedData.music||[],news=homeFeedData.news||[];
+ const allCount=videos.length+music.length+news.length;
+ const mixed=mixHomeFeedItems(videos,music,news);
+ const cards=mixed.map(entry=>'<div class="feed-mixed-item" data-kind="'+entry.kind+'">'+
+  (entry.kind==='video'?videoRow(entry.item):entry.kind==='music'?musicRow(entry.item):newsCard(entry.item))+'</div>').join('');
+ const heading=homeFilter==='all'?(homeTab==='fy'?'Your personalised mix':'From sources you follow'):
+  homeFilter==='videos'?'Videos in your feed':homeFilter==='music'?'Music in your feed':'News in your feed';
+ if(cards){
+  root.innerHTML=section(heading,cards);
+ }else if(allCount){
+  root.innerHTML='<div class="empty-state"><b>No '+esc(homeFilter)+' in this feed yet</b><p>Other recommendations are available. Switch back to All to see the full mix.</p><button class="btn k" data-home-filter="all">SHOW ALL</button></div>';
+ }else{
+  root.innerHTML='<div class="empty-state"><b>'+esc(homeFeedData.message||'No recommendations yet.')+'</b><p>Follow channels, musicians or publishers and choose topics to shape your feed. For You also uses your selected topics. Search stays open to every kind of content.</p><button class="btn k" data-open-search>FIND SOURCES</button></div>';
+ }
+ if(status)status.textContent=homeFeedData.message||((homeFilter==='all'?allCount:mixed.length)+' items · '+(homeTab==='fy'?'For You recommendations':'Following'));
 }
 function renderChannels(items){
  const root=$('#channelResults');if(!root)return;
@@ -683,6 +862,8 @@ document.addEventListener('input',e=>{if(e.target&&e.target.id==='topicQuery')up
 document.addEventListener('click',e=>{
  const b=e.target.closest('button');if(!b)return;
  if(b.id==='topicsShortcut'||b.hasAttribute('data-open-topics')||b.id==='profileShortcut'){location.hash='#topics';return}
+ if(b.dataset.homeFilter){homeFilter=b.dataset.homeFilter;document.querySelectorAll('[data-home-filter]').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.homeFilter===homeFilter)));renderFeedResults(homeFeedData);return}
+ if(b.hasAttribute('data-refresh-feed')){loadHomeFeed();return}
  if(b.dataset.libraryView){
   libraryView=b.dataset.libraryView;renderLibraryContent();
   if(window.RushNative){RushNative.loadLibrary();if(libraryView==='downloads')RushNative.loadDownloads()}
@@ -710,7 +891,7 @@ document.addEventListener('click',e=>{
  if(b.hasAttribute('data-delete-download')){if(window.RushNative)RushNative.deleteDownload(b.dataset.downloadId);return}
  if(b.hasAttribute('data-current-download')||b.hasAttribute('data-current-mp3')||b.hasAttribute('data-current-save')){const d=mediaState;if(!d.hasItem||!d.mediaId)return;if(window.RushNative){if(b.hasAttribute('data-current-save'))RushNative.saveLibraryItem(d.sourceId||d.mediaId,d.title||'',d.artist||'',!!d.isMusic,d.artwork||'');else if(!d.isOffline)RushNative.downloadMedia(d.sourceId||d.mediaId,d.title||'',d.artist||'',!!d.isMusic,b.hasAttribute('data-current-mp3'))}return}
  if(b.hasAttribute('data-open-search')){location.hash='#search';return}
- if(b.dataset.tab){homeTab=b.dataset.tab;$('#v').innerHTML=R.home();indicator();loadHomeFeed();return}
+ if(b.dataset.tab){homeTab=b.dataset.tab;homeFilter='all';$('#v').innerHTML=R.home();indicator();loadHomeFeed();return}
  if(b.hasAttribute('data-save-topics')){saveTopics();return}
  if(b.dataset.topic){const on=b.getAttribute('aria-pressed')!=='true';b.setAttribute('aria-pressed',String(on));updateTopicOptions();return}
  if(b.hasAttribute('data-unified-search')){runUnifiedSearch();return}
