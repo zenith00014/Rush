@@ -143,7 +143,7 @@ def main():
         "video remains docked or floating across page navigation": "RushNative.updateVideoPosition()" in js and "if (!nativeVideoRequested || nativeVideoFullscreen) return" in activity,
         "obsolete productive-channel copy removed": "selected productive channels" not in html and "productive channel selection" not in html,
         "conditional mini-player spacing": ".app.has-mini #sc" in html,
-        "sharp brutalist controls": ".seg,.seg i{border-radius:0!important}" in html and ".topic-tab,.topic-snooze,.topic-manage" in html,
+        "sharp brutalist controls": ".seg,.seg i" in html and "border-radius:0!important" in html and ".topic-tab,.topic-snooze,.topic-manage" in html,
         "selective glass navigation": "top-profile" in html and "backdrop-filter:blur(26px)" in html and ".nav{background:linear-gradient" in html,
         "glass top and bottom navigation": "backdrop-filter:blur(28px)" in html and "backdrop-filter:blur(30px)" in html,
         "active navigation icons stay visible": ".nav a .ic{display:block!important" in html and "visibility:visible!important" in html,
