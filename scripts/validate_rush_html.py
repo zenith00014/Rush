@@ -135,16 +135,16 @@ def main():
         fail("WebView must not require remote font downloads")
 
     ui_contracts = {
-        "no preloaded fixed video player": 'id="videoPlayerHost"' not in html,
+        "native in-app video docking target": 'id="videoPlayerHost"' in html and "getElementById('videoPlayerHost')" in activity and "nativeVideoOverlay" in activity,
         "dedicated music player screen": "function renderPlayerPage()" in js,
         "lyrics are inside player": 'id="playerLyricsPanel"' in html and 'id="lyricsPanel"' not in html,
         "title-first full thumbnails": "media-copy" in js and "mediaThumbnail(thumb,x.title)" in js and "object-fit:contain" in html and "aspect-ratio:16/9" in html,
         "explicit video resume button": "data-video-resume" in html and "RushNative.showCurrentVideo()" in js,
-        "no automatic video popup on tab navigation": "if(page!=='videos')RushNative.hideVideo();" in js,
+        "video remains docked or floating across page navigation": "RushNative.updateVideoPosition()" in js and "if (!nativeVideoRequested || nativeVideoFullscreen) return" in activity,
         "obsolete productive-channel copy removed": "selected productive channels" not in html and "productive channel selection" not in html,
         "conditional mini-player spacing": ".app.has-mini #sc" in html,
-        "rounded selected feed segment": ".seg button,.seg i{border-radius:14px!important}" in html,
-        "glass feed segment": "backdrop-filter:blur(18px)" in html,
+        "sharp brutalist controls": ".seg,.seg i{border-radius:0!important}" in html and ".topic-tab,.topic-snooze,.topic-manage" in html,
+        "selective glass navigation": "top-profile" in html and "backdrop-filter:blur(26px)" in html and ".nav{background:linear-gradient" in html,
         "glass top and bottom navigation": "backdrop-filter:blur(28px)" in html and "backdrop-filter:blur(30px)" in html,
         "active navigation icons stay visible": ".nav a .ic{display:block!important" in html and "visibility:visible!important" in html,
         "adaptive navigation hides on downward scroll": "nav-hidden .top" in html and "nav-hidden .nav" in html and "sc.addEventListener('scroll'" in js,
@@ -187,12 +187,12 @@ def main():
         fail("Player transport controls must start disabled before the first track is loaded")
     if "window._rushLyrics=[]" not in js or "root.replaceChildren()" not in js:
         fail("A new lyrics request must clear the previous track's lyrics")
-    if "getElementById('videoPlayerHost')" in activity or 'getElementById("videoPlayerHost")' in activity:
-        fail("Native video must not retain the removed fixed WebView player slot")
-    if "nativeVideoView?.visibility=android.view.View.GONE" not in activity:
-        fail("Exiting native fullscreen must collapse the video surface cleanly")
-    if "RushNative.updateVideoPosition()" in js or "nativeVideoPositionPending" in js:
-        fail("The obsolete WebView video scroll-position hook must be removed")
+    if "getElementById('videoPlayerHost')" not in activity or "nativeVideoOverlay" not in activity:
+        fail("Native video must dock over the watch-page slot and float over other pages")
+    if "nativeVideoView?.visibility = android.view.View.GONE" not in activity:
+        fail("Closing native video must collapse the video surface cleanly")
+    if "RushNative.updateVideoPosition()" not in js or "nativeVideoPositionPending" in js:
+        fail("The native video window must reposition as the WebView scrolls")
 
     with tempfile.NamedTemporaryFile("w", suffix=".js", encoding="utf-8") as handle:
         handle.write(js)
