@@ -814,6 +814,7 @@ function setupNavigationBehavior(){
   if(top<=10||top<lastTop-5)app.classList.remove('nav-hidden');
   else if(top>lastTop+5&&top>56)app.classList.add('nav-hidden');
   lastTop=top;
+  if(window.RushNative)RushNative.updateVideoPosition();
  },{passive:true});
  document.addEventListener('pointerdown',event=>{
   if(event.target.closest('#nav,.top')||event.clientY<76||event.clientY>window.innerHeight-92)app.classList.remove('nav-hidden');
