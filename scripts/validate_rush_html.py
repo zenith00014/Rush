@@ -119,22 +119,39 @@ def main():
         fail("For You channel eligibility must use followed sources without a second opt-in")
     if "ADD TO FOR YOU" in html or "data-recommend-channel" in html:
         fail("Obsolete separate For You channel opt-in remains in the UI")
-    if "topicQuery" not in html or "function filterTopicNames" not in js:
-        fail("Personalisation topic search is missing")
+    if 'id="q"' not in html or "data-search-submit" not in js or 'id="searchSort"' not in html:
+        fail("The single global Search page and sort controls are missing")
+    if any(marker in js for marker in ("data-home-filter", "data-refresh-feed")):
+        fail("Obsolete Home filter buttons or manual refresh button remain")
+    if any(marker in js for marker in ("videoQuery", "channelQuery", "musicQuery", "newsQuery", "topicQuery")):
+        fail("Per-page search controls must be removed in favour of global Search")
+    if not all(marker in html for marker in ('id="refreshIndicator"', 'id="refreshLabel"')) or "setupNavigationBehavior();" not in js:
+        fail("Home pull-to-refresh interaction is missing")
+    if "function mixHomeFeedItems(" not in js or "homeFeedData=" not in js:
+        fail("Home feed must interleave content types and retain data for rendering")
+    if "videoDiscoveryQueries(profile.topics, following)" not in bridge or "fun videoDiscoveryQueries" not in engine:
+        fail("For You feed must retrieve video candidates from selected topics")
     if "fonts.googleapis.com" in html or "fonts.gstatic.com" in html:
         fail("WebView must not require remote font downloads")
 
     ui_contracts = {
-        "no preloaded fixed video player": 'id="videoPlayerHost"' not in html,
+        "native in-app video docking target": 'id="videoPlayerHost"' in html and "getElementById('videoPlayerHost')" in activity and "nativeVideoOverlay" in activity,
         "dedicated music player screen": "function renderPlayerPage()" in js,
         "lyrics are inside player": 'id="playerLyricsPanel"' in html and 'id="lyricsPanel"' not in html,
-        "responsive media row grid": "grid-template-columns:64px minmax(0,1fr) auto!important" in html,
+        "title-first full thumbnails": "media-copy" in js and "mediaThumbnail(thumb,x.title)" in js and "object-fit:contain" in html and "aspect-ratio:16/9" in html,
         "explicit video resume button": "data-video-resume" in html and "RushNative.showCurrentVideo()" in js,
-        "no automatic video popup on tab navigation": "if(page!=='videos')RushNative.hideVideo();" in js,
+        "video remains docked or floating across page navigation": "RushNative.updateVideoPosition()" in js and "if (!nativeVideoRequested || nativeVideoFullscreen) return" in activity,
         "obsolete productive-channel copy removed": "selected productive channels" not in html and "productive channel selection" not in html,
         "conditional mini-player spacing": ".app.has-mini #sc" in html,
-        "rounded selected feed segment": ".seg button{border-radius:14px!important}" in html and ".seg i{border-radius:14px!important}" in html,
-        "solid feed segment without glass": ".seg{border-radius:18px!important;background:#131b21!important" in html,
+        "sharp brutalist controls": ".seg,.seg i" in html and "border-radius:0!important" in html and ".topic-tab,.topic-snooze,.topic-manage" in html,
+        "selective glass navigation": "top-profile" in html and "backdrop-filter:blur(26px)" in html and ".nav{background:linear-gradient" in html,
+        "glass top and bottom navigation": "backdrop-filter:blur(28px)" in html and "backdrop-filter:blur(30px)" in html,
+        "active navigation icons stay visible": ".nav a .ic{display:block!important" in html and "visibility:visible!important" in html,
+        "adaptive navigation hides on downward scroll": "nav-hidden .top" in html and "nav-hidden .nav" in html and "sc.addEventListener('scroll'" in js,
+        "swipe navigation between pages": "Math.abs(dx)>72" in js and "location.hash='#'+NAV[next][0]" in js,
+        "single global Search CTA removed": "data-unified-search" not in js and "SEARCH ALL SOURCES" not in html,
+        "music now-playing placeholder removed": 'id="musicNowPlaying"' not in html,
+        "search no longer reports result counts": "items.length+' results" not in js and "items.length+' videos found" not in js and "items.length+' tracks found" not in js and "' · '+items.length" not in js,
         "library uses library icon": "library:'M4 4h13v16H4z" in js and "['library','Library','follow']" not in js,
         "edge-to-edge root uses dark surface": "setBackgroundColor(android.graphics.Color.rgb(11,16,20))" in activity,
     }
@@ -170,12 +187,12 @@ def main():
         fail("Player transport controls must start disabled before the first track is loaded")
     if "window._rushLyrics=[]" not in js or "root.replaceChildren()" not in js:
         fail("A new lyrics request must clear the previous track's lyrics")
-    if "getElementById('videoPlayerHost')" in activity or 'getElementById("videoPlayerHost")' in activity:
-        fail("Native video must not retain the removed fixed WebView player slot")
-    if "nativeVideoView?.visibility=android.view.View.GONE" not in activity:
-        fail("Exiting native fullscreen must collapse the video surface cleanly")
-    if "RushNative.updateVideoPosition()" in js or "nativeVideoPositionPending" in js:
-        fail("The obsolete WebView video scroll-position hook must be removed")
+    if "getElementById('videoPlayerHost')" not in activity or "nativeVideoOverlay" not in activity:
+        fail("Native video must dock over the watch-page slot and float over other pages")
+    if "nativeVideoView?.visibility = android.view.View.GONE" not in activity:
+        fail("Closing native video must collapse the video surface cleanly")
+    if "RushNative.updateVideoPosition()" not in js or "nativeVideoPositionPending" in js:
+        fail("The native video window must reposition as the WebView scrolls")
 
     with tempfile.NamedTemporaryFile("w", suffix=".js", encoding="utf-8") as handle:
         handle.write(js)

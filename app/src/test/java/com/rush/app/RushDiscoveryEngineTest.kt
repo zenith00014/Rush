@@ -60,6 +60,22 @@ class RushDiscoveryEngineTest {
         assertEquals("ml", RushDiscoveryEngine.rankSearch("ml", docs).first().value)
     }
 
+    @Test fun forYouVideoDiscoveryUsesUniqueSelectedTopicsButFollowingStaysSourceOnly() {
+        val topics = listOf("Science", " science ", "Technology", "", "Space", "History")
+        assertEquals(
+            listOf("Science", "Technology", "Space"),
+            RushDiscoveryEngine.videoDiscoveryQueries(topics, following = false, limit = 3)
+        )
+        assertEquals(
+            emptyList<String>(),
+            RushDiscoveryEngine.videoDiscoveryQueries(topics, following = true)
+        )
+        assertEquals(
+            emptyList<String>(),
+            RushDiscoveryEngine.videoDiscoveryQueries(topics, following = false, limit = 0)
+        )
+    }
+
     @Test fun freshNewsRanksHigherButOldStoriesRemain() {
         val now = 2_000_000_000L
         val recent = RushDiscoveryEngine.Candidate(

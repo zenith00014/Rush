@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#101418"><title>Rush — Discover what moves you</title><link rel="stylesheet" href="/styles.css"></head>
+<body><div class="shell">
+<header class="top"><a class="brand" href="#" aria-label="Rush home"><span class="brand-mark">R</span>RUSH<span class="live">LIVE DISCOVERY</span></a><div class="top-actions"><button id="refresh" class="icon-btn" title="Refresh feed">↻</button><button id="profile" class="avatar" title="Browser profile">U</button></div></header>
+<div class="ticker"><span>YOUR INTERESTS. YOUR SIGNAL. YOUR RUSH.</span><span>✳ &nbsp; DISCOVER MORE &nbsp; ✳ &nbsp; STAY CURIOUS &nbsp; ✳</span></div>
+<main>
+<section class="hero"><div><p class="eyebrow">A PERSONAL DISCOVERY ENGINE</p><h1>Find your<br><em>next thing.</em></h1><p class="sub">Videos, music and stories — tuned to what you care about.</p></div><div class="hero-art"><span class="burst">R</span><span class="art-caption">NO TWO FEEDS<br>ARE THE SAME</span></div></section>
+<section class="searchbar"><form id="searchForm"><input id="query" placeholder="Search videos, music, channels, news…" autocomplete="off"><button class="primary">SEARCH ↗</button></form><div id="searchKinds" class="search-kinds"><button data-kind="all" class="active">All</button><button data-kind="video">Videos</button><button data-kind="music">Music</button><button data-kind="channel">Channels</button><button data-kind="news">News</button></div></section>
+<section class="feed-head"><div><p class="eyebrow">YOUR FRONT PAGE</p><h2>Discover</h2></div><div class="tabs"><button data-mode="forYou" class="selected">For You</button><button data-mode="following">Following</button></div></section>
+<section class="topic-row"><span>YOUR TOPICS</span><div id="topics"></div><button id="editTopics" class="small-btn">＋ EDIT</button></section>
+<div id="status" class="status" role="status">Loading your feed…</div>
+<section id="feed" class="feed-grid"></section>
+<section id="searchResults" class="search-results hidden"></section>
+</main>
+<nav class="bottom-nav"><button class="active" data-page="home">⌂<span>Home</span></button><button data-page="saved">♡<span>Saved</span></button><button data-page="history">◷<span>History</span></button><button data-page="following">◎<span>Following</span></button></nav>
+</div>
+<dialog id="topicDialog"><form method="dialog"><div class="dialog-head"><div><p class="eyebrow">TUNE YOUR SIGNAL</p><h3>Choose your topics</h3></div><button class="icon-btn" value="cancel">×</button></div><p class="muted">Pick what you want more of. Your feed will adapt.</p><div id="topicChoices" class="topic-choices"></div><button id="saveTopics" class="primary wide" value="default">SAVE INTERESTS ↗</button></form></dialog>
+<dialog id="playerDialog"><div class="player-head"><div><p class="eyebrow">NOW PLAYING</p><h3 id="playerTitle">Rush Player</h3></div><button id="closePlayer" class="icon-btn">×</button></div><div class="player-frame"><iframe id="player" title="YouTube player" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe></div><p class="muted player-note">Playback is provided by YouTube. Availability and ads are controlled by YouTube.</p></dialog>
+<script src="/app.js" defer></script></body></html>

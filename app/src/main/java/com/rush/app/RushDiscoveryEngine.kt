@@ -148,6 +148,21 @@ object RushDiscoveryEngine {
     fun rankFeed(candidates: List<Candidate>, profile: Profile): List<FeedHit> =
         candidates.map { FeedHit(it, scoreFeed(it, profile)) }.sortedByDescending { it.score }
 
+    /**
+     * For You uses selected interests as live video-discovery seeds. Following deliberately
+     * stays source-only so that feed mode always respects the user's follow graph.
+     */
+    fun videoDiscoveryQueries(topics: List<String>, following: Boolean, limit: Int = 5): List<String> {
+        if (following || limit <= 0) return emptyList()
+        val seen = HashSet<String>()
+        return topics.asSequence()
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+            .filter { seen.add(normalize(it)) }
+            .take(limit)
+            .toList()
+    }
+
     /** Greedy creator/topic diversification reduces repetitive feeds. */
     fun diversifyFeed(hits: List<FeedHit>, limit: Int, maxPerCreator: Int = 2): List<FeedHit> {
         if (limit <= 0 || hits.isEmpty()) return emptyList()

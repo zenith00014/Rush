@@ -15,6 +15,8 @@ data class FeedSource(
 object FeedPreferences {
     private const val TOPICS_KEY = "rush_feed_topics"
     private const val SOURCES_KEY = "rush_followed_sources"
+    private const val SNOOZED_TOPICS_KEY = "rush_snoozed_topics"
+    private const val TOPIC_SNOOZE_MS = 24L * 60L * 60L * 1000L
 
     val defaultTopics = listOf(
         "Science", "Technology", "History", "Education", "Design", "Engineering",
@@ -56,11 +58,48 @@ object FeedPreferences {
     fun forYouChannels(sources: List<FeedSource>): List<FeedSource> =
         sources.filter { it.kind == "channel" }
 
-    fun topics(prefs: SharedPreferences): List<String> {
+    fun allTopics(prefs: SharedPreferences): List<String> {
         val stored = runCatching { JSONArray(prefs.getString(TOPICS_KEY, null) ?: "[]") }
             .getOrDefault(JSONArray())
-        val values = (0 until stored.length()).mapNotNull { stored.optString(it).trim().takeIf(String::isNotBlank) }
+        val values = (0 until stored.length()).mapNotNull { stored.optString(it).trim().takeIf { topic -> topic in topicCatalog } }
         return values.distinct().ifEmpty { defaultTopics }
+    }
+
+    fun snoozedTopics(prefs: SharedPreferences): Map<String, Long> {
+        val stored = runCatching { JSONObject(prefs.getString(SNOOZED_TOPICS_KEY, "{}") ?: "{}") }
+            .getOrDefault(JSONObject())
+        val now = System.currentTimeMillis()
+        val active = LinkedHashMap<String, Long>()
+        val expired = mutableListOf<String>()
+        stored.keys().forEach { topic ->
+            val until = stored.optLong(topic)
+            if (topic in topicCatalog && until > now) active[topic] = until else expired += topic
+        }
+        if (expired.isNotEmpty()) {
+            expired.forEach(stored::remove)
+            prefs.edit().putString(SNOOZED_TOPICS_KEY, stored.toString()).apply()
+        }
+        return active
+    }
+
+    fun topics(prefs: SharedPreferences): List<String> {
+        val snoozed = snoozedTopics(prefs).keys
+        return allTopics(prefs).filterNot { it in snoozed }
+    }
+
+    fun snoozeTopic(prefs: SharedPreferences, rawTopic: String): Long {
+        val topic = rawTopic.trim()
+        require(topic in allTopics(prefs)) { "Choose a followed topic to snooze." }
+        val values = JSONObject(prefs.getString(SNOOZED_TOPICS_KEY, "{}") ?: "{}")
+            .put(topic, System.currentTimeMillis() + TOPIC_SNOOZE_MS)
+        prefs.edit().putString(SNOOZED_TOPICS_KEY, values.toString()).apply()
+        return values.getLong(topic)
+    }
+
+    fun unsnoozeTopic(prefs: SharedPreferences, rawTopic: String) {
+        val values = JSONObject(prefs.getString(SNOOZED_TOPICS_KEY, "{}") ?: "{}")
+        values.remove(rawTopic.trim())
+        prefs.edit().putString(SNOOZED_TOPICS_KEY, values.toString()).apply()
     }
 
     fun sources(prefs: SharedPreferences): List<FeedSource> {
@@ -124,7 +163,17 @@ object FeedPreferences {
                     .put("productive", it.productive))
             }
         }
-        return JSONObject().put("topics", topicArray).put("sources", sourceArray)
+        val allTopics = JSONArray(allTopics(prefs))
+        val snoozedArray = JSONArray().apply {
+            snoozedTopics(prefs).forEach { (topic, until) ->
+                put(JSONObject().put("topic", topic).put("until", until))
+            }
+        }
+        return JSONObject()
+            .put("topics", topicArray)
+            .put("allTopics", allTopics)
+            .put("snoozedTopics", snoozedArray)
+            .put("sources", sourceArray)
     }
 
     /** Compatibility wrapper; new recommendation paths use the shared typed scoring engine. */

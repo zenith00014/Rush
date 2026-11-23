@@ -33,7 +33,9 @@ data class YouTubeSearchResult(
     val collectionId: String = "",
     val description: String = "",
     val videoCount: String = "",
-    val thumbnailUrl: String = ""
+    val thumbnailUrl: String = "",
+    val publishedText: String = "",
+    val viewCount: Long = 0L
 )
 
 object LiveYouTubeSearch {
@@ -75,7 +77,14 @@ object LiveYouTubeSearch {
         val primary = runCatching { executeSearch(body, music, channels, playlists) }.getOrNull()
         val merged = LinkedHashMap<String, YouTubeSearchResult>()
         extractorPage?.items.orEmpty().forEach { merged.putIfAbsent(resultKey(it), it) }
-        primary?.items.orEmpty().forEach { merged.putIfAbsent(resultKey(it), it) }
+        primary?.items.orEmpty().forEach { item ->
+            val key = resultKey(item)
+            val existing = merged[key]
+            merged[key] = if (existing == null) item else existing.copy(
+                publishedText = item.publishedText.ifBlank { existing.publishedText },
+                viewCount = item.viewCount.takeIf { it > 0L } ?: existing.viewCount
+            )
+        }
         val primaryContinuation = primary?.continuation ?: extractorPage?.continuation
         if (music || merged.size >= 8) {
             if (merged.isEmpty()) throw IOException("YouTube returned no search results.")
@@ -330,7 +339,26 @@ object LiveYouTubeSearch {
         if (id.isBlank() || title.isBlank()) return
         val owner = text(item.optJSONObject("ownerText")).ifBlank { text(item.optJSONObject("shortBylineText")) }.ifBlank { "YouTube creator" }
         val duration = text(item.optJSONObject("lengthText"))
-        out.putIfAbsent(id, YouTubeSearchResult(id, title, owner, duration, music, thumbnailUrl = thumbnailUrl(item)))
+        val published = text(item.optJSONObject("publishedTimeText"))
+        val views = parseApproxCount(text(item.optJSONObject("viewCountText")).ifBlank {
+            text(item.optJSONObject("shortViewCountText"))
+        })
+        out.putIfAbsent(id, YouTubeSearchResult(
+            id, title, owner, duration, music, thumbnailUrl = thumbnailUrl(item),
+            publishedText = published, viewCount = views
+        ))
+    }
+
+    private fun parseApproxCount(value: String): Long {
+        val match = Regex("""([\d,.]+)\s*([KMB])?""", RegexOption.IGNORE_CASE).find(value) ?: return 0L
+        val amount = match.groupValues[1].replace(",", "").toDoubleOrNull() ?: return 0L
+        val multiplier = when (match.groupValues[2].uppercase(Locale.ROOT)) {
+            "K" -> 1_000.0
+            "M" -> 1_000_000.0
+            "B" -> 1_000_000_000.0
+            else -> 1.0
+        }
+        return (amount * multiplier).toLong()
     }
 
     private fun addChannel(item: JSONObject, out: MutableMap<String, YouTubeSearchResult>) {
@@ -412,7 +440,8 @@ object LiveYouTubeSearch {
     }
 
     @Throws(IOException::class)
-    fun latestUploads(channelId: String): List<YouTubeSearchResult> {
+    fun latestUploads(channelId: String, limit: Int = 100): List<YouTubeSearchResult> {
+        require(limit in 1..100) { "Upload limit must be between 1 and 100." }
         val resolvedChannelId = if (channelId.startsWith("UC")) channelId else channelDetails(
             YouTubeSearchResult("", channelId, "", "", false, true, channelId)
         ).channelId
@@ -425,7 +454,7 @@ object LiveYouTubeSearch {
         collect(firstPage, found, false, false, false)
         var continuation = findContinuation(firstPage)
         var pageCount = 0
-        while (!continuation.isNullOrBlank() && pageCount < 4 && found.size < 120) {
+        while (!continuation.isNullOrBlank() && pageCount < 4 && found.size < limit) {
             val page = browseChannel(continuation = continuation)
             collect(page, found, false, false, false)
             val next = findContinuation(page)
@@ -433,7 +462,7 @@ object LiveYouTubeSearch {
             continuation = next
             pageCount++
         }
-        return found.values.filter { it.videoId.isNotBlank() }.take(100)
+        return found.values.filter { it.videoId.isNotBlank() }.take(limit)
     }
 
     private fun browseChannel(

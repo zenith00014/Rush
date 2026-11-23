@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0b1014"><title>RUSH</title>
+<meta name="theme-color" content="#15171b"><title>RUSH</title>
 <link rel="preconnect" href="https://i.ytimg.com" crossorigin><link rel="preconnect" href="https://news.google.com" crossorigin><style>
 @property --sp{syntax:'<color>';inherits:true;initial-value:#FF6B3D}
 :root{--paper:#0b1014;--paper2:#131b21;--ink:#f2f5f6;--k:#080c0f;--mu:#a5b1b8;--sp:#ff765f;--border:rgba(255,255,255,.12);--nav:68px;--sa:env(safe-area-inset-bottom,0px);--f:system-ui,-apple-system,'Segoe UI',Roboto,'Noto Sans',sans-serif;--m:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;--spr:cubic-bezier(.2,.8,.2,1);--sh:0 10px 28px rgba(0,0,0,.28);--r:16px;color-scheme:dark}
@@ -291,17 +291,287 @@ html,body{background:var(--paper);color:var(--ink)}
 .seg button{border-radius:14px!important}
 .seg i{border-radius:14px!important}
 .bi{background:#131b21!important;box-shadow:none!important}
+
+/* Integrated comic-print Rush interface. Keeps the app's native actions and screen structure intact. */
+:root{
+  --paper:#15171b;--paper2:#1f2228;--ink:#f6f8f9;--mu:#b9c5cc;--k:#080c0f;
+  --sp:#ffd000;--border:rgba(255,255,255,.22);--r:0px;
+  --cf:#ffd000;--cv:#2563ff;--cm:#b02cff;--cn:#00e676;--cs:#00e0ff;--cd:#ff1f6e;
+  --sh:4px 4px 0 rgba(0,0,0,.58);
+}
+html,body{background:var(--paper);color:var(--ink)}
+.app{
+  background:
+    linear-gradient(115deg,transparent 38%,rgba(255,255,255,.035) 50%,transparent 62%),
+    radial-gradient(82% 38% at 12% 0,rgba(255,255,255,.055),transparent 70%),
+    linear-gradient(0deg,rgba(0,0,0,.32),transparent 50%),var(--paper);
+}
+.app::before{
+  opacity:.065;
+  background:
+    radial-gradient(rgba(255,255,255,.5) 1px,transparent 1.6px) 0 0/6px 6px,
+    radial-gradient(80% 34% at 8% 0,rgba(255,255,255,.4),transparent 70%);
+}
+.app[data-page="home"]{--sp:var(--cf)}
+.app[data-page="videos"]{--sp:var(--cv)}
+.app[data-page="music"]{--sp:var(--cm)}
+.app[data-page="player"]{--sp:var(--cm)}
+.app[data-page="news"]{--sp:var(--cn)}
+.app[data-page="search"]{--sp:var(--cs)}
+.app[data-page="topics"],.app[data-page="library"]{--sp:var(--cd)}
+.top{
+  background:linear-gradient(rgba(44,48,56,.9),rgba(21,23,27,.86));
+  border-bottom:2px solid var(--ink);
+  box-shadow:0 4px 0 rgba(0,0,0,.32);
+}
+.wm{font:900 30px/1 var(--f);letter-spacing:-.065em;text-shadow:2px 2px 0 color-mix(in srgb,var(--sp) 68%,#000)}
+.wm i{width:12px;height:12px;background:var(--sp);border:2px solid var(--ink)}
+.pt{padding:12px 16px 8px}
+.pt h1{font:900 clamp(40px,12vw,62px)/.86 var(--f);letter-spacing:-.055em;text-shadow:2px 2px 0 color-mix(in srgb,var(--sp) 66%,#000)}
+.pt em.stk{border:2px solid var(--ink);background:var(--sp);color:var(--k);font-weight:900;box-shadow:3px 3px 0 rgba(0,0,0,.6)}
+.btn,.ib,.chip{
+  border:2px solid var(--ink)!important;border-radius:0!important;
+  transition:transform .2s cubic-bezier(.2,.8,.2,1),box-shadow .2s;
+  -webkit-backdrop-filter:blur(12px) saturate(1.35);backdrop-filter:blur(12px) saturate(1.35);
+}
+.btn,.btn.k,.btn.o{
+  background-color:var(--sp)!important;color:var(--k)!important;
+  font-weight:900;letter-spacing:.045em;text-transform:uppercase;
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.5),inset 0 -3px 0 rgba(0,0,0,.24),3px 3px 0 rgba(0,0,0,.62),3px 3px 0 1px var(--ink);
+}
+.ib{background:rgba(255,255,255,.1);box-shadow:inset 0 1px 0 rgba(255,255,255,.28),3px 3px 0 rgba(0,0,0,.62),3px 3px 0 1px var(--ink)}
+.ib.p{background:var(--sp)!important;color:var(--k)!important}
+.chip{
+  background:rgba(255,255,255,.075);color:var(--ink);
+  font:700 11px var(--m);letter-spacing:.035em;text-transform:uppercase;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.23),2px 2px 0 rgba(0,0,0,.55);
+}
+.chip[aria-pressed="true"],.topic-chip[aria-pressed="true"],.search-filters .chip[aria-pressed="true"],.library-tabs .chip[aria-pressed="true"]{
+  background-color:var(--sp)!important;color:var(--k)!important;border-color:var(--ink)!important;
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.42),inset 0 -2px 0 rgba(0,0,0,.22),2px 2px 0 rgba(0,0,0,.58);
+}
+.btn:active,.ib:active,.chip:active{transform:translate(2px,2px);box-shadow:none}
+h2{font-weight:900;letter-spacing:-.025em}
+h2::after{height:2px;background:var(--ink)}
+.stk{border:2px solid var(--ink);border-radius:0;background:var(--sp);color:var(--k);font:800 10px var(--m);padding:3px 6px;box-shadow:2px 2px 0 rgba(0,0,0,.5)}
+.a{border:2px solid var(--ink);border-radius:0;box-shadow:3px 3px 0 rgba(0,0,0,.62),inset 0 0 0 1px rgba(255,255,255,.22)}
+.a::after{
+  content:"";position:absolute;inset:0;pointer-events:none;mix-blend-mode:multiply;
+  background:radial-gradient(rgba(0,0,0,.38) 1.1px,transparent 1.6px) 0 0/6px 6px;
+  -webkit-mask:linear-gradient(135deg,#000,transparent 66%);mask:linear-gradient(135deg,#000,transparent 66%);
+}
+.seg{
+  border:2px solid var(--ink)!important;border-radius:0!important;
+  background:linear-gradient(145deg,#2b2f37,#1a1d22)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.14),3px 3px 0 rgba(0,0,0,.5);
+}
+.seg button{border-radius:0!important;font-weight:800}
+.seg button[aria-selected="true"]{color:var(--k)!important}
+.seg i{border-radius:0!important;background:var(--sp)!important;box-shadow:inset 0 2px 0 rgba(255,255,255,.45),inset 0 -2px 0 rgba(0,0,0,.25)}
+.feed-actions{align-items:center;gap:8px}
+.home-feed-toolbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:8px 16px 4px}
+.home-feed-filters{display:flex;gap:7px;min-width:0;overflow-x:auto;scrollbar-width:none;flex:1}
+.home-feed-filters::-webkit-scrollbar{display:none}
+.home-feed-toolbar>[data-refresh-feed]{flex:none}
+.feed-section{
+  margin:16px 12px 22px;padding:10px;
+  border:2px solid var(--ink);
+  background:linear-gradient(145deg,#2b2f37 0%,#202329 52%,#181a1f 100%);
+  box-shadow:4px 4px 0 rgba(0,0,0,.58),0 12px 22px rgba(0,0,0,.24);
+}
+.feed-section h2{padding:7px 4px 12px;margin:0 0 8px;border-bottom:2px solid var(--ink)}
+.feed-section h2::after{display:none}
+.feed-mixed-item{
+  --card-accent:var(--sp);position:relative;margin:9px 2px;padding:8px;
+  border:1px solid rgba(255,255,255,.24);border-left:5px solid var(--card-accent);
+  background:linear-gradient(145deg,#30343c,#1a1d22);
+  box-shadow:3px 3px 0 rgba(0,0,0,.52);
+}
+.feed-mixed-item[data-kind="video"]{--card-accent:var(--cv)}
+.feed-mixed-item[data-kind="music"]{--card-accent:var(--cm)}
+.feed-mixed-item[data-kind="news"]{--card-accent:var(--cn)}
+.feed-mixed-item .result-wrap{margin:0;background:transparent;box-shadow:none;border:0}
+.feed-mixed-item .row,.feed-mixed-item .news-open{background:transparent}
+.feed-mixed-item .row.n{border:0}
+.feed-mixed-item .news-card{margin:0;padding:0;background:transparent;border:0;box-shadow:none}
+.feed-mixed-item .result-actions{padding:5px 2px 0}
+.result-wrap,.source-card,.music-now,.news-card,.library-item,.library-playlist,.video-player-tools,.empty-state{
+  border-radius:0!important;border:1px solid rgba(255,255,255,.22);
+  box-shadow:3px 3px 0 rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.09);
+  background:linear-gradient(145deg,#2b2f37,#1c1f25);
+}
+.row,.row.n{border-radius:0!important}
+.row img,.news-thumb,.library-art{border:2px solid var(--ink);border-radius:0!important;box-shadow:2px 2px 0 rgba(0,0,0,.5)}
+.news-card{border-left:5px solid var(--cn);padding:9px}
+.news-copy b,.source-info>b,.library-copy b{font-weight:850;line-height:1.25}
+.source-card{border-left:5px solid var(--sp);padding:10px}
+.library-item,.library-playlist{padding:9px;margin:9px 12px}
+.top .ib{border:2px solid var(--ink)}
+.mini{
+  border-block:2px solid var(--ink);border-radius:0;
+  background:linear-gradient(rgba(48,52,60,.94),rgba(27,30,35,.94));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 -4px 0 rgba(0,0,0,.25);
+}
+.mini .a{border:2px solid var(--ink);border-radius:0}
+.nav{
+  border-top:2px solid var(--ink);border-radius:0;
+  background:linear-gradient(rgba(44,48,56,.95),rgba(21,23,27,.97));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.2);
+}
+.nav a{border-radius:0;color:var(--mu);font-weight:800;letter-spacing:.02em}
+.nav a[aria-current="page"]{color:var(--sp);border-top-color:var(--sp);text-shadow:0 0 8px color-mix(in srgb,var(--sp) 52%,transparent)}
+.nav .pill{border-radius:0!important;background:var(--sp)!important;box-shadow:inset 0 2px 0 rgba(255,255,255,.42),3px 3px 0 rgba(0,0,0,.58)}
+.player-screen{padding-bottom:24px}
+.player-art{border:2px solid var(--ink);border-radius:0!important;box-shadow:6px 6px 0 var(--sp)}
+.player-track,.player-controls,.player-utilities,.player-lyrics{border-radius:0!important}
+.player-lyrics .lyrics-panel{border:2px solid var(--ink);background:#1f2228;border-radius:0}
+.player-lyrics .lyric-line.active{color:var(--sp);text-shadow:1px 1px 0 rgba(0,0,0,.8)}
+.empty-state{margin:12px;padding:18px;border:2px dashed var(--ink);text-align:center}
+#homeFeedStatus{min-height:18px}
+@media(max-width:380px){
+  .home-feed-toolbar{align-items:stretch;flex-direction:column}
+  .home-feed-toolbar>[data-refresh-feed]{align-self:flex-end}
+}
+@media(prefers-reduced-motion:reduce){
+  .btn,.ib,.chip,.feed-mixed-item{transition:none!important}
+}
+
+
+/* Rush design pass: smooth dark surfaces, unified radii, glass docks */
+:root{--paper:#070b10;--paper2:#111923;--ink:#edf2f7;--mu:#8e9ba9;--border:rgba(214,228,244,.14);--r:20px;--sh:0 12px 34px rgba(0,0,0,.34)}
+html,body{background:#070b10;color:var(--ink)}
+.app{--top-height:calc(env(safe-area-inset-top,0px) + 58px);background:radial-gradient(125% 62% at 50% -18%,rgba(73,103,145,.22) 0%,transparent 68%),radial-gradient(92% 60% at -12% 58%,rgba(73,48,105,.10) 0%,transparent 74%),radial-gradient(90% 54% at 112% 78%,rgba(34,76,91,.08) 0%,transparent 72%),linear-gradient(180deg,#0a1119 0%,#080c12 48%,#06090e 100%)}
+.app::before{opacity:.018;mix-blend-mode:soft-light}
+.top{position:relative;z-index:8;height:var(--top-height);min-height:var(--top-height);flex:0 0 var(--top-height);margin-bottom:0;background:linear-gradient(120deg,rgba(25,36,50,.70),rgba(10,16,24,.54))!important;border:0!important;border-bottom:1px solid rgba(224,236,248,.12)!important;border-radius:0 0 22px 22px;box-shadow:0 8px 24px rgba(0,0,0,.18)!important;-webkit-backdrop-filter:blur(28px) saturate(175%)!important;backdrop-filter:blur(28px) saturate(175%)!important;transition:margin-bottom .36s cubic-bezier(.2,.8,.2,1),transform .36s cubic-bezier(.2,.8,.2,1),opacity .24s ease}
+.top .ib{width:42px;height:42px;min-width:42px;min-height:42px;border:1px solid rgba(228,239,250,.17)!important;border-radius:14px!important;background:rgba(255,255,255,.075)!important;color:var(--ink);box-shadow:inset 0 1px 0 rgba(255,255,255,.16)!important}
+.nav{position:absolute;left:12px;right:12px;bottom:calc(var(--sa) + 10px);z-index:9;height:68px;padding:5px;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));align-items:center;border:1px solid rgba(224,237,250,.18)!important;border-radius:26px!important;background:linear-gradient(135deg,rgba(36,49,65,.72),rgba(11,17,26,.72))!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.19),inset 0 -1px 0 rgba(255,255,255,.035),0 14px 34px rgba(0,0,0,.42)!important;-webkit-backdrop-filter:blur(30px) saturate(180%) brightness(.92)!important;backdrop-filter:blur(30px) saturate(180%) brightness(.92)!important;transition:transform .38s cubic-bezier(.2,.8,.2,1),opacity .24s ease,visibility .24s}
+.nav .pill{display:none!important}
+.nav a{position:relative;z-index:1;height:100%;min-height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:0!important;border-radius:19px!important;background:transparent!important;color:rgba(213,224,236,.70)!important;text-shadow:none!important;font:650 10px/1.1 var(--f);letter-spacing:.02em;transition:background .2s ease,color .2s ease,transform .2s ease}
+.nav a .ic{display:block!important;position:relative;z-index:2;width:23px;height:23px;opacity:1!important;visibility:visible!important;color:currentColor;stroke:currentColor;transform:none!important;animation:none!important}
+.nav a:not(.sr) span{position:relative;z-index:2;display:block!important}
+.nav a[aria-current="page"]{color:#fff!important;background:rgba(255,208,0,.15)!important;box-shadow:inset 0 0 0 1px rgba(255,208,0,.20)}
+.nav a[aria-current="page"] .ic{color:var(--sp)!important;stroke:var(--sp)!important}
+.nav a:active{transform:scale(.96)}
+.mini{left:12px;right:12px;bottom:calc(var(--nav) + var(--sa) + 20px);border:1px solid rgba(224,237,250,.16)!important;border-radius:20px!important;background:linear-gradient(130deg,rgba(34,47,63,.82),rgba(11,17,25,.84))!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 10px 26px rgba(0,0,0,.34)!important;-webkit-backdrop-filter:blur(26px) saturate(175%)!important;backdrop-filter:blur(26px) saturate(175%)!important}
+.mini .a,.a,.row img,.library-art,.news-thumb{border-radius:14px!important}
+.btn,.ib,.chip{border-radius:14px!important;border-width:1px!important;box-shadow:none!important}
+.btn,.btn.k,.btn.o{background:var(--sp)!important;color:#101318!important;border:1px solid rgba(255,255,255,.17)!important;box-shadow:0 5px 16px rgba(0,0,0,.20)!important}
+.ib{background:rgba(255,255,255,.07)!important;border-color:rgba(224,237,250,.14)!important}
+.chip{background:rgba(255,255,255,.055);border-color:rgba(224,237,250,.14)!important}
+.chip[aria-pressed="true"],.topic-chip[aria-pressed="true"]{background:rgba(255,208,0,.17)!important;color:var(--sp)!important;border-color:rgba(255,208,0,.4)!important;box-shadow:none!important}
+.seg{border:1px solid rgba(224,237,250,.14)!important;border-radius:18px!important;background:rgba(255,255,255,.045)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.06)!important;-webkit-backdrop-filter:blur(18px) saturate(140%)!important;backdrop-filter:blur(18px) saturate(140%)!important}
+.seg button,.seg i{border-radius:14px!important}.seg i{background:rgba(255,208,0,.20)!important}.seg button[aria-selected="true"]{color:var(--sp)!important}
+.feed-actions{padding:12px 16px 6px}
+.feed-section{margin:14px 12px 20px;padding:10px;border:1px solid rgba(224,237,250,.10);border-radius:20px;background:linear-gradient(150deg,rgba(24,35,48,.78),rgba(10,15,23,.78));box-shadow:0 12px 30px rgba(0,0,0,.18)}
+.feed-section h2{border-bottom:1px solid rgba(224,237,250,.12);font-size:22px}.feed-section h2::after{display:none}
+.feed-mixed-item{margin:9px 2px;padding:8px;border:1px solid rgba(224,237,250,.10);border-left:3px solid var(--card-accent);border-radius:16px;background:rgba(255,255,255,.025);box-shadow:none}
+.result-wrap,.source-card,.music-now,.news-card,.library-item,.library-playlist,.video-player-tools,.empty-state{border:1px solid rgba(224,237,250,.12)!important;border-radius:18px!important;background:linear-gradient(145deg,rgba(25,36,49,.86),rgba(12,18,26,.9))!important;box-shadow:0 8px 22px rgba(0,0,0,.18)!important}
+.result-wrap{min-width:0;margin:10px 12px;padding:12px}
+.media-main{position:relative;display:flex;flex-direction:column;align-items:stretch;gap:10px;width:100%;padding:0;text-align:left;border:0;background:transparent}
+.media-copy{display:flex;flex-direction:column;gap:4px;min-width:0;padding:2px 1px}
+.media-copy b{font:750 17px/1.24 var(--f);letter-spacing:-.012em;overflow-wrap:anywhere}
+.media-copy>span{font:11px/1.35 var(--m);color:var(--mu);overflow-wrap:anywhere}
+.media-thumb{position:relative;display:grid;place-items:center;width:100%;aspect-ratio:16/9;overflow:hidden;border-radius:15px;background:#030609}
+.media-thumb img{display:block;width:100%;height:100%;object-fit:contain;background:#030609}
+.media-thumb-empty{font:700 10px var(--m);letter-spacing:.1em;color:var(--mu)}
+.media-play{position:absolute;right:12px;bottom:12px;width:40px;height:40px;display:grid;place-items:center;border:1px solid rgba(255,255,255,.22);border-radius:50%;background:rgba(4,8,13,.68);color:#fff;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+.media-play .ic{width:17px;height:17px}.media-main:active .media-thumb{transform:scale(.99)}
+.result-actions{display:flex;gap:7px;flex-wrap:wrap;padding:10px 0 0}.result-actions .chip{min-height:36px;padding:0 11px;font-size:10px}
+.news-card{margin:10px 12px;padding:12px}.news-open{display:flex!important;flex-direction:column!important;align-items:stretch;gap:10px;width:100%;padding:0;text-align:left}
+.news-copy{display:flex;flex-direction:column;gap:7px;order:0;min-width:0}.news-copy b{order:0;font:750 18px/1.22 var(--f);letter-spacing:-.014em}.news-copy p{order:1;font:400 13px/1.45 var(--f);color:var(--mu)}.news-copy .news-meta{order:2;font:10px/1.35 var(--m);color:var(--sp)}
+.news-thumb-wrap{order:1;position:relative;width:100%;aspect-ratio:16/9;overflow:hidden;border-radius:15px;background:#030609}
+.news-thumb{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#030609}
+.row,.row.n{border-radius:14px!important}
+.nav-hidden .top{margin-bottom:calc(0px - var(--top-height));transform:translateY(-112%);opacity:0;pointer-events:none}
+.nav-hidden #sc{padding-bottom:calc(var(--sa) + 36px)}
+.nav-hidden .nav{transform:translateY(calc(100% + 28px));opacity:0;visibility:hidden;pointer-events:none}
+.nav-hidden .mini{bottom:calc(var(--sa) + 12px)}
+.refresh-indicator{position:absolute;top:8px;left:50%;z-index:6;display:flex;align-items:center;gap:9px;padding:9px 14px;border:1px solid rgba(224,237,250,.16);border-radius:18px;background:rgba(20,30,42,.9);color:var(--ink);font:600 11px var(--m);opacity:0;transform:translate(-50%,-150%);transition:transform .22s ease,opacity .2s ease;pointer-events:none;-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}
+.refresh-indicator.active{opacity:1;transform:translate(-50%,var(--pull-y,0px))}
+.refresh-spinner{width:15px;height:15px;border:2px solid rgba(255,255,255,.28);border-top-color:var(--sp);border-radius:50%}
+.refresh-indicator.loading .refresh-spinner{animation:refresh-spin .7s linear infinite}
+@keyframes refresh-spin{to{transform:rotate(360deg)}}
+.search-submit{display:grid;place-items:center;width:38px;height:38px;min-width:38px;min-height:38px;border-radius:12px;background:rgba(255,255,255,.08);color:var(--ink)}
+.search-submit .ic{width:19px;height:19px}
+.search-sort{display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:14px 16px 0;color:var(--mu);font:11px var(--m)}
+.search-sort select{min-height:40px;max-width:170px;padding:0 34px 0 12px;border:1px solid rgba(224,237,250,.16);border-radius:12px;background:#111923;color:var(--ink);font:600 12px var(--f)}
+.search-sort select:focus-visible{outline:2px solid var(--sp);outline-offset:2px}
+.video-empty{margin:22px 16px;padding:24px}.video-empty b{display:block;margin-bottom:8px;font:750 20px var(--f)}.video-empty p{color:var(--mu);font-size:13px}
+.topics-grid{gap:9px}
+@media(max-width:380px){.nav{left:8px;right:8px;height:64px}.nav a{font-size:9px}.media-copy b{font-size:16px}}
+@media(prefers-reduced-motion:reduce){.top,.nav,.mini,.refresh-indicator{transition:none!important}.refresh-indicator.loading .refresh-spinner{animation:none!important}}
+
+
+/* BRUTALIST SYSTEM — glass is reserved for the chrome, content stays tactile and sharp. */
+:root{--paper:#0a0d10;--paper2:#151a20;--ink:#f2f0e9;--mu:#a6adb2;--sp:#ff704f;--r:0;--sh:5px 5px 0 rgba(0,0,0,.72)}
+button,.btn,.ib,.chip,.stk,.a,.card,.cat,.seg,.seg i,.feed-section,.feed-mixed-item,.result-wrap,.news-card,.source-card,.empty-state,.profile-panel,.topic-tab,.topic-snooze,.topic-manage,.watch-player-frame,.watch-actions,.snoozed-topic,.library-item,.library-playlist,.nav,.mini{border-radius:0!important}
+.btn,.ib,.chip{border-width:2px!important;border-color:var(--ink)!important;box-shadow:3px 3px 0 var(--sp)!important}
+.btn:active,.ib:active,.chip:active{transform:translate(3px,3px)!important;box-shadow:none!important}
+.app{background:linear-gradient(135deg,rgba(255,255,255,.025) 0 1px,transparent 1px 28px),linear-gradient(90deg,rgba(255,255,255,.018) 0 1px,transparent 1px 28px),var(--paper)!important}
+.app::before{opacity:.07}
+.top{background:linear-gradient(120deg,rgba(255,255,255,.09),rgba(255,255,255,.018));border-bottom:1px solid rgba(255,255,255,.18);-webkit-backdrop-filter:blur(18px) saturate(145%);backdrop-filter:blur(18px) saturate(145%)}
+.top-profile{width:42px;height:42px;background:rgba(255,255,255,.075)!important;border:1px solid rgba(255,255,255,.28)!important;box-shadow:none!important;-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+.nav{background:linear-gradient(150deg,rgba(26,34,43,.87),rgba(7,10,14,.93))!important;border:1px solid rgba(255,255,255,.27)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.17),0 9px 26px rgba(0,0,0,.42)!important;-webkit-backdrop-filter:blur(26px) saturate(155%);backdrop-filter:blur(26px) saturate(155%)}
+.mini{background:linear-gradient(135deg,rgba(24,31,39,.96),rgba(7,10,14,.98))!important;border:1px solid rgba(255,255,255,.2)!important;-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}
+.feed-section,.result-wrap,.news-card,.source-card,.empty-state,.library-item,.library-playlist,.video-player-tools{background:var(--paper2)!important;border:2px solid var(--ink)!important;box-shadow:5px 5px 0 var(--sp)!important}
+.feed-section{margin:18px 12px;padding:8px}
+.feed-mixed-item{border:0!important;border-top:1px solid rgba(255,255,255,.16)!important;background:transparent!important;padding:10px 0}
+.result-wrap{margin:10px 4px;padding:12px 10px}
+.media-thumb,.news-thumb-wrap,.news-thumb,.media-thumb img,.library-art{border-radius:0!important}
+.media-thumb img,.news-thumb{object-fit:cover!important}
+.media-play{border-radius:0!important;background:rgba(6,9,12,.9)!important;border:2px solid var(--ink)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+.media-main{gap:12px}
+.media-copy b,.news-copy b{font-weight:900;letter-spacing:-.025em}
+.pt h1,h2,.wm,.nav a,.chip,.btn,.stk{font-stretch:condensed;text-transform:uppercase;letter-spacing:-.025em}
+h2{font-size:26px;border-bottom:2px solid var(--ink);padding-bottom:12px}
+h2::after{display:none}
+.seg{border:2px solid var(--ink)!important;background:var(--paper2)!important;box-shadow:4px 4px 0 var(--sp)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+.seg i{background:var(--sp)!important}
+.seg button[aria-selected=true]{color:var(--paper)!important}
+.topic-stream{display:flex;align-items:center;gap:7px;overflow-x:auto;white-space:nowrap;padding:10px 12px 14px;scrollbar-width:none}
+.topic-stream::-webkit-scrollbar{display:none}
+.topic-tab-wrap{display:flex;align-items:center;flex:none;border:2px solid var(--ink);background:var(--paper2)}
+.topic-tab,.topic-snooze,.topic-manage{min-height:40px;padding:0 12px;font:800 11px var(--m);background:transparent;border:0;white-space:nowrap}
+.topic-tab[aria-pressed=true]{background:var(--sp);color:var(--paper)}
+.topic-snooze{min-width:34px;padding:0 8px;border-left:1px solid rgba(255,255,255,.2);font-size:15px}
+.topic-manage{flex:none;border:2px solid var(--ink);background:var(--ink);color:var(--paper)}
+.topic-chip.snoozed{opacity:.48;border-style:dashed!important}
+.profile-panel{display:flex;align-items:center;gap:12px;margin:14px 16px;padding:14px;border:2px solid var(--ink);background:var(--paper2);box-shadow:5px 5px 0 var(--sp)}
+.profile-mark{display:grid;place-items:center;width:48px;height:48px;background:var(--sp);border:2px solid var(--ink);color:var(--paper);font:900 30px/1 var(--f)}
+.profile-copy{flex:1;min-width:0}.profile-copy b,.profile-copy span{display:block}.profile-copy span{font:10px var(--m);color:var(--mu);margin-top:4px}
+.snoozed-list{margin:18px 0}
+.snoozed-topic{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 16px;border-bottom:1px solid rgba(255,255,255,.15)}
+.snoozed-topic small{font:10px var(--m);color:var(--mu)}
+.watch-page{padding-bottom:32px}
+.watch-player-frame{position:relative;display:grid;place-items:center;width:calc(100% - 24px);margin:10px 12px 0;aspect-ratio:16/9;min-height:180px;background:#030405;border:2px solid var(--ink);color:var(--mu);font:800 11px var(--m);letter-spacing:.08em}
+.watch-player-frame>span{pointer-events:none}
+.watch-heading{padding:16px 16px 8px}
+.watch-heading h2{display:block;padding:8px 0 10px;font-size:22px;line-height:1.1;border-bottom:1px solid rgba(255,255,255,.18)}
+.watch-heading p{color:var(--mu);font:11px var(--m);margin-top:7px}
+.watch-actions{display:flex;flex-wrap:wrap;gap:8px;margin:10px 16px;padding:12px;border:2px solid var(--ink);background:var(--paper2)}
+.watch-section h2{padding-top:20px}
+.watch-section .result-wrap{margin-left:12px;margin-right:12px}
+.news-card{margin:10px 12px}
+.news-open{border:0!important}
+.nav a{font-weight:800!important}
+.nav a[aria-current="page"]{border-radius:0!important;background:rgba(255,112,79,.18)!important;box-shadow:inset 0 -3px 0 var(--sp)!important}
+.nav a[aria-current="page"] .ic{color:var(--sp)!important;stroke:var(--sp)!important}
+.mini{grid-template-columns:42px 1fr auto auto!important;bottom:calc(var(--nav) + var(--sa) + 20px)}
+.mini .rule{display:none}
+.si,.seg,.bi{border-radius:0!important}
+@media(max-width:380px){.profile-panel{gap:8px;padding:10px}.profile-panel .chip{padding:0 8px}.topic-tab,.topic-manage{padding-inline:9px}}
+
+
+.nav a,.nav .pill{border-radius:0!important}
+.top-profile{font:900 19px var(--f)!important;letter-spacing:-.06em}
 </style></head>
 <body>
 <div class="app">
 <header class="top">
     <div class="wm" aria-label="Rush">rush<i></i></div>
-    <div>
-      <button class="ib" id="searchShortcut" data-open-search aria-label="Search all Rush">⌕</button>
-      <button class="ib" id="topicsShortcut" aria-label="Personalise Rush">☷</button>
-    </div>
+    <div><button class="ib top-profile" id="profileShortcut" aria-label="Open profile and library">R</button></div>
   </header>
-<main id="sc"><div id="v"></div></main>
+<main id="sc"><div id="refreshIndicator" class="refresh-indicator" aria-hidden="true"><span class="refresh-spinner"></span><span id="refreshLabel">Pull to refresh</span></div><div id="v"></div></main>
   <section class="mini" id="mini" aria-label="Now playing" inert>
     <div class="a" id="ma"><img alt="" hidden></div>
     <div><b id="mt"></b><span id="ms"></span></div>
@@ -329,11 +599,26 @@ const PAL=['#FF6B3D','#4D7DFF','#D8FF3F','#35E0E0','#B58CFF','#3DDC84'];
 const TOPICS=['Science','Technology','AI and machine learning','Programming','Cybersecurity','History','Geography','Education','Languages','Literature','Books','Philosophy','Psychology','Mathematics','Space','Engineering','Economics','Business','Startups','Personal finance','Investing','Politics','Current affairs','World news','Environment','Climate','Health','Medicine','Fitness','Sports','Football','Basketball','Cricket','Esports','Gaming','Game development','Design','Art','Photography','Architecture','Fashion','Beauty','Makeup','Cooking','Food','Travel','Cars','Motorcycles','Nature','Wildlife','Pets','Gardening','Home improvement','Music','Music production','Classical music','Hip-hop','K-pop','Film analysis','Anime','Manga','Podcasts','Documentaries','Vlogs','Comedy','Memes','Viral clips','Celebrity gossip','Pranks','Internet drama','Rage bait','Reality TV','Shorts','ASMR','Luxury','Shopping','Product reviews','Relationships','Parenting','Lifestyle','Meditation','Self-improvement','Romance','Horror','Internet culture','Streaming','Live streams','Board games','Collecting','Crafts'];
 const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const safeUrl=v=>/^https:\/\/[^\s"'<>]+$/i.test(String(v||''))?String(v):'';
-let prefs={topics:['Science','Technology','History','Education','Design','Engineering','Economics','Culture','Environment','Sports','Music','Health','Language','Business','Art','Documentaries'],sources:[]};
-let page='home',homeTab='fy',unifiedMode='all',unifiedQuery='',mediaState={hasItem:false,isMusic:false,isVideo:false,isPlaying:false,title:'',artist:'',artwork:''};
+let prefs={topics:['Science','Technology','History','Education','Design','Engineering','Economics','Culture','Environment','Sports','Music','Health','Language','Business','Art','Documentaries'],allTopics:[],snoozedTopics:[],sources:[]};
+let page='home',homeTab='fy',activeTopic='',activeVideo=null,homeFeedCache={},unifiedMode='all',unifiedQuery='',unifiedPending=0,searchSort='relevance',refreshFallback=0,mediaState={hasItem:false,isMusic:false,isVideo:false,isPlaying:false,title:'',artist:'',artwork:''};
+function finishRefreshIndicator(){
+ if(refreshFallback){clearTimeout(refreshFallback);refreshFallback=0}
+ const indicator=$('#refreshIndicator'),label=$('#refreshLabel');
+ if(indicator){indicator.classList.remove('active','loading');indicator.style.removeProperty('--pull-y')}
+ if(label)label.textContent='Pull to refresh';
+}
 const unifiedData={videos:[],music:[],news:[],channels:[],playlists:[]};
 let publicPlaylistData=null;
-const selectedTopics=()=>prefs.topics||[];
+const selectedTopics=()=>prefs.allTopics&&prefs.allTopics.length?prefs.allTopics:(prefs.topics||[]);
+const activeTopics=()=>prefs.topics||selectedTopics();
+const snoozedTopics=()=>Array.isArray(prefs.snoozedTopics)?prefs.snoozedTopics:[];
+function topicSnoozed(topic){return snoozedTopics().some(item=>item.topic===topic&&Number(item.until)>Date.now())}
+function currentFeedMode(){return activeTopic?'topic:'+activeTopic:(homeTab==='fy'?'forYou':'following')}
+function renderHomeTopicTabs(){
+ const root=$('#homeTopicTabs');if(!root)return;
+ const tabs=activeTopics().map(topic=>'<div class="topic-tab-wrap"><button class="topic-tab" data-topic-filter="'+esc(topic)+'" aria-pressed="'+(activeTopic===topic)+'">'+esc(topic)+'</button><button class="topic-snooze" data-snooze-topic="'+esc(topic)+'" aria-label="Snooze '+esc(topic)+' for one day" title="Snooze for 24 hours">1D</button></div>').join('');
+ root.innerHTML='<button class="topic-tab topic-all" data-topic-filter="" aria-pressed="'+(!activeTopic)+'">ALL</button>'+tabs+'<button class="topic-manage" data-open-topics>＋ TOPICS</button>';
+}
 function loadPrefs(){
  try{if(window.RushNative){const raw=RushNative.getFeedPreferences();if(raw)prefs=JSON.parse(raw)}}catch(e){}
 }
@@ -363,24 +648,27 @@ function mediaActions(x,isMusic){
 function playlistRow(x){
  return '<article class="source-card"><img src="'+esc(safeUrl(x.thumbnail))+'" alt="" loading="lazy" decoding="async" onerror="this.hidden=true"><div class="source-info"><b>'+esc(x.title)+'</b><span>'+esc(x.creator||'YouTube')+' · '+esc(x.videoCount||'Playlist')+'</span><div class="result-actions"><button class="chip" data-public-playlist-open data-playlist-id="'+esc(x.id)+'" data-playlist-title="'+esc(x.title)+'">VIEW PLAYLIST</button></div></div></article>';
 }
-function videoRow(x){
+function mediaThumbnail(url,alt){
+ const thumb=safeUrl(url);
+ return '<span class="media-thumb">'+(thumb?'<img src="'+esc(thumb)+'" alt="'+esc(alt||'')+'" loading="lazy" decoding="async" onerror="this.hidden=true">':'<span class="media-thumb-empty">NO PREVIEW</span>')+'</span>';
+}
+function videoRow(x,showActions=true){
  const thumb=safeUrl(x.thumbnail);
- return '<div class="result-wrap"><button class="row n" data-video-id="'+esc(x.id)+'" data-title="'+esc(x.title)+'" data-creator="'+esc(x.artist||x.creator)+'" data-thumbnail="'+esc(thumb)+'"><img src="'+esc(thumb)+'" alt="" loading="lazy" decoding="async" onerror="this.hidden=true"><div><b>'+esc(x.title)+'</b><span>'+esc(x.artist||x.creator||'YouTube')+' · '+esc(x.duration||'')+'</span></div>'+ic('play')+'</button>'+mediaActions(x,false)+'</div>';
+ return '<article class="result-wrap"><button class="media-main" data-video-id="'+esc(x.id)+'" data-title="'+esc(x.title)+'" data-creator="'+esc(x.artist||x.creator)+'" data-source-id="'+esc(x.sourceId||'')+'" data-source-name="'+esc(x.sourceName||x.artist||x.creator||'')+'" data-thumbnail="'+esc(thumb)+'"><span class="media-copy"><b>'+esc(x.title)+'</b><span>'+esc(x.artist||x.creator||'YouTube')+' · '+esc(x.duration||'')+'</span></span>'+mediaThumbnail(thumb,x.title)+'<span class="media-play">'+ic('play')+'</span></button>'+(showActions?mediaActions(x,false):'')+'</article>';
 }
-function musicRow(x){
- return '<div class="result-wrap">'+videoLikeMusic(x)+'<div class="result-actions">'+sourceButton('artist',x.artist,x.artist,'FOLLOW ARTIST')+'</div>'+mediaActions(x,true)+'</div>';
+function musicRow(x,showActions=true){
+ const thumb=safeUrl(x.thumbnail);
+ return '<article class="result-wrap"><button class="media-main" data-track="'+esc(x.id)+'" data-title="'+esc(x.title)+'" data-artist="'+esc(x.artist)+'" data-thumbnail="'+esc(thumb)+'"><span class="media-copy"><b>'+esc(x.title)+'</b><span>'+esc(x.artist||'Unknown artist')+' · '+esc(x.duration||'')+'</span></span>'+mediaThumbnail(thumb,x.title)+'<span class="media-play">'+ic('play')+'</span></button>'+(showActions?'<div class="result-actions">'+sourceButton('artist',x.artist,x.artist,'FOLLOW ARTIST')+'</div>'+mediaActions(x,true):'')+'</article>';
 }
-function musicHistoryRow(x){
- return '<div class="result-wrap history-row">'+videoLikeMusic(x)+'</div>';
-}
+function musicHistoryRow(x){return '<article class="result-wrap history-row">'+videoLikeMusic(x)+'</article>'}
 function videoLikeMusic(x){
  const thumb=safeUrl(x.thumbnail);
- return '<button class="row n" data-track="'+esc(x.id)+'" data-title="'+esc(x.title)+'" data-artist="'+esc(x.artist)+'" data-thumbnail="'+esc(thumb)+'"><img src="'+esc(thumb)+'" alt="" loading="lazy" decoding="async" onerror="this.hidden=true"><div><b>'+esc(x.title)+'</b><span>'+esc(x.artist||'Unknown artist')+' · '+esc(x.duration||'')+'</span></div>'+ic('play')+'</button>';
+ return '<button class="media-main" data-track="'+esc(x.id)+'" data-title="'+esc(x.title)+'" data-artist="'+esc(x.artist)+'" data-thumbnail="'+esc(thumb)+'"><span class="media-copy"><b>'+esc(x.title)+'</b><span>'+esc(x.artist||'Unknown artist')+' · '+esc(x.duration||'')+'</span></span>'+mediaThumbnail(thumb,x.title)+'<span class="media-play">'+ic('play')+'</span></button>';
 }
-function newsCard(x){
+function newsCard(x,showPublisherAction=true){
  const thumb=safeUrl(x.thumbnail),publisher=x.source||'News publisher';
- const image='<span class="news-thumb-wrap"><span class="news-thumb-fallback">NEWS</span>'+(thumb?'<img class="news-thumb" src="'+esc(thumb)+'" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.hidden=true">':'')+'</span>';
- return '<article class="news-card"><button class="news-open" data-news-url="'+esc(safeUrl(x.url))+'"><span class="news-copy"><span class="news-meta">'+esc(publisher)+' · '+esc(x.date||'')+'</span><b>'+esc(x.title)+'</b><p>'+esc(x.summary||'Open the article for the full report.')+'</p></span>'+image+'</button><div class="result-actions">'+sourceButton('news',publisher,publisher,'FOLLOW PUBLISHER')+'</div></article>';
+ const image='<span class="news-thumb-wrap"><span class="news-thumb-fallback">NEWS</span>'+(thumb?'<img class="news-thumb" src="'+esc(thumb)+'" alt="" loading="lazy" decoding="async" onerror="this.hidden=true">':'')+'</span>';
+ return '<article class="news-card"><button class="news-open" data-news-url="'+esc(safeUrl(x.url))+'"><span class="news-copy"><b>'+esc(x.title)+'</b><p>'+esc(x.summary||'Open the article for the full report.')+'</p><span class="news-meta">'+esc(publisher)+' · '+esc(x.date||'')+'</span></span>'+image+'</button>'+(showPublisherAction?'<div class="result-actions">'+sourceButton('news',publisher,publisher,'FOLLOW PUBLISHER')+'</div>':'')+'</article>';
 }
 function section(title,body){
  return '<section class="feed-section"><h2>'+title+'</h2>'+(body||'<p class="meta pad">Nothing to show yet.</p>')+'</section>';
@@ -388,24 +676,31 @@ function section(title,body){
 function pageTop(title,kicker){
  return '<header class="pt"><h1>'+title+'</h1><em class="stk">'+kicker+'</em></header>';
 }
+let homeTasteMusic=[],homeFeedData={videos:[],music:[],news:[],message:''};
 function renderHome(){
  return pageTop('Home','your feed')+
  '<div class="seg" role="tablist"><i></i><button role="tab" data-tab="fy" aria-selected="'+(homeTab==='fy')+'">For you</button><button role="tab" data-tab="fo" aria-selected="'+(homeTab==='fo')+'">Following</button></div>'+
- '<div class="feed-actions"><button class="chip" data-open-topics>CHOOSE TOPICS</button><button class="chip" data-open-search>FIND CHANNELS & SOURCES</button></div>'+
- '<p class="meta pad" id="homeFeedStatus">Building your feed…</p><div id="homeFeedResults"></div>';
+ '<div class="topic-stream" id="homeTopicTabs" aria-label="Followed topics"></div>'+
+ '<p class="meta pad" id="homeFeedStatus" aria-live="polite">Loading your feed…</p><div id="homeFeedResults"></div>';
 }
 function renderVideoPage(){
- return pageTop('Videos','full-screen playback')+
- '<section class="video-controls"><div class="video-player-status"><p class="meta pad video-playback-status" id="videoPlaybackStatus" aria-live="polite" hidden></p><button class="chip" data-video-resume hidden>OPEN VIDEO PLAYER</button></div>'+
- '<h2>Find videos</h2><label class="si">'+ic('search')+'<input id="videoQuery" type="search" placeholder="Search videos, creators and topics" aria-label="Search videos" autocomplete="off"></label><button class="btn" data-video-search>SEARCH YOUTUBE</button><p class="meta pad" id="videoStatus">Choose a result to open the full-screen player. Search remains broad across YouTube.</p><div id="videoResults"></div></section>';
+ const item=activeVideo||{};
+ const title=item.title||mediaState.title||'Select a video';
+ const creator=item.creator||mediaState.artist||'Rush video player';
+ const thumb=safeUrl(item.thumbnail||mediaState.artwork);
+ const options='<div class="watch-actions">'+(item.id?'<button class="chip" data-save-item data-id="'+esc(item.id)+'" data-title="'+esc(title)+'" data-creator="'+esc(creator)+'" data-music="false" data-thumbnail="'+esc(thumb)+'">SAVE</button><button class="chip" data-queue-item data-id="'+esc(item.id)+'" data-title="'+esc(title)+'" data-creator="'+esc(creator)+'" data-music="false" data-thumbnail="'+esc(thumb)+'">ADD TO QUEUE</button><button class="chip" data-download-media data-id="'+esc(item.id)+'" data-title="'+esc(title)+'" data-creator="'+esc(creator)+'" data-music="false">DOWNLOAD</button>'+(item.sourceId?sourceButton('channel',item.sourceId,item.sourceName||creator,'FOLLOW CHANNEL'):''):'')+'</div>';
+ const suggestions=(homeFeedData.videos||[]).filter(x=>x.id&&x.id!==item.id).slice(0,12);
+ return pageTop('Watch','in-app playback')+
+ '<section class="watch-page"><div class="watch-player-frame" id="videoPlayerHost"><span>VIDEO PLAYER</span></div>'+
+ '<div class="watch-heading"><h2 id="watchTitle">'+esc(title)+'</h2><p id="watchCreator">'+esc(creator)+'</p><p class="meta" id="videoPlaybackStatus" aria-live="polite">Select a video from Home or Search.</p></div>'+
+ options+
+ '<section class="watch-section"><h2>Comments</h2><p class="meta pad">Comments are not available from the current video source.</p></section>'+
+ '<section class="watch-section"><h2>Up next</h2><div id="watchSuggestions">'+(suggestions.length?suggestions.map(x=>videoRow(x,false)).join(''):'<p class="meta pad">Video suggestions will appear here as your feed loads.</p>')+'</div></section></section>';
 }
-
 function renderMusicPage(){
  return pageTop('Music','your listening taste')+
- '<section class="music-now" id="musicNowPlaying"><div class="music-now-art"><img id="musicNowArtwork" src="" alt="Current track artwork"><span id="musicNowFallback">RUSH<br>MUSIC</span></div><div class="music-now-copy"><span class="stk">NOW PLAYING</span><h3 id="musicNowTitle">No music playing</h3><p id="musicNowArtist">Choose a track to start listening.</p><p class="meta" id="musicStatus">Your player will appear here when a track starts.</p><button class="btn k" data-open-player>OPEN PLAYER</button><button class="btn o" data-music-toggle aria-label="Play or pause music">'+ic('play')+' PLAY / PAUSE</button><div class="result-actions"><button class="chip" data-current-download>DOWNLOAD</button><button class="chip" data-current-mp3>DOWNLOAD MP3</button><button class="chip" data-current-save>SAVE</button></div></div></section>'+
  '<h2>Picked for your taste</h2><p class="meta pad" id="musicSuggestionStatus">Using your listening history and followed musicians.</p><div id="musicSuggestions"></div>'+
- '<h2>Discover music</h2><section class="music-find"><label class="si">'+ic('search')+'<input id="musicQuery" type="search" placeholder="Search songs, artists or albums" aria-label="Search music" autocomplete="off"></label><button class="btn" data-music-search>SEARCH MUSIC</button><div id="musicResults"></div></section>'+
- '<section><h2>Browse genres</h2><div class="gen">'+['Pop','Hip-hop','Electronic','Rock','Jazz','Ambient','Classical','Folk'].map((t,i)=>'<button class="cat" data-music-term="'+t+'" style="background:'+PAL[(i+1)%PAL.length]+'"><b>'+t+'</b><i aria-hidden="true">→</i></button>').join('')+'</div></section>'+
+ '<section><h2>Explore by genre</h2><div class="gen">'+['Pop','Hip-hop','Electronic','Rock','Jazz','Ambient','Classical','Folk'].map((t,i)=>'<button class="cat" data-music-term="'+t+'" style="background:'+PAL[(i+1)%PAL.length]+'"><b>'+t+'</b><i aria-hidden="true">→</i></button>').join('')+'</div></section>'+
  '<section><h2>Recently played</h2><div id="musicRecent"><p class="meta pad">Your listening history will appear here.</p></div></section>';
 }
 function renderPlayerPage(){
@@ -419,44 +714,39 @@ function renderPlayerPage(){
 }
 function renderNewsPage(){
  return pageTop('News','useful reporting')+
- '<section class="news-controls"><div class="chips news-chips">'+['Personalized','World','Technology','Science','Business','Sports','Culture','Health'].map((t,i)=>'<button class="chip" data-news-category="'+t+'" aria-pressed="'+(i===0)+'">'+t+'</button>').join('')+'</div><label class="si">'+ic('search')+'<input id="newsQuery" type="search" placeholder="Search headlines and publishers" aria-label="Search news" autocomplete="off"></label><button class="btn" data-news-search>SEARCH NEWS</button><p class="meta pad" id="newsStatus">Ranking reporting from your topics and followed publishers…</p><div id="newsResults"></div></section>';
+ '<section class="news-controls"><div class="chips news-chips">'+['Personalized','World','Technology','Science','Business','Sports','Culture','Health'].map((t,i)=>'<button class="chip" data-news-category="'+t+'" aria-pressed="'+(i===0)+'">'+t+'</button>').join('')+'</div><p class="meta pad" id="newsStatus">Reporting selected for your interests and followed publishers.</p><div id="newsResults"></div></section>';
 }
 function renderSearchPage(){
  return pageTop('Search','open discovery')+
- '<label class="si">'+ic('search')+'<input id="q" type="search" placeholder="Search videos, music, news, channels, playlists or artists" aria-label="Search all Rush" autocomplete="off"></label><button class="btn" data-unified-search>SEARCH ALL SOURCES</button>'+
+ '<div class="si" role="search">'+ic('search')+'<input id="q" type="search" placeholder="Search videos, music, news, channels, playlists or artists" aria-label="Search Rush" autocomplete="off"><button class="search-submit" type="button" data-search-submit aria-label="Search">'+ic('search')+'</button></div>'+
+ '<div class="search-sort"><label for="searchSort">Sort by</label><select id="searchSort" aria-label="Sort search results"><option value="relevance">Relevance</option><option value="uploadDate">Upload date</option><option value="viewCount">View count</option><option value="duration">Duration</option></select></div>'+
  '<div class="chips search-filters"><button class="chip" data-search-filter="all" aria-pressed="true">All</button><button class="chip" data-search-filter="videos" aria-pressed="false">Videos</button><button class="chip" data-search-filter="music" aria-pressed="false">Music</button><button class="chip" data-search-filter="news" aria-pressed="false">News</button><button class="chip" data-search-filter="channels" aria-pressed="false">Channels</button><button class="chip" data-search-filter="playlists" aria-pressed="false">Playlists</button></div>'+
- '<p class="meta pad" id="unifiedStatus">Search is broad. Recommendation rules do not restrict these results.</p><div id="unifiedResults"></div><div id="publicPlaylistContent"></div>';
-}
-function filterTopicNames(topics,query){
- const q=String(query||'').trim().toLocaleLowerCase();
- return topics.filter(topic=>!q||topic.toLocaleLowerCase().includes(q));
+ '<p class="meta pad" id="unifiedStatus">Enter a search above to discover videos, music, news and sources.</p><div id="unifiedResults"></div><div id="publicPlaylistContent"></div>';
 }
 function updateTopicOptions(){
- const input=$('#topicQuery'),query=input?input.value:'';
- const visible=new Set(filterTopicNames(TOPICS,query));
  const buttons=[...document.querySelectorAll('[data-topic]')];
- let shown=0;
- buttons.forEach(button=>{const show=visible.has(button.dataset.topic);button.hidden=!show;if(show)shown++});
- const empty=$('#topicNoResults');if(empty)empty.hidden=shown>0;
+ buttons.forEach(button=>{button.hidden=false;button.classList.toggle('snoozed',topicSnoozed(button.dataset.topic))});
  const status=$('#topicStatus');
- if(status)status.textContent=buttons.filter(b=>b.getAttribute('aria-pressed')==='true').length+' selected · '+TOPICS.length+' interests';
+ if(status)status.textContent=activeTopics().length+' active · '+snoozedTopics().length+' snoozed';
 }
 function renderTopicsPage(){
- return pageTop('Personalise','your interests and followed sources')+
- '<p class="pad meta">Choose subjects you care about. Recommendations prioritise useful, informative material; every subject remains available in Search.</p>'+
- '<label class="si">'+ic('search')+'<input id="topicQuery" type="search" maxlength="80" placeholder="Search interests" aria-label="Search interests" autocomplete="off"></label>'+
- '<div class="meta pad" id="topicStatus" aria-live="polite">'+selectedTopics().length+' selected · '+TOPICS.length+' interests</div>'+
- '<div class="topics-grid" id="topicOptions">'+TOPICS.map(t=>'<button class="chip topic-chip" data-topic="'+esc(t)+'" aria-pressed="'+selectedTopics().includes(t)+'">'+esc(t)+'</button>').join('')+'</div>'+
- '<p class="meta pad" id="topicNoResults" aria-live="polite" hidden>No interests match that search.</p>'+
- '<div class="feed-actions"><button class="btn k" data-save-topics>SAVE INTERESTS</button></div>'+
- '<h2>Followed sources</h2><p class="meta pad">Follow any channel, publisher or musician. Followed YouTube channels can all supply For You candidates; productive and informative items rank higher.</p><div id="followedSources"></div>';
+ const sleeping=snoozedTopics().map(x=>'<div class="snoozed-topic"><span>'+esc(x.topic)+' <small>· '+Math.max(1,Math.ceil((Number(x.until)-Date.now())/3600000))+'h left</small></span><button class="chip" data-unsnooze-topic="'+esc(x.topic)+'">RESTORE</button></div>').join('');
+ return pageTop('Topics','your interests')+
+ '<p class="pad meta">Your active topics appear together on Home. Pick one topic to focus the feed, or snooze it for one day.</p>'+
+ '<div class="meta pad" id="topicStatus" aria-live="polite">'+activeTopics().length+' active · '+snoozedTopics().length+' snoozed</div>'+
+ '<div class="topics-grid" id="topicOptions">'+TOPICS.map(t=>'<button class="chip topic-chip '+(topicSnoozed(t)?'snoozed':'')+'" data-topic="'+esc(t)+'" aria-pressed="'+selectedTopics().includes(t)+'">'+esc(t)+(topicSnoozed(t)?' · SNOOZED':'')+'</button>').join('')+'</div>'+
+ '<div class="feed-actions"><button class="btn k" data-save-topics>SAVE TOPICS</button></div>'+
+ '<section class="snoozed-list"><h2>Snoozed for one day</h2><div id="snoozedTopicList">'+(sleeping||'<p class="meta pad">No topics are snoozed.</p>')+'</div></section>'+
+ '<h2>Followed sources</h2><p class="meta pad">Follow channels, publishers and musicians to shape your Home feed.</p><div id="followedSources"></div>';
 }
 const R={home:renderHome,videos:renderVideoPage,music:renderMusicPage,player:renderPlayerPage,news:renderNewsPage,search:renderSearchPage,topics:renderTopicsPage,library:renderLibraryPage};
 
 let libraryView='saved',libraryData={saved:[],history:[],queue:[],playlists:[],items:{}},downloadData={items:[],count:0,bytes:0};
 function renderLibraryPage(){
- return pageTop('Library','saved offline')+
- '<div class="chips library-tabs">'+[['saved','Saved'],['history','History'],['playlists','Playlists'],['queue','Queue'],['downloads','Downloads']].map(([key,label])=>'<button class="chip" data-library-view="'+key+'" aria-pressed="'+(libraryView===key)+'">'+label+'</button>').join('')+'</div>'+
+ return pageTop('You','profile + library')+
+ '<section class="profile-panel"><div class="profile-mark">R</div><div class="profile-copy"><b>YOUR RUSH</b><span>'+activeTopics().length+' active topics · '+prefs.sources.length+' followed sources</span></div><button class="chip" data-open-topics>EDIT TOPICS</button></section>'+
+ '<h2>Followed sources</h2><div id="followedSources"></div>'+
+ '<h2>Your library</h2><div class="chips library-tabs">'+[['saved','Saved'],['history','History'],['playlists','Playlists'],['queue','Queue'],['downloads','Downloads']].map(([key,label])=>'<button class="chip" data-library-view="'+key+'" aria-pressed="'+(libraryView===key)+'">'+label+'</button>').join('')+'</div>'+
  '<p class="meta pad" id="libraryStatus">Your collection is stored on this device.</p><div id="libraryContent"></div>';
 }
 function libraryMediaRow(id,kind,playlistId){
@@ -512,8 +802,58 @@ function refreshLibrary(){
  if(page==='library')loadLibrary();
 }
 
-const NAV=[['home','Home','home'],['videos','Videos','vid'],['music','Music','music'],['news','News','news'],['library','Library','library']];
+const NAV=[['home','Home','home'],['videos','Videos','vid'],['music','Music','music'],['news','News','news'],['search','Search','search']];
 $('#nav').innerHTML='<i class="pill"></i>'+NAV.map(([key,label,icon])=>'<a href="#'+key+'" data-k="'+key+'">'+ic(icon)+'<span>'+label+'</span></a>').join('');
+function setupNavigationBehavior(){
+ const sc=$('#sc'),app=$('.app'),indicator=$('#refreshIndicator'),label=$('#refreshLabel');
+ if(!sc||!app)return;
+ let lastTop=0,startX=0,startY=0,pull=0,gestureTarget=null;
+ const ignoreSwipe='.car,.chips,.lyrics-panel,.player-controls,.player-progress,.library-tabs,input,select,textarea';
+ sc.addEventListener('scroll',()=>{
+  const top=sc.scrollTop;
+  if(top<=10||top<lastTop-5)app.classList.remove('nav-hidden');
+  else if(top>lastTop+5&&top>56)app.classList.add('nav-hidden');
+  lastTop=top;
+  if(window.RushNative)RushNative.updateVideoPosition();
+ },{passive:true});
+ document.addEventListener('pointerdown',event=>{
+  if(event.target.closest('#nav,.top')||event.clientY<76||event.clientY>window.innerHeight-92)app.classList.remove('nav-hidden');
+ },{passive:true});
+ sc.addEventListener('touchstart',event=>{
+  if(!event.touches.length)return;
+  const touch=event.touches[0];startX=touch.clientX;startY=touch.clientY;pull=0;gestureTarget=event.target;
+ },{passive:true});
+ sc.addEventListener('touchmove',event=>{
+  if(!event.touches.length)return;
+  const touch=event.touches[0],dx=touch.clientX-startX,dy=touch.clientY-startY;
+  if(Math.abs(dx)>Math.abs(dy)*1.15)return;
+  if(page==='home'&&sc.scrollTop<=0&&dy>14){
+   pull=Math.min(104,dy*.58);
+   if(indicator){indicator.classList.add('active');indicator.classList.remove('loading');indicator.style.setProperty('--pull-y',pull+'px')}
+   if(label)label.textContent=pull>=68?'Release to refresh':'Pull to refresh';
+   if(event.cancelable)event.preventDefault();
+  }
+ },{passive:false});
+ sc.addEventListener('touchend',event=>{
+  const changed=event.changedTouches&&event.changedTouches[0];
+  const dx=(changed?changed.clientX:startX)-startX,dy=(changed?changed.clientY:startY)-startY;
+  if(pull>=68&&page==='home'){
+   if(indicator){indicator.classList.add('active','loading');indicator.style.setProperty('--pull-y','104px')}
+   if(label)label.textContent='Refreshing…';
+   if(refreshFallback)clearTimeout(refreshFallback);
+   refreshFallback=setTimeout(finishRefreshIndicator,20000);
+   loadHomeFeed(true);if(homeTab==='fy'&&window.RushNative)RushNative.loadMusicSuggestions();
+  }else if(pull>0){
+   setTimeout(finishRefreshIndicator,180);
+  }
+  if(Math.abs(dx)>72&&Math.abs(dx)>Math.abs(dy)*1.25&&!(gestureTarget&&gestureTarget.closest(ignoreSwipe))){
+   const current=page==='player'?'music':page,index=NAV.findIndex(item=>item[0]===current),next=index+(dx<0?1:-1);
+   if(index>=0&&NAV[next]){app.classList.remove('nav-hidden');location.hash='#'+NAV[next][0]}
+  }
+  pull=0;
+ },{passive:true});
+}
+setupNavigationBehavior();
 function navPosition(){
  const active=$('#nav a[aria-current]'),nav=$('#nav');if(!active)return;
  nav.style.setProperty('--lx',active.offsetLeft+2+'px');nav.style.setProperty('--lw',active.offsetWidth-4+'px');
@@ -532,16 +872,28 @@ function renderSources(){
 
 function applyPrefs(data){
  if(data&&data.topics&&data.sources)prefs=data;
+ if(activeTopic&&!activeTopics().includes(activeTopic))activeTopic='';
  const root=$('#topicOptions');
- if(root)root.querySelectorAll('[data-topic]').forEach(b=>b.setAttribute('aria-pressed',selectedTopics().includes(b.dataset.topic)));
- const status=$('#topicStatus');if(status)status.textContent=selectedTopics().length+' selected · '+TOPICS.length+' interests';
- renderSources();updateTopicOptions();
+ if(root)root.querySelectorAll('[data-topic]').forEach(b=>{
+  b.setAttribute('aria-pressed',selectedTopics().includes(b.dataset.topic));
+  b.classList.toggle('snoozed',topicSnoozed(b.dataset.topic));
+ });
+ const status=$('#topicStatus');if(status)status.textContent=activeTopics().length+' active · '+snoozedTopics().length+' snoozed';
+ renderSources();updateTopicOptions();renderHomeTopicTabs();renderSnoozedTopics();
+ if(page==='library'){const copy=$('.profile-copy span');if(copy)copy.textContent=activeTopics().length+' active topics · '+prefs.sources.length+' followed sources'}
+}
+function renderSnoozedTopics(){
+ const root=$('#snoozedTopicList');if(!root)return;
+ const sleeping=snoozedTopics().map(x=>'<div class="snoozed-topic"><span>'+esc(x.topic)+' <small>· '+Math.max(1,Math.ceil((Number(x.until)-Date.now())/3600000))+'h left</small></span><button class="chip" data-unsnooze-topic="'+esc(x.topic)+'">RESTORE</button></div>').join('');
+ root.innerHTML=sleeping||'<p class="meta pad">No topics are snoozed.</p>';
 }
 function loadFeedPreferences(){
  try{if(window.RushNative){const raw=RushNative.getFeedPreferences();if(raw)applyPrefs(JSON.parse(raw))}}catch(e){}
 }
 function go(){
  page=(location.hash||'#home').slice(1);if(!R[page])page='home';
+ $('.app').classList.remove('nav-hidden');
+ $('.app').dataset.page=page;
  $('#v').innerHTML=R[page]();
  if(page==='topics')updateTopicOptions();
  const activePage=page==='player'?'music':page;
@@ -550,61 +902,120 @@ function go(){
  $('#sc').scrollTop=0;navPosition();indicator();loadFeedPreferences();
  if(window.RushNative){
   RushNative.loadCurrentPlayback();
-  if(page==='home')loadHomeFeed();
-  if(page!=='videos')RushNative.hideVideo();
+  if(page==='home'){renderHomeTopicTabs();loadHomeFeed();if(homeTab==='fy')RushNative.loadMusicSuggestions()}
+  if(page==='videos')renderWatchDetails();
   if(page==='music'){RushNative.loadMusicHistory();RushNative.loadMusicSuggestions()}
   if(page==='player')RushNative.loadCurrentMusicLyrics();
   if(page==='news')RushNative.loadPersonalizedNews();
   if(page==='library')loadLibrary();
+  RushNative.updateVideoPosition();
  }
 }
-function loadHomeFeed(){
- const status=$('#homeFeedStatus');if(status)status.textContent=homeTab==='fy'?'Finding a mix of videos, music and news for you…':'Loading posts from sources you follow…';
- if(window.RushNative)RushNative.loadHomeFeed(homeTab==='fy'?'forYou':'following');
+function loadHomeFeed(force=false){
+ const mode=currentFeedMode(),status=$('#homeFeedStatus'),now=Date.now();
+ let cached=homeFeedCache[mode];
+ if(!cached){
+  try{const raw=localStorage.getItem('rush-feed:'+mode);if(raw)cached=JSON.parse(raw)}catch(e){}
+ }
+ if(cached&&cached.data){
+  renderFeedResults(cached.data);
+  if(status)status.textContent='Showing recent posts · updating in background';
+  if(!force&&now-Number(cached.savedAt||0)<5*60*1000)return;
+ }else if(status)status.textContent=activeTopic?'Loading '+activeTopic+'…':(homeTab==='fy'?'Finding your mix…':'Loading followed sources…');
+ if(window.RushNative)RushNative.loadHomeFeed(mode);
+}
+function mixHomeFeedItems(videos,music,articles){
+ const pools={video:videos||[],music:music||[],news:articles||[]};
+ const order=['video','video','music','news'],positions={video:0,music:0,news:0};
+ const total=pools.video.length+pools.music.length+pools.news.length;
+ const mixed=[];let cursor=0;
+ while(mixed.length<total){
+  let picked=false;
+  for(let attempt=0;attempt<order.length;attempt++){
+   const kind=order[cursor++%order.length];
+   if(positions[kind]<(pools[kind]||[]).length){mixed.push({kind,item:pools[kind][positions[kind]++]});picked=true;break}
+  }
+  if(!picked)break;
+ }
+ return mixed;
 }
 function renderFeedResults(data){
- if(page!=='home')return;
- const root=$('#homeFeedResults'),status=$('#homeFeedStatus');if(!root)return;
- const videos=(data.videos||[]),music=(data.music||[]),news=(data.news||[]);
- const v=videos.map(videoRow).join(''),m=music.map(musicRow).join(''),n=news.map(newsCard).join('');
- root.innerHTML=(v?section(homeTab==='fy'?'Recommended for your interests':'Latest from followed channels',v):'')+
- (m?section('Music from artists you follow',m):'')+(n?section('News from publishers you follow',n):'')+
- (!v&&!m&&!n?'<div class="empty-state"><b>'+esc(data.message||'No recommendations yet.')+'</b><p>Follow channels, musicians or publishers and choose topics to shape your feed. Search stays open to every kind of content.</p><button class="btn k" data-open-search>FIND SOURCES</button></div>':'');
- if(status)status.textContent=data.message||((videos.length+music.length+news.length)+' items · '+(homeTab==='fy'?'For You recommendations':'Following'));
+ const incoming=Object.assign({videos:[],music:[],news:[],message:''},data||{});
+ const rankedMusic=[...(incoming.music||[]),...(homeTab==='fy'?homeTasteMusic:[])];
+ const seenMusic=new Set();
+ incoming.music=rankedMusic.filter(item=>item&&item.id&&!seenMusic.has(item.id)&&seenMusic.add(item.id));
+ homeFeedData=incoming;
+ const root=$('#homeFeedResults'),status=$('#homeFeedStatus');if(!root||page!=='home')return;
+ const mixed=mixHomeFeedItems(incoming.videos,incoming.music,incoming.news);
+ const cards=mixed.map(entry=>'<div class="feed-mixed-item" data-kind="'+entry.kind+'">'+(entry.kind==='video'?videoRow(entry.item,false):entry.kind==='music'?musicRow(entry.item,false):newsCard(entry.item,false))+'</div>').join('');
+ const heading=activeTopic?activeTopic:(homeTab==='fy'?'Your personalised mix':'From sources you follow');
+ if(cards)root.innerHTML=section(heading,cards);
+ else root.innerHTML='<div class="empty-state"><b>'+esc(incoming.message||'No recommendations yet.')+'</b><p>Choose topics or follow channels and publishers to shape your feed.</p><button class="btn k" data-open-topics>CHOOSE TOPICS</button></div>';
+ if(status)status.textContent=incoming.message||'Your feed is up to date.';
+}
+function renderWatchDetails(){
+ if(page!=='videos')return;
+ const item=activeVideo||{};
+ const title=$('#watchTitle'),creator=$('#watchCreator');
+ if(title)title.textContent=item.title||mediaState.title||'Select a video';
+ if(creator)creator.textContent=item.creator||mediaState.artist||'Rush video player';
+ const options=$('.watch-actions');
+ if(options&&item.id)options.innerHTML='<button class="chip" data-save-item data-id="'+esc(item.id)+'" data-title="'+esc(item.title)+'" data-creator="'+esc(item.creator)+'" data-music="false" data-thumbnail="'+esc(safeUrl(item.thumbnail))+'">SAVE</button><button class="chip" data-queue-item data-id="'+esc(item.id)+'" data-title="'+esc(item.title)+'" data-creator="'+esc(item.creator)+'" data-music="false" data-thumbnail="'+esc(safeUrl(item.thumbnail))+'">ADD TO QUEUE</button><button class="chip" data-download-media data-id="'+esc(item.id)+'" data-title="'+esc(item.title)+'" data-creator="'+esc(item.creator)+'" data-music="false">DOWNLOAD</button>'+(item.sourceId?sourceButton('channel',item.sourceId,item.sourceName||item.creator,'FOLLOW CHANNEL'):'');
+ const suggestions=$('#watchSuggestions');
+ if(suggestions)suggestions.innerHTML=(homeFeedData.videos||[]).filter(x=>x.id&&x.id!==item.id).slice(0,12).map(x=>videoRow(x,false)).join('')||'<p class="meta pad">Video suggestions will appear here as your feed loads.</p>';
 }
 function renderChannels(items){
  const root=$('#channelResults');if(!root)return;
  root.innerHTML=items.map(channelCard).join('')||'<p class="meta pad">No channels found. Try the channel name or handle.</p>';
 }
+function durationSeconds(value){
+ const parts=String(value||'').trim().split(':').map(Number);
+ if(!parts.length||parts.some(n=>!Number.isFinite(n)))return 0;
+ return parts.reduce((total,n)=>total*60+n,0);
+}
+function publishedRank(value){
+ const textValue=String(value||'').trim();
+ const relative=textValue.match(/(\d+)\s*(second|minute|hour|day|week|month|year)s?\s+ago/i);
+ if(relative){
+  const amount=Number(relative[1]),unit=relative[2].toLowerCase();
+  const factor={second:1000,minute:60000,hour:3600000,day:86400000,week:604800000,month:2629800000,year:31557600000}[unit]||0;
+  return Date.now()-amount*factor;
+ }
+ const parsed=Date.parse(textValue);return Number.isFinite(parsed)?parsed:0;
+}
+function sortedSearchItems(items,kind){
+ const output=[...(items||[])];
+ if(searchSort==='uploadDate')return output.sort((a,b)=>publishedRank(b.publishedText||b.date)-publishedRank(a.publishedText||a.date));
+ if(searchSort==='viewCount'&&kind==='videos')return output.sort((a,b)=>(Number(b.viewCount)||0)-(Number(a.viewCount)||0));
+ if(searchSort==='duration'&&(kind==='videos'||kind==='music'))return output.sort((a,b)=>durationSeconds(b.duration)-durationSeconds(a.duration));
+ return output;
+}
 function renderSearchResults(){
  const root=$('#unifiedResults');if(!root||page!=='search')return;
- const groups={
-  videos:unifiedData.videos,
-  music:unifiedData.music,
-  news:unifiedData.news,
-  channels:unifiedData.channels,
-  playlists:unifiedData.playlists
- };
+ const groups={videos:unifiedData.videos,music:unifiedData.music,news:unifiedData.news,channels:unifiedData.channels,playlists:unifiedData.playlists};
  const names={videos:'Videos',music:'Music',news:'News',channels:'YouTube channels',playlists:'Public YouTube playlists'};
- const renderers={videos:items=>items.map(videoRow).join(''),music:items=>items.map(musicRow).join(''),news:items=>items.map(newsCard).join(''),channels:items=>items.map(channelCard).join(''),playlists:items=>items.map(playlistRow).join('')};
- root.innerHTML=Object.keys(groups).filter(k=>unifiedMode==='all'||unifiedMode===k).map(k=>{
-  const items=groups[k];return section(names[k]+' · '+items.length,renderers[k](items));
- }).join('')||'<p class="meta pad">No results in this category.</p>';
- const total=Object.values(groups).reduce((sum,items)=>sum+items.length,0);
- const status=$('#unifiedStatus');if(status)status.textContent=total+' results · search keeps broader discovery open';
+ const renderers={videos:items=>sortedSearchItems(items,'videos').map(x=>videoRow(x)).join(''),music:items=>sortedSearchItems(items,'music').map(x=>musicRow(x)).join(''),news:items=>sortedSearchItems(items,'news').map(x=>newsCard(x)).join(''),channels:items=>items.map(channelCard).join(''),playlists:items=>items.map(playlistRow).join('')};
+ const keys=Object.keys(groups).filter(k=>(unifiedMode==='all'||unifiedMode===k)&&groups[k].length);
+ root.innerHTML=keys.map(k=>section(names[k],renderers[k](groups[k]))).join('')||
+  (unifiedPending>0?'<p class="meta pad">Searching…</p>':unifiedQuery?'<p class="meta pad">No results found. Try another search.</p>':'');
+ const status=$('#unifiedStatus');
+ if(status)status.textContent=unifiedPending>0?'Searching…':unifiedQuery?'Search complete.':'Enter a search above to discover content.';
 }
+function finishUnifiedSearch(){unifiedPending=Math.max(0,unifiedPending-1);renderSearchResults()}
 function runUnifiedSearch(){
- const q=$('#q')?.value.trim();if(!q)return;
+ const input=$('#q'),q=input?.value.trim();if(!q)return;
  unifiedQuery=q;Object.keys(unifiedData).forEach(k=>unifiedData[k]=[]);
- const status=$('#unifiedStatus');if(status)status.textContent='Searching YouTube, YouTube Music and news sources…';
- $('#unifiedResults').innerHTML='';
+ unifiedPending=5;
+ const status=$('#unifiedStatus');if(status)status.textContent='Searching…';
+ const root=$('#unifiedResults');if(root)root.innerHTML='<p class="meta pad">Searching…</p>';
  const publicRoot=$('#publicPlaylistContent');if(publicRoot)publicRoot.innerHTML='';
  publicPlaylistData=null;
  if(window.RushNative){RushNative.searchVideos(q);RushNative.searchMusic(q);RushNative.searchNews(q);RushNative.searchChannels(q);RushNative.searchPlaylists(q)}
+ else{unifiedPending=0;renderSearchResults()}
 }
 function updateMini(){
  const mini=$('#mini');if(!mini)return;
- const show=!!mediaState.hasItem&&!(!mediaState.title);
+ const show=!!mediaState.hasItem&&!!mediaState.title&&!!mediaState.isMusic;
  mini.classList.toggle('on',show);mini.inert=!show;
  $('.app').classList.toggle('has-mini',show);
  if(!show)return;
@@ -619,7 +1030,8 @@ function updateMini(){
 }
 function updateCurrentPlayback(data){
  mediaState=Object.assign({},mediaState,data||{});updateMini();
- if(page==='videos'){const resume=$('[data-video-resume]');if(resume)resume.hidden=!(mediaState.hasItem&&mediaState.isVideo)}
+ if(mediaState.hasItem&&mediaState.isVideo&&!activeVideo)activeVideo={id:mediaState.sourceId||mediaState.mediaId,title:mediaState.title,creator:mediaState.artist,thumbnail:mediaState.artwork};
+ if(page==='videos')renderWatchDetails();
  if(page==='videos'||page==='music'){
   const currentDownload=$('[data-current-download]'),currentMp3=$('[data-current-mp3]'),currentSave=$('[data-current-save]');
   if(currentDownload)currentDownload.disabled=!mediaState.hasItem||!!mediaState.isOffline;
@@ -674,15 +1086,15 @@ function handleFollow(kind,id,name,productive){
  RushNative.followSource(kind,id,name,!!productive);
 }
 function refreshCurrentPage(){
- if(page==='home')loadHomeFeed();
- if(page==='topics')renderPreferencePage();
+ if(page==='home'){renderHomeTopicTabs();loadHomeFeed(true)}
+ if(page==='topics'){$('#v').innerHTML=R.topics();applyPrefs(prefs)}
  if(page==='search')renderSearchResults();
- if(page==='library')renderLibraryContent();
+ if(page==='library'){const copy=$('#v');if(copy)copy.innerHTML=R.library();applyPrefs(prefs);loadLibrary()}
 }
-document.addEventListener('input',e=>{if(e.target&&e.target.id==='topicQuery')updateTopicOptions()});
 document.addEventListener('click',e=>{
  const b=e.target.closest('button');if(!b)return;
- if(b.id==='topicsShortcut'||b.hasAttribute('data-open-topics')||b.id==='profileShortcut'){location.hash='#topics';return}
+ if(b.id==='profileShortcut'){location.hash='#library';return}
+ if(b.hasAttribute('data-open-topics')){location.hash='#topics';return}
  if(b.dataset.libraryView){
   libraryView=b.dataset.libraryView;renderLibraryContent();
   if(window.RushNative){RushNative.loadLibrary();if(libraryView==='downloads')RushNative.loadDownloads()}
@@ -710,10 +1122,22 @@ document.addEventListener('click',e=>{
  if(b.hasAttribute('data-delete-download')){if(window.RushNative)RushNative.deleteDownload(b.dataset.downloadId);return}
  if(b.hasAttribute('data-current-download')||b.hasAttribute('data-current-mp3')||b.hasAttribute('data-current-save')){const d=mediaState;if(!d.hasItem||!d.mediaId)return;if(window.RushNative){if(b.hasAttribute('data-current-save'))RushNative.saveLibraryItem(d.sourceId||d.mediaId,d.title||'',d.artist||'',!!d.isMusic,d.artwork||'');else if(!d.isOffline)RushNative.downloadMedia(d.sourceId||d.mediaId,d.title||'',d.artist||'',!!d.isMusic,b.hasAttribute('data-current-mp3'))}return}
  if(b.hasAttribute('data-open-search')){location.hash='#search';return}
- if(b.dataset.tab){homeTab=b.dataset.tab;$('#v').innerHTML=R.home();indicator();loadHomeFeed();return}
+ if(b.hasAttribute('data-search-submit')){runUnifiedSearch();return}
+ if(b.dataset.tab){homeTab=b.dataset.tab;activeTopic='';if(homeTab==='fo')homeTasteMusic=[];$('#v').innerHTML=R.home();renderHomeTopicTabs();indicator();loadHomeFeed(true);if(homeTab==='fy'&&window.RushNative)RushNative.loadMusicSuggestions();return}
  if(b.hasAttribute('data-save-topics')){saveTopics();return}
+ if(b.dataset.topicFilter!==undefined){
+  activeTopic=b.dataset.topicFilter||'';
+  renderHomeTopicTabs();
+  loadHomeFeed(true);
+  return
+ }
+ if(b.dataset.snoozeTopic){
+  if(activeTopic===b.dataset.snoozeTopic)activeTopic='';
+  if(window.RushNative)RushNative.snoozeTopic(b.dataset.snoozeTopic);
+  return
+ }
+ if(b.dataset.unsnoozeTopic){if(window.RushNative)RushNative.unsnoozeTopic(b.dataset.unsnoozeTopic);return}
  if(b.dataset.topic){const on=b.getAttribute('aria-pressed')!=='true';b.setAttribute('aria-pressed',String(on));updateTopicOptions();return}
- if(b.hasAttribute('data-unified-search')){runUnifiedSearch();return}
  if(b.dataset.searchFilter){unifiedMode=b.dataset.searchFilter;document.querySelectorAll('[data-search-filter]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));const publicRoot=$('#publicPlaylistContent');if(publicRoot)publicRoot.innerHTML='';renderSearchResults();return}
  if(b.hasAttribute('data-public-playlist-open')){
   const root=$('#publicPlaylistContent');if(root)root.innerHTML='<p class="meta pad">Loading playlist…</p>';
@@ -725,16 +1149,21 @@ document.addEventListener('click',e=>{
   if(window.RushNative&&items.length)RushNative.queuePublicPlaylist(publicPlaylistData.title||'YouTube playlist',JSON.stringify(items));
   return
  }
- if(b.hasAttribute('data-video-search')){const q=$('#videoQuery')?.value.trim();if(q&&window.RushNative){$('#videoStatus').textContent='Searching YouTube…';$('#videoResults').innerHTML='';RushNative.searchVideos(q)}return}
- if(b.hasAttribute('data-channel-search')){const q=$('#channelQuery')?.value.trim();if(q&&window.RushNative){$('#channelStatus').textContent='Searching channels…';$('#channelResults').innerHTML='';RushNative.searchChannels(q)}return}
- if(b.hasAttribute('data-music-search')){const q=$('#musicQuery')?.value.trim();if(q&&window.RushNative){$('#musicStatus').textContent='Searching YouTube Music…';$('#musicResults').innerHTML='';RushNative.searchMusic(q)}return}
- if(b.dataset.musicTerm){const input=$('#musicQuery');if(input)input.value=b.dataset.musicTerm;if(window.RushNative)RushNative.searchMusic(b.dataset.musicTerm);return}
- if(b.hasAttribute('data-news-search')){const q=$('#newsQuery')?.value.trim();if(q&&window.RushNative)RushNative.searchNews(q);return}
+ if(b.dataset.musicTerm){const term=b.dataset.musicTerm;const openSearch=()=>{const input=$('#q');if(input){input.value=term;runUnifiedSearch()}};location.hash='#search';if(page==='search')openSearch();else setTimeout(openSearch,80);return}
  if(b.dataset.newsCategory){document.querySelectorAll('[data-news-category]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));if(b.dataset.newsCategory==='Personalized')RushNative.loadPersonalizedNews();else if(window.RushNative)RushNative.loadNews(b.dataset.newsCategory);return}
  if(b.dataset.followKind){if(sourceExists(b.dataset.followKind,b.dataset.sourceId))RushNative.unfollowSource(b.dataset.followKind,b.dataset.sourceId);else handleFollow(b.dataset.followKind,b.dataset.sourceId,b.dataset.sourceName,false);return}
  if(b.dataset.unfollowKind){if(window.RushNative)RushNative.unfollowSource(b.dataset.unfollowKind,b.dataset.sourceId);return}
- if(b.dataset.videoId){const d=b.dataset;const status=$('#videoPlaybackStatus');if(status){status.hidden=false;status.textContent='Preparing video…'}if(window.RushNative)RushNative.playVideo(d.videoId,d.title,d.creator,d.thumbnail);return}
-  if(b.hasAttribute('data-video-resume')){if(window.RushNative)RushNative.showCurrentVideo();return}
+ if(b.dataset.videoId){
+  const d=b.dataset;
+  activeVideo={id:d.videoId,title:d.title,creator:d.creator,sourceId:d.sourceId||'',sourceName:d.sourceName||'',thumbnail:d.thumbnail||''};
+  const startPlayback=()=>{
+   if(page==='videos'){$('#v').innerHTML=R.videos();renderWatchDetails()}
+   if(window.RushNative)RushNative.playVideo(d.videoId,d.title,d.creator,d.thumbnail)
+  };
+  if(page!=='videos'){location.hash='#videos';setTimeout(startPlayback,180)}else startPlayback();
+  return
+ }
+  if(b.hasAttribute('data-video-resume')){location.hash='#videos';if(window.RushNative)RushNative.showCurrentVideo();return}
  if(b.dataset.track){const d=b.dataset;const status=$('#musicStatus');if(status)status.textContent='Preparing track…';if(window.RushNative)RushNative.playMusic(d.track,d.title,d.artist,d.thumbnail);location.hash='#player';return}
  if(b.dataset.newsUrl){if(window.RushNative)RushNative.openNews(b.dataset.newsUrl);return}
  if(b.hasAttribute('data-video-fullscreen')){if(window.RushNative)RushNative.setVideoFullscreen(true);return}
@@ -756,16 +1185,10 @@ document.addEventListener('click',e=>{
  if(b.dataset.act==='open'){if(mediaState.isMusic)location.hash='#player';else{location.hash='#videos';if(window.RushNative)RushNative.showCurrentVideo()}return}
 });
 document.addEventListener('change',e=>{
+  if(e.target&&e.target.id==='searchSort'){searchSort=e.target.value;renderSearchResults();return}
   if(e.target&&e.target.id==='playerSeek'&&window.RushNative)RushNative.seekPlaybackTo(Number(e.target.value)||0);
  });
- document.addEventListener('keydown',e=>{
- if(e.key!=='Enter')return;
- if(e.target.id==='q'){e.preventDefault();runUnifiedSearch()}
- if(e.target.id==='videoQuery'){e.preventDefault();const b=$('[data-video-search]');if(b)b.click()}
- if(e.target.id==='channelQuery'){e.preventDefault();const b=$('[data-channel-search]');if(b)b.click()}
- if(e.target.id==='musicQuery'){e.preventDefault();const b=$('[data-music-search]');if(b)b.click()}
- if(e.target.id==='newsQuery'){e.preventDefault();const b=$('[data-news-search]');if(b)b.click()}
-});
+ document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='q'){e.preventDefault();runUnifiedSearch()}});
 window.rushFeedPreferences=data=>{applyPrefs(data);refreshCurrentPage()};
 window.rushLibraryData=data=>{libraryData=data||libraryData;if(page==='library')renderLibraryContent()};
 window.rushLibraryError=error=>{const status=$('#libraryStatus');if(status)status.textContent=error.message||'Library action failed.'};
@@ -776,43 +1199,42 @@ window.rushQueuePlayback=state=>{const status=$('#libraryStatus');if(status)stat
 window.rushOpenDownloads=()=>{libraryView='downloads';if(page==='library'){renderLibraryContent();if(window.RushNative)RushNative.loadDownloads()}else location.hash='#library'};
 window.rushFeedPreferencesError=error=>{const t=$('#topicStatus');if(t)t.textContent=error.message||'Could not save preferences.'};
 window.rushCurrentPlayback=updateCurrentPlayback;
-window.rushHomeFeedResults=renderFeedResults;
-window.rushChannelSearchResults=items=>{renderChannels(items);if(page==='search'){unifiedData.channels=items;renderSearchResults()}};
-window.rushPlaylistSearchResults=items=>{unifiedData.playlists=items||[];renderSearchResults()};
-window.rushPlaylistSearchError=error=>{const s=$('#unifiedStatus');if(s)s.textContent=error.message||'Playlist search failed.'};
+window.rushHomeFeedResults=data=>{
+ const key=data&&data.mode?data.mode:currentFeedMode(),entry={savedAt:Date.now(),data:data||{}};
+ homeFeedCache[key]=entry;
+ try{localStorage.setItem('rush-feed:'+key,JSON.stringify(entry))}catch(e){}
+ if(page==='home'&&key===currentFeedMode())renderFeedResults(data);
+ finishRefreshIndicator()
+};
+window.rushChannelSearchResults=items=>{if(page==='search'){unifiedData.channels=items||[];finishUnifiedSearch()}else renderChannels(items||[])};
+window.rushPlaylistSearchResults=items=>{unifiedData.playlists=items||[];finishUnifiedSearch()};
+window.rushPlaylistSearchError=error=>{const s=$('#unifiedStatus');if(s)s.textContent=error.message||'Playlist search failed.';finishUnifiedSearch()};
 window.rushPublicPlaylistResults=data=>{
  publicPlaylistData=data||{items:[]};
  const root=$('#publicPlaylistContent');if(!root||page!=='search')return;
  const items=publicPlaylistData.items||[];
- root.innerHTML='<section class="feed-section"><h2>'+esc(publicPlaylistData.title||'YouTube playlist')+' · '+items.length+'</h2><div class="feed-actions"><button class="chip" data-queue-public-playlist>QUEUE FIRST '+Math.min(50,items.length)+'</button><span class="meta">Up to 100 videos loaded from this public playlist.</span></div>'+(items.length?items.map(videoRow).join(''):'<p class="meta pad">No playable videos were found in this playlist.</p>')+'</section>';
+ root.innerHTML='<section class="feed-section"><h2>'+esc(publicPlaylistData.title||'YouTube playlist')+'</h2><div class="feed-actions"><button class="chip" data-queue-public-playlist>QUEUE PLAYLIST</button></div>'+(items.length?items.map(x=>videoRow(x)).join(''):'<p class="meta pad">No playable videos were found in this playlist.</p>')+'</section>';
 };
 window.rushPublicPlaylistError=error=>{const root=$('#publicPlaylistContent');if(root)root.innerHTML='<p class="meta pad">'+esc(error.message||'Could not open this playlist.')+'</p>'};
 window.rushPlaylistQueued=data=>{const s=$('#unifiedStatus');if(s)s.textContent=(data.count||0)+' playlist videos added to your local queue. Open Library → Queue to play them.'};
 
-window.rushChannelSearchError=error=>{const s=$('#channelStatus')||$('#unifiedStatus');if(s)s.textContent=error.message||'Channel search failed.'};
-window.rushVideoSearchResults=items=>{
- unifiedData.videos=items;renderSearchResults();
- const root=$('#videoResults');if(root)root.innerHTML=items.map(videoRow).join('')||'<p class="meta pad">No videos found. Try another search.</p>';
- const status=$('#videoStatus');if(status)status.textContent=items.length+' videos found';
-};
-window.rushVideoSearchError=error=>{const s=$('#videoStatus')||$('#unifiedStatus');if(s)s.textContent=error.message||'Video search failed.'};
+window.rushChannelSearchError=error=>{const s=$('#unifiedStatus');if(s)s.textContent=error.message||'Channel search failed.';finishUnifiedSearch()};
+window.rushVideoSearchResults=items=>{unifiedData.videos=items||[];finishUnifiedSearch()};
+window.rushVideoSearchError=error=>{const s=$('#unifiedStatus');if(s)s.textContent=error.message||'Video search failed.';finishUnifiedSearch()};
 window.rushVideoPlaybackState=state=>{
  const status=$('#videoPlaybackStatus');
  if(status){status.hidden=false;status.textContent=state.state==='playing'?'NOW PLAYING · '+(state.title||'Video'):state.message||state.state}
  if(state.state==='playing'&&window.RushNative)RushNative.loadCurrentPlayback();
 };
 window.rushVideoCaptions=lines=>{const root=$('#videoCaptions');if(root)root.textContent=lines.join(' ')};
-window.rushMusicSearchResults=items=>{
- unifiedData.music=items;renderSearchResults();
- const root=$('#musicResults');if(root)root.innerHTML=items.map(musicRow).join('')||'<p class="meta pad">No tracks found. Try another search.</p>';
- const status=$('#musicStatus');if(status)status.textContent=items.length+' tracks found';
-};
-window.rushMusicSearchError=error=>{const s=$('#musicStatus')||$('#unifiedStatus');if(s)s.textContent=error.message||'Music search failed.'};
+window.rushMusicSearchResults=items=>{unifiedData.music=items||[];finishUnifiedSearch()};
+window.rushMusicSearchError=error=>{const s=$('#unifiedStatus');if(s)s.textContent=error.message||'Music search failed.';finishUnifiedSearch()};
 window.rushMusicHistory=items=>{const root=$('#musicRecent');if(root)root.innerHTML=items.slice(0,8).map(musicHistoryRow).join('')||'<p class="meta pad">No tracks played yet.</p>'};
 window.rushMusicSuggestionResults=data=>{
  const items=data.items||[],root=$('#musicSuggestions'),status=$('#musicSuggestionStatus');
- if(root)root.innerHTML=items.map(musicRow).join('')||'<p class="meta pad">'+esc(data.message||'Play music or follow an artist to establish your taste profile.')+'</p>';
+ if(root)root.innerHTML=items.map(x=>musicRow(x)).join('')||'<p class="meta pad">'+esc(data.message||'Play music or follow an artist to establish your taste profile.')+'</p>';
  if(status)status.textContent=data.message||'Ranked using followed musicians and recent listening history.';
+ if(page==='home'&&homeTab==='fy'){homeTasteMusic=items;renderFeedResults(homeFeedData)}
 };
 window.rushMusicPlaybackState=state=>{
  const status=$('#musicStatus');if(status&&page==='music')status.textContent=state.state==='playing'?'PLAYING · '+(state.title||'track'):state.state==='loading'?'LOADING · '+(state.title||'track'):state.message||state.state;
@@ -833,12 +1255,8 @@ window.rushMusicLyrics=data=>{
  else{root.textContent='';window._rushLyrics=[];if(status)status.textContent='No lyrics available for this track.'}
 };
 window.rushNewsLoading=state=>{const s=$('#newsStatus');if(s)s.textContent='Loading: '+state.query+'…'};
-window.rushNewsError=error=>{const s=$('#newsStatus')||$('#unifiedStatus');if(s)s.textContent=error.message||'Could not load news.'};
-window.rushNewsResults=items=>{
- unifiedData.news=items;renderSearchResults();
- const root=$('#newsResults');if(root)root.innerHTML=items.map(newsCard).join('')||'<p class="meta pad">No articles found.</p>';
- const status=$('#newsStatus');if(status)status.textContent=items.length+' articles · ranked by your topics and publisher follows';
-};
+window.rushNewsError=error=>{const s=$('#newsStatus')||$('#unifiedStatus');if(s)s.textContent=error.message||'Could not load news.';if(page==='search')finishUnifiedSearch()};
+window.rushNewsResults=items=>{unifiedData.news=items||[];if(page==='search')finishUnifiedSearch();const root=$('#newsResults');if(root&&page==='news')root.innerHTML=unifiedData.news.map(x=>newsCard(x)).join('')||'<p class="meta pad">No articles found.</p>';const status=$('#newsStatus');if(status&&page==='news')status.textContent='Reporting selected for your interests and followed publishers.'};
 window.rushMusicLyricsLoading=()=>{
  window._rushLyrics=[];
  const status=$('#playerLyricsStatus'),root=$('#playerLyricsPanel');

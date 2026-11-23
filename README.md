@@ -9,7 +9,7 @@ Rush is an Android media and discovery app built with Kotlin, AndroidX Media3 an
 - Source follows for YouTube channels, news publishers and musicians
 - A two-mode Home feed: For You and Following
 - User-selected topics across learning, culture, entertainment and low-focus/viral categories
-- For You recommendations limited to YouTube channels the user explicitly includes in the productive-channel pool
+- For You recommendations seeded by selected topics and all followed YouTube channels, ranked with local interests and history
 - News discovery and publisher-aware suggestions using topic relevance, reporting/context signals and followed publishers
 - Broad search across videos, music, news, YouTube channels and public video playlists; playlist tracks can be browsed and queued locally, and recommendation scoring is not applied as a search restriction
 - Public video playlists, local playlists, watch/listening history and offline downloads
@@ -19,7 +19,7 @@ Movies and TV are temporarily hidden from the app while a permitted, reliable mo
 
 ## Recommendation behavior
 
-For You draws from all followed YouTube channels; following is enough to supply candidates. Productive and informative material is ranked higher, rather than requiring a separate channel eligibility flag. Selected topics help rank videos across different subject areas, so productive recommendations are not limited to one discipline. Low-focus topics such as memes, pranks and viral clips remain available in topic selection and unrestricted search, but receive a ranking penalty in recommendation feeds.
+For You combines candidates from all followed YouTube channels with live YouTube searches seeded by the user's selected topics. Following remains source-only. The local scorer ranks candidates by topic affinity, follows, listening or viewing history, freshness, metadata quality and novelty, then diversifies creators. This means new users can get video suggestions before following a channel. Productive and informative material is ranked higher, rather than requiring a separate channel eligibility flag. Selected topics help rank videos across different subject areas, so productive recommendations are not limited to one discipline. Low-focus topics such as memes, pranks and viral clips remain available in topic selection and unrestricted search, but receive a ranking penalty in recommendation feeds.
 
 Following collects content from sources the user follows. Music suggestions use followed musicians and recent listening history. News suggestions use selected topics and followed publishers, with contextual/reporting signals prioritized over low-information viral terms. Search remains broader than recommendation feeds and is not filtered by the selected topics or productive-channel pool.
 
