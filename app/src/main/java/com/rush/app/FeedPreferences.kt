@@ -151,12 +151,7 @@ object FeedPreferences {
             .mapNotNull { array.optString(it).trim().takeIf { value -> value in topicCatalog } }
             .distinct()
         require(selected.isNotEmpty()) { "Choose at least one topic." }
-        val snoozed = JSONObject(prefs.getString(SNOOZED_TOPICS_KEY, "{}") ?: "{}")
-        selected.forEach(snoozed::remove)
-        prefs.edit()
-            .putString(TOPICS_KEY, JSONArray(selected).toString())
-            .putString(SNOOZED_TOPICS_KEY, snoozed.toString())
-            .apply()
+        prefs.edit().putString(TOPICS_KEY, JSONArray(selected).toString()).apply()
         return selected
     }
 
