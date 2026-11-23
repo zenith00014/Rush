@@ -7,6 +7,29 @@ plugins {
     id("com.google.protobuf") version "0.9.6"
 }
 
+val robolectricSdkRuntime by configurations.creating {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+}
+
+val prepareRobolectricRuntime by tasks.registering {
+    val runtimeArtifacts = robolectricSdkRuntime
+    val runtimeDirectory = layout.buildDirectory.dir("robolectric-runtime")
+    doLast {
+        val artifacts = runtimeArtifacts.files
+        check(artifacts.size == 1) {
+            "Expected one preinstrumented Robolectric SDK jar, found ${artifacts.size}"
+        }
+        val destinationDirectory = runtimeDirectory.get().asFile
+        destinationDirectory.mkdirs()
+        val destination = java.io.File(
+            destinationDirectory,
+            "android-all-instrumented-15-robolectric-12650502-i7.jar"
+        )
+        artifacts.single().copyTo(destination, overwrite = true)
+    }
+}
+
 android {
     namespace = "com.rush.app"
     compileSdk = 36
@@ -24,13 +47,14 @@ android {
         unitTests {
             isIncludeAndroidResources = true
             all {
-                // Robolectric fetches its Android runtime separately from Gradle dependencies.
-                // Use the same mirror configured in settings.gradle.kts, not repo1.maven.org.
+                // Fetch the large Android framework jar as a Gradle dependency, then let
+                // Robolectric load that local artifact without making its own HTTP request.
+                it.dependsOn(prepareRobolectricRuntime)
                 it.systemProperty(
-                    "robolectric.dependency.repo.url",
-                    "https://maven-central.storage-download.googleapis.com/maven2/"
+                    "robolectric.dependency.dir",
+                    layout.buildDirectory.dir("robolectric-runtime").get().asFile.absolutePath
                 )
-                it.systemProperty("robolectric.dependency.repo.id", "google-maven-central-mirror")
+                it.systemProperty("robolectric.offline", "true")
             }
         }
     }
@@ -67,6 +91,7 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
     testImplementation("androidx.test:core:1.6.1")
     testImplementation("org.robolectric:robolectric:4.14.1")
+    robolectricSdkRuntime("org.robolectric:android-all-instrumented:15-robolectric-12650502-i7")
 }
 
 protobuf {

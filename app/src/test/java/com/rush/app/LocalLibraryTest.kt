@@ -76,15 +76,16 @@ class LocalLibraryTest {
     }
 
     @Test
-    fun topicSelectionIsValidatedAndChannelRecommendationIsExplicit() {
+    fun topicSelectionIsValidatedAndLegacyProductivityFlagDoesNotGateForYou() {
         FeedPreferences.saveTopics(prefs, """["Science","Programming"]""")
         FeedPreferences.follow(prefs, "channel", "UC0123456789", "Science channel", false)
-        var source = FeedPreferences.sources(prefs).single()
-        assertFalse(source.productive)
+        val source = FeedPreferences.sources(prefs).single()
 
-        FeedPreferences.setProductive(prefs, "UC0123456789", "Science channel", true)
-        source = FeedPreferences.sources(prefs).single()
-        assertTrue(source.productive)
+        assertFalse(source.productive)
+        assertEquals(
+            listOf("UC0123456789"),
+            FeedPreferences.forYouChannels(listOf(source)).map { it.id }
+        )
         assertEquals(listOf("Science", "Programming"), FeedPreferences.topics(prefs))
 
         var rejected = false

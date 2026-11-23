@@ -145,6 +145,13 @@ def main():
     for native_method in ("fun musicDuration()", "fun seekPlaybackTo(positionMs: Long)", "fun skipPrevious()", "fun skipNext()"):
         if native_method not in bridge:
             fail(f"Native media control missing: {native_method}")
+    gradle_config = (ROOT / "app/build.gradle.kts").read_text(encoding="utf-8")
+    if "robolectricSdkRuntime" not in gradle_config or "robolectric.offline" not in gradle_config:
+        fail("Robolectric Android SDK must be prefetched by Gradle and loaded offline")
+    if "Number((m[3]||'').padEnd(3,'0'))/1000" not in js:
+        fail("LRC fractional timestamps must preserve 1-, 2-, and 3-digit precision")
+    if "window.rushMusicLyricsLoading=()=>{" not in js:
+        fail("Player lyrics loading feedback callback is missing")
     if "if (!future.isDone || future.isCancelled) return null" not in bridge:
         fail("Playback position polling must never block waiting for the media service")
     if "robolectric.dependency.repo.url" not in gradle or "maven-central.storage-download.googleapis.com/maven2/" not in gradle:
