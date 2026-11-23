@@ -593,19 +593,19 @@ function videoRow(x,showActions=true){
  const thumb=safeUrl(x.thumbnail);
  return '<article class="result-wrap"><button class="media-main" data-video-id="'+esc(x.id)+'" data-title="'+esc(x.title)+'" data-creator="'+esc(x.artist||x.creator)+'" data-source-id="'+esc(x.sourceId||'')+'" data-source-name="'+esc(x.sourceName||x.artist||x.creator||'')+'" data-thumbnail="'+esc(thumb)+'"><span class="media-copy"><b>'+esc(x.title)+'</b><span>'+esc(x.artist||x.creator||'YouTube')+' · '+esc(x.duration||'')+'</span></span>'+mediaThumbnail(thumb,x.title)+'<span class="media-play">'+ic('play')+'</span></button>'+(showActions?mediaActions(x,false):'')+'</article>';
 }
-function musicRow(x){
+function musicRow(x,showActions=true){
  const thumb=safeUrl(x.thumbnail);
- return '<article class="result-wrap"><button class="media-main" data-track="'+esc(x.id)+'" data-title="'+esc(x.title)+'" data-artist="'+esc(x.artist)+'" data-thumbnail="'+esc(thumb)+'"><span class="media-copy"><b>'+esc(x.title)+'</b><span>'+esc(x.artist||'Unknown artist')+' · '+esc(x.duration||'')+'</span></span>'+mediaThumbnail(thumb,x.title)+'<span class="media-play">'+ic('play')+'</span></button><div class="result-actions">'+sourceButton('artist',x.artist,x.artist,'FOLLOW ARTIST')+'</div>'+mediaActions(x,true)+'</article>';
+ return '<article class="result-wrap"><button class="media-main" data-track="'+esc(x.id)+'" data-title="'+esc(x.title)+'" data-artist="'+esc(x.artist)+'" data-thumbnail="'+esc(thumb)+'"><span class="media-copy"><b>'+esc(x.title)+'</b><span>'+esc(x.artist||'Unknown artist')+' · '+esc(x.duration||'')+'</span></span>'+mediaThumbnail(thumb,x.title)+'<span class="media-play">'+ic('play')+'</span></button>'+(showActions?'<div class="result-actions">'+sourceButton('artist',x.artist,x.artist,'FOLLOW ARTIST')+'</div>'+mediaActions(x,true):'')+'</article>';
 }
 function musicHistoryRow(x){return '<article class="result-wrap history-row">'+videoLikeMusic(x)+'</article>'}
 function videoLikeMusic(x){
  const thumb=safeUrl(x.thumbnail);
  return '<button class="media-main" data-track="'+esc(x.id)+'" data-title="'+esc(x.title)+'" data-artist="'+esc(x.artist)+'" data-thumbnail="'+esc(thumb)+'"><span class="media-copy"><b>'+esc(x.title)+'</b><span>'+esc(x.artist||'Unknown artist')+' · '+esc(x.duration||'')+'</span></span>'+mediaThumbnail(thumb,x.title)+'<span class="media-play">'+ic('play')+'</span></button>';
 }
-function newsCard(x){
+function newsCard(x,showPublisherAction=true){
  const thumb=safeUrl(x.thumbnail),publisher=x.source||'News publisher';
  const image='<span class="news-thumb-wrap"><span class="news-thumb-fallback">NEWS</span>'+(thumb?'<img class="news-thumb" src="'+esc(thumb)+'" alt="" loading="lazy" decoding="async" onerror="this.hidden=true">':'')+'</span>';
- return '<article class="news-card"><button class="news-open" data-news-url="'+esc(safeUrl(x.url))+'"><span class="news-copy"><b>'+esc(x.title)+'</b><p>'+esc(x.summary||'Open the article for the full report.')+'</p><span class="news-meta">'+esc(publisher)+' · '+esc(x.date||'')+'</span></span>'+image+'</button><div class="result-actions">'+sourceButton('news',publisher,publisher,'FOLLOW PUBLISHER')+'</div></article>';
+ return '<article class="news-card"><button class="news-open" data-news-url="'+esc(safeUrl(x.url))+'"><span class="news-copy"><b>'+esc(x.title)+'</b><p>'+esc(x.summary||'Open the article for the full report.')+'</p><span class="news-meta">'+esc(publisher)+' · '+esc(x.date||'')+'</span></span>'+image+'</button>'+(showPublisherAction?'<div class="result-actions">'+sourceButton('news',publisher,publisher,'FOLLOW PUBLISHER')+'</div>':'')+'</article>';
 }
 function section(title,body){
  return '<section class="feed-section"><h2>'+title+'</h2>'+(body||'<p class="meta pad">Nothing to show yet.</p>')+'</section>';
@@ -617,13 +617,22 @@ let homeTasteMusic=[],homeFeedData={videos:[],music:[],news:[],message:''};
 function renderHome(){
  return pageTop('Home','your feed')+
  '<div class="seg" role="tablist"><i></i><button role="tab" data-tab="fy" aria-selected="'+(homeTab==='fy')+'">For you</button><button role="tab" data-tab="fo" aria-selected="'+(homeTab==='fo')+'">Following</button></div>'+
- '<div class="feed-actions"><button class="chip" data-open-topics>CHOOSE TOPICS</button></div>'+
- '<p class="meta pad" id="homeFeedStatus" aria-live="polite">Building your feed…</p><div id="homeFeedResults"></div>';
+ '<div class="topic-stream" id="homeTopicTabs" aria-label="Followed topics"></div>'+
+ '<p class="meta pad" id="homeFeedStatus" aria-live="polite">Loading your feed…</p><div id="homeFeedResults"></div>';
 }
 function renderVideoPage(){
- return pageTop('Videos','full-screen playback')+
- '<section class="video-controls"><div class="video-player-status"><p class="meta pad video-playback-status" id="videoPlaybackStatus" aria-live="polite" hidden></p><button class="chip" data-video-resume hidden>OPEN VIDEO PLAYER</button></div>'+
- '<div class="empty-state video-empty"><b>Your video space</b><p>Choose a video from your feed or Search to open the full-screen player. Your current video can be reopened here.</p></div></section>';
+ const item=activeVideo||{};
+ const title=item.title||mediaState.title||'Select a video';
+ const creator=item.creator||mediaState.artist||'Rush video player';
+ const thumb=safeUrl(item.thumbnail||mediaState.artwork);
+ const options=item.id?'<div class="watch-actions"><button class="chip" data-save-item data-id="'+esc(item.id)+'" data-title="'+esc(title)+'" data-creator="'+esc(creator)+'" data-music="false" data-thumbnail="'+esc(thumb)+'">SAVE</button><button class="chip" data-queue-item data-id="'+esc(item.id)+'" data-title="'+esc(title)+'" data-creator="'+esc(creator)+'" data-music="false" data-thumbnail="'+esc(thumb)+'">ADD TO QUEUE</button><button class="chip" data-download-media data-id="'+esc(item.id)+'" data-title="'+esc(title)+'" data-creator="'+esc(creator)+'" data-music="false">DOWNLOAD</button>'+(item.sourceId?sourceButton('channel',item.sourceId,item.sourceName||creator,'FOLLOW CHANNEL'):'')+'</div>':'';
+ const suggestions=(homeFeedData.videos||[]).filter(x=>x.id&&x.id!==item.id).slice(0,12);
+ return pageTop('Watch','in-app playback')+
+ '<section class="watch-page"><div class="watch-player-frame" id="videoPlayerHost"><span>VIDEO PLAYER</span></div>'+
+ '<div class="watch-heading"><h2 id="watchTitle">'+esc(title)+'</h2><p id="watchCreator">'+esc(creator)+'</p><p class="meta" id="videoPlaybackStatus" aria-live="polite">Select a video from Home or Search.</p></div>'+
+ options+
+ '<section class="watch-section"><h2>Comments</h2><p class="meta pad">Comments are not available from the current video source.</p></section>'+
+ '<section class="watch-section"><h2>Up next</h2><div id="watchSuggestions">'+(suggestions.length?suggestions.map(x=>videoRow(x,false)).join(''):'<p class="meta pad">Video suggestions will appear here as your feed loads.</p>')+'</div></section></section>';
 }
 function renderMusicPage(){
  return pageTop('Music','your listening taste')+
@@ -658,19 +667,23 @@ function updateTopicOptions(){
  if(status)status.textContent=buttons.filter(b=>b.getAttribute('aria-pressed')==='true').length+' selected · '+TOPICS.length+' interests';
 }
 function renderTopicsPage(){
- return pageTop('Personalise','your interests and followed sources')+
- '<p class="pad meta">Choose subjects you care about. Recommendations prioritise useful, informative material; every subject remains available in Search.</p>'+
- '<div class="meta pad" id="topicStatus" aria-live="polite">'+selectedTopics().length+' selected · '+TOPICS.length+' interests</div>'+
- '<div class="topics-grid" id="topicOptions">'+TOPICS.map(t=>'<button class="chip topic-chip" data-topic="'+esc(t)+'" aria-pressed="'+selectedTopics().includes(t)+'">'+esc(t)+'</button>').join('')+'</div>'+
- '<div class="feed-actions"><button class="btn k" data-save-topics>SAVE INTERESTS</button></div>'+
- '<h2>Followed sources</h2><p class="meta pad">Follow any channel, publisher or musician. Followed sources are saved on this device and automatically shape your feed.</p><div id="followedSources"></div>';
+ const sleeping=snoozedTopics().map(x=>'<div class="snoozed-topic"><span>'+esc(x.topic)+' <small>· '+Math.max(1,Math.ceil((Number(x.until)-Date.now())/3600000))+'h left</small></span><button class="chip" data-unsnooze-topic="'+esc(x.topic)+'">RESTORE</button></div>').join('');
+ return pageTop('Topics','your interests')+
+ '<p class="pad meta">Your active topics appear together on Home. Pick one topic to focus the feed, or snooze it for one day.</p>'+
+ '<div class="meta pad" id="topicStatus" aria-live="polite">'+activeTopics().length+' active · '+snoozedTopics().length+' snoozed</div>'+
+ '<div class="topics-grid" id="topicOptions">'+TOPICS.map(t=>'<button class="chip topic-chip '+(topicSnoozed(t)?'snoozed':'')+'" data-topic="'+esc(t)+'" aria-pressed="'+selectedTopics().includes(t)+'">'+esc(t)+(topicSnoozed(t)?' · SNOOZED':'')+'</button>').join('')+'</div>'+
+ '<div class="feed-actions"><button class="btn k" data-save-topics>SAVE TOPICS</button></div>'+
+ '<section class="snoozed-list"><h2>Snoozed for one day</h2><div id="snoozedTopicList">'+(sleeping||'<p class="meta pad">No topics are snoozed.</p>')+'</div></section>'+
+ '<h2>Followed sources</h2><p class="meta pad">Follow channels, publishers and musicians to shape your Home feed.</p><div id="followedSources"></div>';
 }
 const R={home:renderHome,videos:renderVideoPage,music:renderMusicPage,player:renderPlayerPage,news:renderNewsPage,search:renderSearchPage,topics:renderTopicsPage,library:renderLibraryPage};
 
 let libraryView='saved',libraryData={saved:[],history:[],queue:[],playlists:[],items:{}},downloadData={items:[],count:0,bytes:0};
 function renderLibraryPage(){
- return pageTop('Library','saved offline')+
- '<div class="chips library-tabs">'+[['saved','Saved'],['history','History'],['playlists','Playlists'],['queue','Queue'],['downloads','Downloads']].map(([key,label])=>'<button class="chip" data-library-view="'+key+'" aria-pressed="'+(libraryView===key)+'">'+label+'</button>').join('')+'</div>'+
+ return pageTop('You','profile + library')+
+ '<section class="profile-panel"><div class="profile-mark">R</div><div class="profile-copy"><b>YOUR RUSH</b><span>'+activeTopics().length+' active topics · '+prefs.sources.length+' followed sources</span></div><button class="chip" data-open-topics>EDIT TOPICS</button></section>'+
+ '<h2>Followed sources</h2><div id="followedSources"></div>'+
+ '<h2>Your library</h2><div class="chips library-tabs">'+[['saved','Saved'],['history','History'],['playlists','Playlists'],['queue','Queue'],['downloads','Downloads']].map(([key,label])=>'<button class="chip" data-library-view="'+key+'" aria-pressed="'+(libraryView===key)+'">'+label+'</button>').join('')+'</div>'+
  '<p class="meta pad" id="libraryStatus">Your collection is stored on this device.</p><div id="libraryContent"></div>';
 }
 function libraryMediaRow(id,kind,playlistId){
