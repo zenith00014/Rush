@@ -440,7 +440,8 @@ object LiveYouTubeSearch {
     }
 
     @Throws(IOException::class)
-    fun latestUploads(channelId: String): List<YouTubeSearchResult> {
+    fun latestUploads(channelId: String, limit: Int = 100): List<YouTubeSearchResult> {
+        require(limit in 1..100) { "Upload limit must be between 1 and 100." }
         val resolvedChannelId = if (channelId.startsWith("UC")) channelId else channelDetails(
             YouTubeSearchResult("", channelId, "", "", false, true, channelId)
         ).channelId
@@ -453,7 +454,7 @@ object LiveYouTubeSearch {
         collect(firstPage, found, false, false, false)
         var continuation = findContinuation(firstPage)
         var pageCount = 0
-        while (!continuation.isNullOrBlank() && pageCount < 4 && found.size < 120) {
+        while (!continuation.isNullOrBlank() && pageCount < 4 && found.size < limit) {
             val page = browseChannel(continuation = continuation)
             collect(page, found, false, false, false)
             val next = findContinuation(page)
@@ -461,7 +462,7 @@ object LiveYouTubeSearch {
             continuation = next
             pageCount++
         }
-        return found.values.filter { it.videoId.isNotBlank() }.take(100)
+        return found.values.filter { it.videoId.isNotBlank() }.take(limit)
     }
 
     private fun browseChannel(
