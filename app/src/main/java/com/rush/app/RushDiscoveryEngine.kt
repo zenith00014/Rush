@@ -156,8 +156,8 @@ object RushDiscoveryEngine {
         if (following || limit <= 0) return emptyList()
         val seen = HashSet<String>()
         return topics.asSequence()
-            .map(String::trim)
-            .filter(String::isNotBlank)
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
             .filter { seen.add(normalize(it)) }
             .take(limit)
             .toList()
