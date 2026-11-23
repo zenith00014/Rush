@@ -598,7 +598,7 @@ function videoLikeMusic(x){
 }
 function newsCard(x){
  const thumb=safeUrl(x.thumbnail),publisher=x.source||'News publisher';
- const image='<span class="news-thumb-wrap"><span class="news-thumb-fallback">NEWS</span>'+(thumb?'<img class="news-thumb" src="'+esc(thumb)+'" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.hidden=true">':'')+'</span>';
+ const image='<span class="news-thumb-wrap"><span class="news-thumb-fallback">NEWS</span>'+(thumb?'<img class="news-thumb" src="'+esc(thumb)+'" alt="" loading="lazy" decoding="async" onerror="this.hidden=true">':'')+'</span>';
  return '<article class="news-card"><button class="news-open" data-news-url="'+esc(safeUrl(x.url))+'"><span class="news-copy"><b>'+esc(x.title)+'</b><p>'+esc(x.summary||'Open the article for the full report.')+'</p><span class="news-meta">'+esc(publisher)+' · '+esc(x.date||'')+'</span></span>'+image+'</button><div class="result-actions">'+sourceButton('news',publisher,publisher,'FOLLOW PUBLISHER')+'</div></article>';
 }
 function section(title,body){
