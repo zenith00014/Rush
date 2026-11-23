@@ -561,12 +561,15 @@ h2::after{display:none}
 .si,.seg,.bi{border-radius:0!important}
 @media(max-width:380px){.profile-panel{gap:8px;padding:10px}.profile-panel .chip{padding:0 8px}.topic-tab,.topic-manage{padding-inline:9px}}
 
+
+.nav a,.nav .pill{border-radius:0!important}
+.top-profile{font:900 19px var(--f)!important;letter-spacing:-.06em}
 </style></head>
 <body>
 <div class="app">
 <header class="top">
     <div class="wm" aria-label="Rush">rush<i></i></div>
-    <div><button class="ib top-profile" id="profileShortcut" aria-label="Open profile and library">◉</button></div>
+    <div><button class="ib top-profile" id="profileShortcut" aria-label="Open profile and library">R</button></div>
   </header>
 <main id="sc"><div id="refreshIndicator" class="refresh-indicator" aria-hidden="true"><span class="refresh-spinner"></span><span id="refreshLabel">Pull to refresh</span></div><div id="v"></div></main>
   <section class="mini" id="mini" aria-label="Now playing" inert>
@@ -613,7 +616,7 @@ function topicSnoozed(topic){return snoozedTopics().some(item=>item.topic===topi
 function currentFeedMode(){return activeTopic?'topic:'+activeTopic:(homeTab==='fy'?'forYou':'following')}
 function renderHomeTopicTabs(){
  const root=$('#homeTopicTabs');if(!root)return;
- const tabs=activeTopics().map(topic=>'<div class="topic-tab-wrap"><button class="topic-tab" data-topic-filter="'+esc(topic)+'" aria-pressed="'+(activeTopic===topic)+'">'+esc(topic)+'</button><button class="topic-snooze" data-snooze-topic="'+esc(topic)+'" aria-label="Snooze '+esc(topic)+' for one day" title="Snooze for 24 hours">···</button></div>').join('');
+ const tabs=activeTopics().map(topic=>'<div class="topic-tab-wrap"><button class="topic-tab" data-topic-filter="'+esc(topic)+'" aria-pressed="'+(activeTopic===topic)+'">'+esc(topic)+'</button><button class="topic-snooze" data-snooze-topic="'+esc(topic)+'" aria-label="Snooze '+esc(topic)+' for one day" title="Snooze for 24 hours">1D</button></div>').join('');
  root.innerHTML='<button class="topic-tab topic-all" data-topic-filter="" aria-pressed="'+(!activeTopic)+'">ALL</button>'+tabs+'<button class="topic-manage" data-open-topics>＋ TOPICS</button>';
 }
 function loadPrefs(){
