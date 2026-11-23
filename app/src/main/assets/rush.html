@@ -993,7 +993,7 @@ function renderSearchResults(){
  const root=$('#unifiedResults');if(!root||page!=='search')return;
  const groups={videos:unifiedData.videos,music:unifiedData.music,news:unifiedData.news,channels:unifiedData.channels,playlists:unifiedData.playlists};
  const names={videos:'Videos',music:'Music',news:'News',channels:'YouTube channels',playlists:'Public YouTube playlists'};
- const renderers={videos:items=>sortedSearchItems(items,'videos').map(videoRow).join(''),music:items=>sortedSearchItems(items,'music').map(musicRow).join(''),news:items=>sortedSearchItems(items,'news').map(newsCard).join(''),channels:items=>items.map(channelCard).join(''),playlists:items=>items.map(playlistRow).join('')};
+ const renderers={videos:items=>sortedSearchItems(items,'videos').map(x=>videoRow(x)).join(''),music:items=>sortedSearchItems(items,'music').map(x=>musicRow(x)).join(''),news:items=>sortedSearchItems(items,'news').map(x=>newsCard(x)).join(''),channels:items=>items.map(channelCard).join(''),playlists:items=>items.map(playlistRow).join('')};
  const keys=Object.keys(groups).filter(k=>(unifiedMode==='all'||unifiedMode===k)&&groups[k].length);
  root.innerHTML=keys.map(k=>section(names[k],renderers[k](groups[k]))).join('')||
   (unifiedPending>0?'<p class="meta pad">Searching…</p>':unifiedQuery?'<p class="meta pad">No results found. Try another search.</p>':'');
@@ -1212,7 +1212,7 @@ window.rushPublicPlaylistResults=data=>{
  publicPlaylistData=data||{items:[]};
  const root=$('#publicPlaylistContent');if(!root||page!=='search')return;
  const items=publicPlaylistData.items||[];
- root.innerHTML='<section class="feed-section"><h2>'+esc(publicPlaylistData.title||'YouTube playlist')+'</h2><div class="feed-actions"><button class="chip" data-queue-public-playlist>QUEUE PLAYLIST</button></div>'+(items.length?items.map(videoRow).join(''):'<p class="meta pad">No playable videos were found in this playlist.</p>')+'</section>';
+ root.innerHTML='<section class="feed-section"><h2>'+esc(publicPlaylistData.title||'YouTube playlist')+'</h2><div class="feed-actions"><button class="chip" data-queue-public-playlist>QUEUE PLAYLIST</button></div>'+(items.length?items.map(x=>videoRow(x)).join(''):'<p class="meta pad">No playable videos were found in this playlist.</p>')+'</section>';
 };
 window.rushPublicPlaylistError=error=>{const root=$('#publicPlaylistContent');if(root)root.innerHTML='<p class="meta pad">'+esc(error.message||'Could not open this playlist.')+'</p>'};
 window.rushPlaylistQueued=data=>{const s=$('#unifiedStatus');if(s)s.textContent=(data.count||0)+' playlist videos added to your local queue. Open Library → Queue to play them.'};
@@ -1231,7 +1231,7 @@ window.rushMusicSearchError=error=>{const s=$('#unifiedStatus');if(s)s.textConte
 window.rushMusicHistory=items=>{const root=$('#musicRecent');if(root)root.innerHTML=items.slice(0,8).map(musicHistoryRow).join('')||'<p class="meta pad">No tracks played yet.</p>'};
 window.rushMusicSuggestionResults=data=>{
  const items=data.items||[],root=$('#musicSuggestions'),status=$('#musicSuggestionStatus');
- if(root)root.innerHTML=items.map(musicRow).join('')||'<p class="meta pad">'+esc(data.message||'Play music or follow an artist to establish your taste profile.')+'</p>';
+ if(root)root.innerHTML=items.map(x=>musicRow(x)).join('')||'<p class="meta pad">'+esc(data.message||'Play music or follow an artist to establish your taste profile.')+'</p>';
  if(status)status.textContent=data.message||'Ranked using followed musicians and recent listening history.';
  if(page==='home'&&homeTab==='fy'){homeTasteMusic=items;renderFeedResults(homeFeedData)}
 };
@@ -1255,7 +1255,7 @@ window.rushMusicLyrics=data=>{
 };
 window.rushNewsLoading=state=>{const s=$('#newsStatus');if(s)s.textContent='Loading: '+state.query+'…'};
 window.rushNewsError=error=>{const s=$('#newsStatus')||$('#unifiedStatus');if(s)s.textContent=error.message||'Could not load news.';if(page==='search')finishUnifiedSearch()};
-window.rushNewsResults=items=>{unifiedData.news=items||[];if(page==='search')finishUnifiedSearch();const root=$('#newsResults');if(root&&page==='news')root.innerHTML=unifiedData.news.map(newsCard).join('')||'<p class="meta pad">No articles found.</p>';const status=$('#newsStatus');if(status&&page==='news')status.textContent='Reporting selected for your interests and followed publishers.'};
+window.rushNewsResults=items=>{unifiedData.news=items||[];if(page==='search')finishUnifiedSearch();const root=$('#newsResults');if(root&&page==='news')root.innerHTML=unifiedData.news.map(x=>newsCard(x)).join('')||'<p class="meta pad">No articles found.</p>';const status=$('#newsStatus');if(status&&page==='news')status.textContent='Reporting selected for your interests and followed publishers.'};
 window.rushMusicLyricsLoading=()=>{
  window._rushLyrics=[];
  const status=$('#playerLyricsStatus'),root=$('#playerLyricsPanel');
