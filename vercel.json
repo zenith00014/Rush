@@ -1,0 +1,8 @@
+{
+  "outputDirectory": "web-preview",
+  "functions": {
+    "api/**/*.js": {
+      "runtime": "nodejs20.x"
+    }
+  }
+}
