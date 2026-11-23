@@ -76,6 +76,8 @@ class MainActivity:ComponentActivity(){
  private var fullscreenExitButton:android.widget.TextView?=null
  private var webPageLoaded=false
  private var pendingOpenDownloads=false
+ private var newsArticleDialog:android.app.Dialog?=null
+ private var newsArticleWebView:android.webkit.WebView?=null
  private val notificationPermissionLauncher=registerForActivityResult(
   androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
  ){ granted ->
@@ -128,6 +130,107 @@ class MainActivity:ComponentActivity(){
    if(fullscreen)setNativeVideoFullscreen(true) else updateNativeVideoPosition()
   }
  }
+ fun showNewsArticle(rawUrl:String) {
+  val uri=runCatching { android.net.Uri.parse(rawUrl.trim().take(4096)) }.getOrNull() ?: return
+  if(uri.scheme!="https"||uri.host.isNullOrBlank()||!uri.userInfo.isNullOrBlank())return
+  runOnUiThread {
+   newsArticleDialog?.let { if(it.isShowing){newsArticleWebView?.loadUrl(uri.toString());return@runOnUiThread} }
+   val dialog=android.app.Dialog(this)
+   val density=resources.displayMetrics.density
+   fun dp(value:Int)=(value*density).toInt()
+   val shell=android.widget.LinearLayout(this).apply {
+    orientation=android.widget.LinearLayout.VERTICAL
+    setBackgroundColor(android.graphics.Color.rgb(14,18,22))
+   }
+   val toolbar=android.widget.LinearLayout(this).apply {
+    orientation=android.widget.LinearLayout.HORIZONTAL
+    gravity=android.view.Gravity.CENTER_VERTICAL
+    setPadding(dp(12),dp(8),dp(12),dp(8))
+    setBackgroundColor(android.graphics.Color.rgb(20,27,33))
+   }
+   fun action(label:String)=android.widget.TextView(this).apply {
+    text=label
+    textSize=13f
+    setTextColor(android.graphics.Color.WHITE)
+    gravity=android.view.Gravity.CENTER
+    setPadding(dp(12),dp(10),dp(12),dp(10))
+    background=android.graphics.drawable.GradientDrawable().apply {
+     setColor(0xFF29343C.toInt())
+     cornerRadius=dp(12).toFloat()
+    }
+   }
+   val back=action("BACK")
+   val heading=android.widget.TextView(this).apply {
+    text="RUSH  /  NEWS"
+    textSize=13f
+    setTextColor(android.graphics.Color.WHITE)
+    typeface=android.graphics.Typeface.DEFAULT_BOLD
+    gravity=android.view.Gravity.CENTER
+    layoutParams=android.widget.LinearLayout.LayoutParams(0,dp(44),1f)
+   }
+   val close=action("CLOSE")
+   toolbar.addView(back,android.widget.LinearLayout.LayoutParams(dp(64),dp(44)))
+   toolbar.addView(heading)
+   toolbar.addView(close,android.widget.LinearLayout.LayoutParams(dp(68),dp(44)))
+   val progress=android.widget.ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal).apply {
+    max=100
+    isIndeterminate=false
+    progressTintList=android.content.res.ColorStateList.valueOf(0xFFFF6B3D.toInt())
+    progressBackgroundTintList=android.content.res.ColorStateList.valueOf(0xFF26313A.toInt())
+   }
+   val article=android.webkit.WebView(this).apply {
+    setBackgroundColor(android.graphics.Color.rgb(14,18,22))
+    isVerticalScrollBarEnabled=true
+    settings.javaScriptEnabled=true
+    settings.domStorageEnabled=false
+    settings.loadsImagesAutomatically=true
+    settings.blockNetworkImage=false
+    settings.allowFileAccess=false
+    settings.allowContentAccess=false
+    settings.mixedContentMode=android.webkit.WebSettings.MIXED_CONTENT_NEVER_ALLOW
+    settings.javaScriptCanOpenWindowsAutomatically=false
+    settings.setSupportMultipleWindows(false)
+    settings.safeBrowsingEnabled=true
+    webViewClient=object:android.webkit.WebViewClient(){
+     override fun shouldOverrideUrlLoading(view:android.webkit.WebView,request:android.webkit.WebResourceRequest):Boolean {
+      val target=request.url
+      return target.scheme!="https"||target.host.isNullOrBlank()||!target.userInfo.isNullOrBlank()
+     }
+     override fun onReceivedSslError(view:android.webkit.WebView,handler:android.webkit.SslErrorHandler,error:android.net.http.SslError){handler.cancel()}
+    }
+    webChromeClient=object:android.webkit.WebChromeClient(){
+     override fun onProgressChanged(view:android.webkit.WebView,value:Int){progress.progress=value;progress.visibility=if(value>=100)android.view.View.GONE else android.view.View.VISIBLE}
+    }
+   }
+   shell.addView(toolbar,android.widget.LinearLayout.LayoutParams(-1,dp(60)))
+   shell.addView(progress,android.widget.LinearLayout.LayoutParams(-1,dp(3)))
+   shell.addView(article,android.widget.LinearLayout.LayoutParams(-1,0,1f))
+   dialog.setContentView(shell)
+   dialog.setCancelable(true)
+   dialog.setOnKeyListener { _,keyCode,event ->
+    if(keyCode==android.view.KeyEvent.KEYCODE_BACK&&event.action==android.view.KeyEvent.ACTION_UP){
+     if(article.canGoBack())article.goBack() else dialog.dismiss()
+     true
+    }else false
+   }
+   back.setOnClickListener { if(article.canGoBack())article.goBack() else dialog.dismiss() }
+   close.setOnClickListener { dialog.dismiss() }
+   dialog.setOnDismissListener {
+    article.stopLoading()
+    article.loadUrl("about:blank")
+    article.destroy()
+    if(newsArticleWebView===article)newsArticleWebView=null
+    if(newsArticleDialog===dialog)newsArticleDialog=null
+   }
+   newsArticleDialog=dialog
+   newsArticleWebView=article
+   dialog.show()
+   dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.rgb(14,18,22)))
+   dialog.window?.setLayout(-1,-1)
+   article.loadUrl(uri.toString())
+  }
+ }
+
  fun updateNativeVideoPosition() {
   if(!nativeVideoRequested||nativeVideoFullscreen)return
   runOnUiThread {
@@ -287,6 +390,7 @@ class MainActivity:ComponentActivity(){
   onBackPressedDispatcher.addCallback(this,object:androidx.activity.OnBackPressedCallback(true){
    override fun handleOnBackPressed(){
     if(nativeVideoFullscreen){setNativeVideoFullscreen(false);return}
+    if(newsArticleDialog?.isShowing==true){if(newsArticleWebView?.canGoBack()==true)newsArticleWebView?.goBack() else newsArticleDialog?.dismiss();return}
     if(webView.canGoBack())webView.goBack()
     else webView.evaluateJavascript("location.hash='#home'",null)
    }
