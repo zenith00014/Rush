@@ -501,6 +501,66 @@ html,body{background:#070b10;color:var(--ink)}
 @media(max-width:380px){.nav{left:8px;right:8px;height:64px}.nav a{font-size:9px}.media-copy b{font-size:16px}}
 @media(prefers-reduced-motion:reduce){.top,.nav,.mini,.refresh-indicator{transition:none!important}.refresh-indicator.loading .refresh-spinner{animation:none!important}}
 
+
+/* BRUTALIST SYSTEM — glass is reserved for the chrome, content stays tactile and sharp. */
+:root{--paper:#0a0d10;--paper2:#151a20;--ink:#f2f0e9;--mu:#a6adb2;--sp:#ff704f;--r:0;--sh:5px 5px 0 rgba(0,0,0,.72)}
+button,.btn,.ib,.chip,.stk,.a,.card,.cat,.seg,.seg i,.feed-section,.feed-mixed-item,.result-wrap,.news-card,.source-card,.empty-state,.profile-panel,.topic-tab,.topic-snooze,.topic-manage,.watch-player-frame,.watch-actions,.snoozed-topic,.library-item,.library-playlist,.nav,.mini{border-radius:0!important}
+.btn,.ib,.chip{border-width:2px!important;border-color:var(--ink)!important;box-shadow:3px 3px 0 var(--sp)!important}
+.btn:active,.ib:active,.chip:active{transform:translate(3px,3px)!important;box-shadow:none!important}
+.app{background:linear-gradient(135deg,rgba(255,255,255,.025) 0 1px,transparent 1px 28px),linear-gradient(90deg,rgba(255,255,255,.018) 0 1px,transparent 1px 28px),var(--paper)!important}
+.app::before{opacity:.07}
+.top{background:linear-gradient(120deg,rgba(255,255,255,.09),rgba(255,255,255,.018));border-bottom:1px solid rgba(255,255,255,.18);-webkit-backdrop-filter:blur(18px) saturate(145%);backdrop-filter:blur(18px) saturate(145%)}
+.top-profile{width:42px;height:42px;background:rgba(255,255,255,.075)!important;border:1px solid rgba(255,255,255,.28)!important;box-shadow:none!important;-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+.nav{background:linear-gradient(150deg,rgba(26,34,43,.87),rgba(7,10,14,.93))!important;border:1px solid rgba(255,255,255,.27)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.17),0 9px 26px rgba(0,0,0,.42)!important;-webkit-backdrop-filter:blur(26px) saturate(155%);backdrop-filter:blur(26px) saturate(155%)}
+.mini{background:linear-gradient(135deg,rgba(24,31,39,.96),rgba(7,10,14,.98))!important;border:1px solid rgba(255,255,255,.2)!important;-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}
+.feed-section,.result-wrap,.news-card,.source-card,.empty-state,.library-item,.library-playlist,.video-player-tools{background:var(--paper2)!important;border:2px solid var(--ink)!important;box-shadow:5px 5px 0 var(--sp)!important}
+.feed-section{margin:18px 12px;padding:8px}
+.feed-mixed-item{border:0!important;border-top:1px solid rgba(255,255,255,.16)!important;background:transparent!important;padding:10px 0}
+.result-wrap{margin:10px 4px;padding:12px 10px}
+.media-thumb,.news-thumb-wrap,.news-thumb,.media-thumb img,.library-art{border-radius:0!important}
+.media-thumb img,.news-thumb{object-fit:cover!important}
+.media-play{border-radius:0!important;background:rgba(6,9,12,.9)!important;border:2px solid var(--ink)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+.media-main{gap:12px}
+.media-copy b,.news-copy b{font-weight:900;letter-spacing:-.025em}
+.pt h1,h2,.wm,.nav a,.chip,.btn,.stk{font-stretch:condensed;text-transform:uppercase;letter-spacing:-.025em}
+h2{font-size:26px;border-bottom:2px solid var(--ink);padding-bottom:12px}
+h2::after{display:none}
+.seg{border:2px solid var(--ink)!important;background:var(--paper2)!important;box-shadow:4px 4px 0 var(--sp)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+.seg i{background:var(--sp)!important}
+.seg button[aria-selected=true]{color:var(--paper)!important}
+.topic-stream{display:flex;align-items:center;gap:7px;overflow-x:auto;white-space:nowrap;padding:10px 12px 14px;scrollbar-width:none}
+.topic-stream::-webkit-scrollbar{display:none}
+.topic-tab-wrap{display:flex;align-items:center;flex:none;border:2px solid var(--ink);background:var(--paper2)}
+.topic-tab,.topic-snooze,.topic-manage{min-height:40px;padding:0 12px;font:800 11px var(--m);background:transparent;border:0;white-space:nowrap}
+.topic-tab[aria-pressed=true]{background:var(--sp);color:var(--paper)}
+.topic-snooze{min-width:34px;padding:0 8px;border-left:1px solid rgba(255,255,255,.2);font-size:15px}
+.topic-manage{flex:none;border:2px solid var(--ink);background:var(--ink);color:var(--paper)}
+.topic-chip.snoozed{opacity:.48;border-style:dashed!important}
+.profile-panel{display:flex;align-items:center;gap:12px;margin:14px 16px;padding:14px;border:2px solid var(--ink);background:var(--paper2);box-shadow:5px 5px 0 var(--sp)}
+.profile-mark{display:grid;place-items:center;width:48px;height:48px;background:var(--sp);border:2px solid var(--ink);color:var(--paper);font:900 30px/1 var(--f)}
+.profile-copy{flex:1;min-width:0}.profile-copy b,.profile-copy span{display:block}.profile-copy span{font:10px var(--m);color:var(--mu);margin-top:4px}
+.snoozed-list{margin:18px 0}
+.snoozed-topic{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 16px;border-bottom:1px solid rgba(255,255,255,.15)}
+.snoozed-topic small{font:10px var(--m);color:var(--mu)}
+.watch-page{padding-bottom:32px}
+.watch-player-frame{position:relative;display:grid;place-items:center;width:calc(100% - 24px);margin:10px 12px 0;aspect-ratio:16/9;min-height:180px;background:#030405;border:2px solid var(--ink);color:var(--mu);font:800 11px var(--m);letter-spacing:.08em}
+.watch-player-frame>span{pointer-events:none}
+.watch-heading{padding:16px 16px 8px}
+.watch-heading h2{display:block;padding:8px 0 10px;font-size:22px;line-height:1.1;border-bottom:1px solid rgba(255,255,255,.18)}
+.watch-heading p{color:var(--mu);font:11px var(--m);margin-top:7px}
+.watch-actions{display:flex;flex-wrap:wrap;gap:8px;margin:10px 16px;padding:12px;border:2px solid var(--ink);background:var(--paper2)}
+.watch-section h2{padding-top:20px}
+.watch-section .result-wrap{margin-left:12px;margin-right:12px}
+.news-card{margin:10px 12px}
+.news-open{border:0!important}
+.nav a{font-weight:800!important}
+.nav a[aria-current="page"]{border-radius:0!important;background:rgba(255,112,79,.18)!important;box-shadow:inset 0 -3px 0 var(--sp)!important}
+.nav a[aria-current="page"] .ic{color:var(--sp)!important;stroke:var(--sp)!important}
+.mini{grid-template-columns:42px 1fr auto auto!important;bottom:calc(var(--nav) + var(--sa) + 20px)}
+.mini .rule{display:none}
+.si,.seg,.bi{border-radius:0!important}
+@media(max-width:380px){.profile-panel{gap:8px;padding:10px}.profile-panel .chip{padding:0 8px}.topic-tab,.topic-manage{padding-inline:9px}}
+
 </style></head>
 <body>
 <div class="app">
