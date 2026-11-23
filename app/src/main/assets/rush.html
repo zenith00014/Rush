@@ -380,7 +380,7 @@ function videoLikeMusic(x){
 function newsCard(x){
  const thumb=safeUrl(x.thumbnail),publisher=x.source||'News publisher';
  const image='<span class="news-thumb-wrap"><span class="news-thumb-fallback">NEWS</span>'+(thumb?'<img class="news-thumb" src="'+esc(thumb)+'" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.hidden=true">':'')+'</span>';
- return '<article class="news-card"><button class="news-open" data-news-url="'+esc(x.url)+'"><span class="news-copy"><span class="news-meta">'+esc(publisher)+' · '+esc(x.date||'')+'</span><b>'+esc(x.title)+'</b><p>'+esc(x.summary||'Open the article for the full report.')+'</p></span>'+image+'</button><div class="result-actions">'+sourceButton('news',publisher,publisher,'FOLLOW PUBLISHER')+'</div></article>';
+ return '<article class="news-card"><button class="news-open" data-news-url="'+esc(safeUrl(x.url))+'"><span class="news-copy"><span class="news-meta">'+esc(publisher)+' · '+esc(x.date||'')+'</span><b>'+esc(x.title)+'</b><p>'+esc(x.summary||'Open the article for the full report.')+'</p></span>'+image+'</button><div class="result-actions">'+sourceButton('news',publisher,publisher,'FOLLOW PUBLISHER')+'</div></article>';
 }
 function section(title,body){
  return '<section class="feed-section"><h2>'+title+'</h2>'+(body||'<p class="meta pad">Nothing to show yet.</p>')+'</section>';
@@ -659,7 +659,10 @@ function renderPlayerState(){
   if(isMusic&&artwork){img.onerror=()=>{img.hidden=true;fallback.hidden=false};img.src=artwork;img.hidden=false;fallback.hidden=true}
   else{img.removeAttribute('src');img.hidden=true;fallback.hidden=false}
  }
- const toggle=$('#playerToggle');if(toggle)toggle.innerHTML=ic(isMusic&&mediaState.isPlaying?'pause':'play');
+ const toggle=$('#playerToggle');if(toggle){toggle.innerHTML=ic(isMusic&&mediaState.isPlaying?'pause':'play');toggle.disabled=!isMusic}
+ const previous=$('[data-player-prev]'),next=$('[data-player-next]');
+ if(previous)previous.disabled=!isMusic;if(next)next.disabled=!isMusic;
+ const lyrics=$('[data-player-lyrics-toggle]');if(lyrics)lyrics.disabled=!isMusic;
  const save=$('#playerSave');if(save)save.disabled=!isMusic;
  renderPlayerProgress(mediaState.position,mediaState.duration);
 }
@@ -836,7 +839,12 @@ window.rushNewsResults=items=>{
  const root=$('#newsResults');if(root)root.innerHTML=items.map(newsCard).join('')||'<p class="meta pad">No articles found.</p>';
  const status=$('#newsStatus');if(status)status.textContent=items.length+' articles · ranked by your topics and publisher follows';
 };
-window.rushMusicLyricsLoading=()=>{const status=$('#playerLyricsStatus');if(status)status.textContent='Loading lyrics…'};
+window.rushMusicLyricsLoading=()=>{
+ window._rushLyrics=[];
+ const status=$('#playerLyricsStatus'),root=$('#playerLyricsPanel');
+ if(status)status.textContent='Loading lyrics…';
+ if(root)root.replaceChildren();
+};
 setInterval(()=>{
  if(page==='library'&&libraryView==='downloads'&&window.RushNative)RushNative.loadDownloads();
 },2000);
