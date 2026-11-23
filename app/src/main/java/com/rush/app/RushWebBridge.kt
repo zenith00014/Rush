@@ -142,9 +142,8 @@ class RushWebBridge(
                 withContext(Dispatchers.IO) {
                     selectedChannels.take(10).forEach { source ->
                         runCatching {
-                            LiveYouTubeSearch.latestUploads(source.id)
+                            LiveYouTubeSearch.latestUploads(source.id, 12)
                                 .filter { it.videoId.isNotBlank() }
-                                .take(12)
                                 .forEach { item ->
                                     val candidate = RushDiscoveryEngine.Candidate(
                                         id = item.videoId, kind = RushDiscoveryEngine.Kind.VIDEO,
