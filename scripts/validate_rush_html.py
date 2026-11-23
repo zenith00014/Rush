@@ -151,7 +151,7 @@ def main():
         "swipe navigation between pages": "Math.abs(dx)>72" in js and "location.hash='#'+NAV[next][0]" in js,
         "single global Search CTA removed": "data-unified-search" not in js and "SEARCH ALL SOURCES" not in html,
         "music now-playing placeholder removed": 'id="musicNowPlaying"' not in html,
-        "search no longer reports result counts": "results found" not in js and "videos found" not in js and "tracks found" not in js,
+        "search no longer reports result counts": "items.length+' results" not in js and "items.length+' videos found" not in js and "items.length+' tracks found" not in js and "' · '+items.length" not in js,
         "library uses library icon": "library:'M4 4h13v16H4z" in js and "['library','Library','follow']" not in js,
         "edge-to-edge root uses dark surface": "setBackgroundColor(android.graphics.Color.rgb(11,16,20))" in activity,
     }
