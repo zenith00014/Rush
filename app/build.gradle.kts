@@ -1,4 +1,5 @@
 import com.google.protobuf.gradle.id
+import java.io.File
 
 plugins {
     id("com.android.application")
@@ -22,7 +23,7 @@ val prepareRobolectricRuntime by tasks.registering {
         }
         val destinationDirectory = runtimeDirectory.get().asFile
         destinationDirectory.mkdirs()
-        val destination = java.io.File(
+        val destination = File(
             destinationDirectory,
             "android-all-instrumented-15-robolectric-12650502-i7.jar"
         )
