@@ -689,13 +689,17 @@ class RushWebBridge(
         }
     }
 
-    @JavascriptInterface
-    fun musicPosition(): Long = runCatching { controllerFuture?.get()?.currentPosition ?: 0L }.getOrDefault(0L)
+    private fun completedController(): MediaController? {
+        val future = controllerFuture ?: return null
+        if (!future.isDone || future.isCancelled) return null
+        return runCatching { future.get() }.getOrNull()
+    }
 
     @JavascriptInterface
-    fun musicDuration(): Long = runCatching {
-        controllerFuture?.get()?.duration?.takeIf { it > 0L } ?: 0L
-    }.getOrDefault(0L)
+    fun musicPosition(): Long = completedController()?.currentPosition ?: 0L
+
+    @JavascriptInterface
+    fun musicDuration(): Long = completedController()?.duration?.takeIf { it > 0L } ?: 0L
 
     @JavascriptInterface
     fun seekPlaybackTo(positionMs: Long) {

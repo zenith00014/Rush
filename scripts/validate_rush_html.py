@@ -139,6 +139,8 @@ def main():
     for native_method in ("fun musicDuration()", "fun seekPlaybackTo(positionMs: Long)", "fun skipPrevious()", "fun skipNext()"):
         if native_method not in bridge:
             fail(f"Native media control missing: {native_method}")
+    if "if (!future.isDone || future.isCancelled) return null" not in bridge:
+        fail("Playback position polling must never block waiting for the media service")
 
     with tempfile.NamedTemporaryFile("w", suffix=".js", encoding="utf-8") as handle:
         handle.write(js)
