@@ -533,7 +533,7 @@ function section(title,body){
 function pageTop(title,kicker){
  return '<header class="pt"><h1>'+title+'</h1><em class="stk">'+kicker+'</em></header>';
 }
-let homeFilter='all',homeFeedData={videos:[],music:[],news:[],message:''};
+let homeFilter='all',homeTasteMusic=[],homeFeedData={videos:[],music:[],news:[],message:''};
 function renderHome(){
  return pageTop('Home','your feed')+
  '<div class="seg" role="tablist"><i></i><button role="tab" data-tab="fy" aria-selected="'+(homeTab==='fy')+'">For you</button><button role="tab" data-tab="fo" aria-selected="'+(homeTab==='fo')+'">Following</button></div>'+
@@ -698,7 +698,7 @@ function go(){
  $('#sc').scrollTop=0;navPosition();indicator();loadFeedPreferences();
  if(window.RushNative){
   RushNative.loadCurrentPlayback();
-  if(page==='home')loadHomeFeed();
+  if(page==='home'){loadHomeFeed();if(homeTab==='fy')RushNative.loadMusicSuggestions()}
   if(page!=='videos')RushNative.hideVideo();
   if(page==='music'){RushNative.loadMusicHistory();RushNative.loadMusicSuggestions()}
   if(page==='player')RushNative.loadCurrentMusicLyrics();
@@ -733,7 +733,11 @@ function mixHomeFeedItems(videos,music,articles){
 }
 function renderFeedResults(data){
  if(page!=='home')return;
- homeFeedData=Object.assign({videos:[],music:[],news:[],message:''},data||{});
+ const incoming=Object.assign({videos:[],music:[],news:[],message:''},data||{});
+ const rankedMusic=[...(incoming.music||[]),...(homeTab==='fy'?homeTasteMusic:[])];
+ const seenMusic=new Set();
+ incoming.music=rankedMusic.filter(item=>item&&item.id&&!seenMusic.has(item.id)&&seenMusic.add(item.id));
+ homeFeedData=incoming;
  const root=$('#homeFeedResults'),status=$('#homeFeedStatus');if(!root)return;
  const videos=homeFeedData.videos||[],music=homeFeedData.music||[],news=homeFeedData.news||[];
  const allCount=videos.length+music.length+news.length;
@@ -891,7 +895,7 @@ document.addEventListener('click',e=>{
  if(b.hasAttribute('data-delete-download')){if(window.RushNative)RushNative.deleteDownload(b.dataset.downloadId);return}
  if(b.hasAttribute('data-current-download')||b.hasAttribute('data-current-mp3')||b.hasAttribute('data-current-save')){const d=mediaState;if(!d.hasItem||!d.mediaId)return;if(window.RushNative){if(b.hasAttribute('data-current-save'))RushNative.saveLibraryItem(d.sourceId||d.mediaId,d.title||'',d.artist||'',!!d.isMusic,d.artwork||'');else if(!d.isOffline)RushNative.downloadMedia(d.sourceId||d.mediaId,d.title||'',d.artist||'',!!d.isMusic,b.hasAttribute('data-current-mp3'))}return}
  if(b.hasAttribute('data-open-search')){location.hash='#search';return}
- if(b.dataset.tab){homeTab=b.dataset.tab;homeFilter='all';$('#v').innerHTML=R.home();indicator();loadHomeFeed();return}
+ if(b.dataset.tab){homeTab=b.dataset.tab;homeFilter='all';if(homeTab==='fo')homeTasteMusic=[];$('#v').innerHTML=R.home();indicator();loadHomeFeed();if(homeTab==='fy'&&window.RushNative)RushNative.loadMusicSuggestions();return}
  if(b.hasAttribute('data-save-topics')){saveTopics();return}
  if(b.dataset.topic){const on=b.getAttribute('aria-pressed')!=='true';b.setAttribute('aria-pressed',String(on));updateTopicOptions();return}
  if(b.hasAttribute('data-unified-search')){runUnifiedSearch();return}
@@ -994,6 +998,7 @@ window.rushMusicSuggestionResults=data=>{
  const items=data.items||[],root=$('#musicSuggestions'),status=$('#musicSuggestionStatus');
  if(root)root.innerHTML=items.map(musicRow).join('')||'<p class="meta pad">'+esc(data.message||'Play music or follow an artist to establish your taste profile.')+'</p>';
  if(status)status.textContent=data.message||'Ranked using followed musicians and recent listening history.';
+ if(page==='home'&&homeTab==='fy'){homeTasteMusic=items;renderFeedResults(homeFeedData)}
 };
 window.rushMusicPlaybackState=state=>{
  const status=$('#musicStatus');if(status&&page==='music')status.textContent=state.state==='playing'?'PLAYING · '+(state.title||'track'):state.state==='loading'?'LOADING · '+(state.title||'track'):state.message||state.state;
