@@ -713,7 +713,7 @@ class RushWebBridge(
                 val controller = getController()
                 val item = controller.currentMediaItem ?: return@launch
                 val audioOnly = item.mediaMetadata.extras?.getBoolean(PlaybackMetadata.AUDIO_ONLY, false) == true
-                if (!audioOnly) activity.runOnUiThread { activity.showNativeVideo(controller, fullscreen = true) }
+                if (!audioOnly) activity.runOnUiThread { activity.showNativeVideo(controller, fullscreen = false) }
             }
         }
     }
@@ -1372,7 +1372,7 @@ class RushWebBridge(
                     }
                 }
                 if (controller.currentMediaItem?.mediaMetadata?.extras?.getBoolean(PlaybackMetadata.AUDIO_ONLY, false) != true) {
-                    activity.runOnUiThread { activity.showNativeVideo(controller, fullscreen = true) }
+                    activity.runOnUiThread { activity.showNativeVideo(controller, fullscreen = false) }
                 } else {
                     activity.hideNativeVideo()
                 }
@@ -1575,7 +1575,7 @@ class RushWebBridge(
                     media.file.absolutePath
                 )
                 if (media.isAudio) activity.hideNativeVideo()
-                else activity.runOnUiThread { activity.showNativeVideo(controller, fullscreen = true) }
+                else activity.runOnUiThread { activity.showNativeVideo(controller, fullscreen = false) }
                 publish("rushCurrentPlayback", JSONObject()
                     .put("hasItem", true)
                     .put("isMusic", media.isAudio)
