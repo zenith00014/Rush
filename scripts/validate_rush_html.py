@@ -116,6 +116,24 @@ def main():
     if "fonts.googleapis.com" in html or "fonts.gstatic.com" in html:
         fail("WebView must not require remote font downloads")
 
+    ui_contracts = {
+        "no preloaded fixed video player": 'id="videoPlayerHost"' not in html,
+        "dedicated music player screen": "function renderPlayerPage()" in js,
+        "lyrics are inside player": 'id="playerLyricsPanel"' in html and 'id="lyricsPanel"' not in html,
+        "responsive media row grid": "grid-template-columns:64px minmax(0,1fr) auto!important" in html,
+        "explicit video resume button": "data-video-resume" in html and "RushNative.showCurrentVideo()" in js,
+        "no automatic video popup on tab navigation": "if(page!=='videos')RushNative.hideVideo();" in js,
+        "obsolete productive-channel copy removed": "selected productive channels" not in html and "productive channel selection" not in html,
+        "conditional mini-player spacing": ".app.has-mini #sc" in html,
+    }
+    for contract, valid in ui_contracts.items():
+        if not valid:
+            fail(f"UI contract failed: {contract}")
+
+    for native_method in ("fun musicDuration()", "fun seekPlaybackTo(positionMs: Long)", "fun skipPrevious()", "fun skipNext()"):
+        if native_method not in bridge:
+            fail(f"Native media control missing: {native_method}")
+
     with tempfile.NamedTemporaryFile("w", suffix=".js", encoding="utf-8") as handle:
         handle.write(js)
         handle.flush()

@@ -44,7 +44,7 @@ button{min-height:44px;min-width:44px}
 .tk div{display:inline-block;padding-left:100%;animation:tk 30s linear infinite}
 @keyframes tk{to{transform:translateX(-100%)}}
 /* page */
-#sc{position:relative;z-index:1;flex:1;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-width:none;padding-bottom:calc(var(--nav) + var(--sa) + 144px)}
+#sc{position:relative;z-index:1;flex:1;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-width:none;padding-bottom:calc(var(--nav) + var(--sa) + 36px)}
 #sc::-webkit-scrollbar{display:none}
 #v>*{animation:in .7s var(--spr) both}
 #v>:nth-child(2){animation-delay:.05s}#v>:nth-child(3){animation-delay:.1s}#v>:nth-child(4){animation-delay:.15s}#v>:nth-child(n+5){animation-delay:.2s}
@@ -279,6 +279,12 @@ html,body{background:var(--paper);color:var(--ink)}
 .player-utilities{display:flex;justify-content:space-between;gap:10px}.player-utilities .chip{flex:1}.player-lyrics{margin-top:28px;padding:12px 0 30px;border-top:1px solid var(--border)}
 .player-lyrics h2{padding:22px 0 12px}.player-lyrics .lyrics-panel{padding:8px 0;max-height:52vh;overflow:auto}.player-lyrics .lyric-line{border-bottom:1px solid var(--border);padding:12px 4px;border-radius:8px}.player-lyrics .lyric-line.active{background:rgba(255,118,95,.12);transform:none}
 @media(max-width:380px){.news-open{grid-template-columns:minmax(0,1fr) 88px;gap:9px}.row,.row.n{gap:9px!important;grid-template-columns:56px minmax(0,1fr) auto!important}.row img{width:56px!important;height:56px!important}.player-art{width:min(100%,300px)}.player-controls{gap:16px}}
+/* Dynamic bottom spacing; no blank footer when there is no mini player. */
+.app.has-mini #sc{padding-bottom:calc(var(--nav) + var(--sa) + 112px)}
+.video-player-status{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 16px;flex-wrap:wrap}
+.video-playback-status{margin:0;min-width:0;flex:1}
+.video-player-status [hidden]{display:none!important}
+.nav .pill{border-radius:16px!important}.nav a{border-radius:16px}
 </style></head>
 <body>
 <div class="app">
@@ -337,18 +343,19 @@ function sourceButton(kind,id,name,label){
  return '<button class="chip source-follow" data-follow-kind="'+esc(kind)+'" data-source-id="'+esc(id)+'" data-source-name="'+esc(name)+'">'+(found?'FOLLOWING':(label||'FOLLOW'))+'</button>';
 }
 function channelCard(x){
- return '<article class="source-card"><img src="'+esc(x.thumbnail)+'" alt="" loading="lazy"><div class="source-info"><b>'+esc(x.name)+'</b><span>'+esc(x.subscribers||'YouTube channel')+'</span><p>'+esc(x.description||'')+'</p><div class="source-actions">'+sourceButton('channel',x.id,x.name,'FOLLOW')+'</div></div></article>';
+ const thumb=safeUrl(x.thumbnail);
+ return '<article class="source-card"><img src="'+esc(thumb)+'" alt="" loading="lazy" decoding="async" onerror="this.hidden=true"><div class="source-info"><b>'+esc(x.name)+'</b><span>'+esc(x.subscribers||'YouTube channel')+'</span><p>'+esc(x.description||'')+'</p><div class="source-actions">'+sourceButton('channel',x.id,x.name,'FOLLOW')+'</div></div></article>';
 }
 
 function mediaActions(x,isMusic){
- const id=esc(x.id),title=esc(x.title),creator=esc(isMusic?(x.artist||x.creator):(x.artist||x.creator)),thumb=esc(x.thumbnail);
+ const id=esc(x.id),title=esc(x.title),creator=esc(isMusic?(x.artist||x.creator):(x.artist||x.creator)),thumb=esc(safeUrl(x.thumbnail));
  return '<div class="result-actions"><button class="chip" data-save-item data-id="'+id+'" data-title="'+title+'" data-creator="'+creator+'" data-music="'+isMusic+'" data-thumbnail="'+thumb+'">SAVE</button>'+
   '<button class="chip" data-queue-item data-id="'+id+'" data-title="'+title+'" data-creator="'+creator+'" data-music="'+isMusic+'" data-thumbnail="'+thumb+'">QUEUE</button>'+
   '<button class="chip" data-download-media data-id="'+id+'" data-title="'+title+'" data-creator="'+creator+'" data-music="'+isMusic+'">DOWNLOAD</button>'+
   (isMusic?'<button class="chip" data-download-mp3 data-id="'+id+'" data-title="'+title+'" data-creator="'+creator+'">MP3</button>':'')+'</div>';
 }
 function playlistRow(x){
- return '<article class="source-card"><img src="'+esc(safeUrl(x.thumbnail))+'" alt="" loading="lazy"><div class="source-info"><b>'+esc(x.title)+'</b><span>'+esc(x.creator||'YouTube')+' · '+esc(x.videoCount||'Playlist')+'</span><div class="result-actions"><button class="chip" data-public-playlist-open data-playlist-id="'+esc(x.id)+'" data-playlist-title="'+esc(x.title)+'">VIEW PLAYLIST</button></div></div></article>';
+ return '<article class="source-card"><img src="'+esc(safeUrl(x.thumbnail))+'" alt="" loading="lazy" decoding="async" onerror="this.hidden=true"><div class="source-info"><b>'+esc(x.title)+'</b><span>'+esc(x.creator||'YouTube')+' · '+esc(x.videoCount||'Playlist')+'</span><div class="result-actions"><button class="chip" data-public-playlist-open data-playlist-id="'+esc(x.id)+'" data-playlist-title="'+esc(x.title)+'">VIEW PLAYLIST</button></div></div></article>';
 }
 function videoRow(x){
  const thumb=safeUrl(x.thumbnail);
@@ -383,9 +390,10 @@ function renderHome(){
 }
 function renderVideoPage(){
  return pageTop('Videos','full-screen playback')+
- '<section class="video-controls"><p class="meta pad video-playback-status" id="videoPlaybackStatus" aria-live="polite" hidden></p>'+
+ '<section class="video-controls"><div class="video-player-status"><p class="meta pad video-playback-status" id="videoPlaybackStatus" aria-live="polite" hidden></p><button class="chip" data-video-resume hidden>OPEN VIDEO PLAYER</button></div>'+
  '<h2>Find videos</h2><label class="si">'+ic('search')+'<input id="videoQuery" type="search" placeholder="Search videos, creators and topics" aria-label="Search videos" autocomplete="off"></label><button class="btn" data-video-search>SEARCH YOUTUBE</button><p class="meta pad" id="videoStatus">Choose a result to open the full-screen player. Search remains broad across YouTube.</p><div id="videoResults"></div></section>';
 }
+
 function renderMusicPage(){
  return pageTop('Music','your listening taste')+
  '<section class="music-now" id="musicNowPlaying"><div class="music-now-art"><img id="musicNowArtwork" src="" alt="Current track artwork"><span id="musicNowFallback">RUSH<br>MUSIC</span></div><div class="music-now-copy"><span class="stk">NOW PLAYING</span><h3 id="musicNowTitle">No music playing</h3><p id="musicNowArtist">Choose a track to start listening.</p><p class="meta" id="musicStatus">Your player will appear here when a track starts.</p><button class="btn k" data-open-player>OPEN PLAYER</button><button class="btn o" data-music-toggle aria-label="Play or pause music">'+ic('play')+' PLAY / PAUSE</button><div class="result-actions"><button class="chip" data-current-download>DOWNLOAD</button><button class="chip" data-current-mp3>DOWNLOAD MP3</button><button class="chip" data-current-save>SAVE</button></div></div></section>'+
@@ -537,7 +545,7 @@ function go(){
  if(window.RushNative){
   RushNative.loadCurrentPlayback();
   if(page==='home')loadHomeFeed();
-  if(page==='videos')RushNative.showCurrentVideo();else RushNative.hideVideo();
+  if(page!=='videos')RushNative.hideVideo();
   if(page==='music'){RushNative.loadMusicHistory();RushNative.loadMusicSuggestions()}
   if(page==='player')RushNative.loadCurrentMusicLyrics();
   if(page==='news')RushNative.loadPersonalizedNews();
@@ -592,6 +600,7 @@ function updateMini(){
  const mini=$('#mini');if(!mini)return;
  const show=!!mediaState.hasItem&&!(!mediaState.title);
  mini.classList.toggle('on',show);mini.inert=!show;
+ $('.app').classList.toggle('has-mini',show);
  if(!show)return;
  $('#mt').textContent=mediaState.title||'Now playing';
  $('#ms').textContent=(mediaState.isMusic?'MUSIC':(mediaState.isVideo?'VIDEO':'MEDIA'))+(mediaState.artist?' · '+mediaState.artist:'');
@@ -604,6 +613,7 @@ function updateMini(){
 }
 function updateCurrentPlayback(data){
  mediaState=Object.assign({},mediaState,data||{});updateMini();
+ if(page==='videos'){const resume=$('[data-video-resume]');if(resume)resume.hidden=!(mediaState.hasItem&&mediaState.isVideo)}
  if(page==='videos'||page==='music'){
   const currentDownload=$('[data-current-download]'),currentMp3=$('[data-current-mp3]'),currentSave=$('[data-current-save]');
   if(currentDownload)currentDownload.disabled=!mediaState.hasItem||!!mediaState.isOffline;
@@ -713,7 +723,8 @@ document.addEventListener('click',e=>{
  if(b.dataset.newsCategory){document.querySelectorAll('[data-news-category]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));if(b.dataset.newsCategory==='Personalized')RushNative.loadPersonalizedNews();else if(window.RushNative)RushNative.loadNews(b.dataset.newsCategory);return}
  if(b.dataset.followKind){if(sourceExists(b.dataset.followKind,b.dataset.sourceId))RushNative.unfollowSource(b.dataset.followKind,b.dataset.sourceId);else handleFollow(b.dataset.followKind,b.dataset.sourceId,b.dataset.sourceName,false);return}
  if(b.dataset.unfollowKind){if(window.RushNative)RushNative.unfollowSource(b.dataset.unfollowKind,b.dataset.sourceId);return}
- if(b.dataset.videoId){const d=b.dataset;const host=$('#videoPlayerHost');if(host){host.scrollIntoView({behavior:RM?'auto':'smooth',block:'start'});host.innerHTML='<span>LOADING VIDEO…</span>'}const status=$('#videoPlaybackStatus');if(status)status.textContent='Preparing video…';if(window.RushNative)RushNative.playVideo(d.videoId,d.title,d.creator,d.thumbnail);return}
+ if(b.dataset.videoId){const d=b.dataset;const status=$('#videoPlaybackStatus');if(status){status.hidden=false;status.textContent='Preparing video…'}if(window.RushNative)RushNative.playVideo(d.videoId,d.title,d.creator,d.thumbnail);return}
+  if(b.hasAttribute('data-video-resume')){if(window.RushNative)RushNative.showCurrentVideo();return}
  if(b.dataset.track){const d=b.dataset;const status=$('#musicStatus');if(status)status.textContent='Preparing track…';if(window.RushNative)RushNative.playMusic(d.track,d.title,d.artist,d.thumbnail);location.hash='#player';return}
  if(b.dataset.newsUrl){if(window.RushNative)RushNative.openNews(b.dataset.newsUrl);return}
  if(b.hasAttribute('data-video-fullscreen')){if(window.RushNative)RushNative.setVideoFullscreen(true);return}
@@ -732,7 +743,7 @@ document.addEventListener('click',e=>{
   }
   if(b.hasAttribute('data-music-toggle')){if(mediaState.hasItem&&mediaState.isMusic&&window.RushNative)RushNative.togglePlayback();return}
  if(b.dataset.act==='toggle'){if(window.RushNative)RushNative.togglePlayback();return}
- if(b.dataset.act==='open'){location.hash=mediaState.isMusic?'#player':'#videos';return}
+ if(b.dataset.act==='open'){if(mediaState.isMusic)location.hash='#player';else{location.hash='#videos';if(window.RushNative)RushNative.showCurrentVideo()}return}
 });
 document.addEventListener('change',e=>{
   if(e.target&&e.target.id==='playerSeek'&&window.RushNative)RushNative.seekPlaybackTo(Number(e.target.value)||0);
