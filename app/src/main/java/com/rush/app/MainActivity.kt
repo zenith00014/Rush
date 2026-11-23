@@ -111,7 +111,7 @@ class MainActivity:ComponentActivity(){
   webView.evaluateJavascript("window.rushOpenDownloads ? window.rushOpenDownloads() : (location.hash='#library')",null)
  }
  @androidx.media3.common.util.UnstableApi
- fun showNativeVideo(player: androidx.media3.common.Player) {
+ fun showNativeVideo(player: androidx.media3.common.Player, fullscreen: Boolean = false) {
   nativeVideoRequested=true
   runOnUiThread {
    val view=nativeVideoView?:androidx.media3.ui.PlayerView(this).apply {
@@ -125,11 +125,11 @@ class MainActivity:ComponentActivity(){
    view.player=player
    if(view.parent==null)rootLayout.addView(view,android.widget.FrameLayout.LayoutParams(1,1))
    setPipEligible(true)
-   updateNativeVideoPosition()
+   if(fullscreen)setNativeVideoFullscreen(true) else updateNativeVideoPosition()
   }
  }
  fun updateNativeVideoPosition() {
-  if(!nativeVideoRequested||!::webView.isInitialized)return
+  if(!nativeVideoRequested||nativeVideoFullscreen||!::webView.isInitialized)return
   webView.post {
    webView.evaluateJavascript("""(function(){var e=document.getElementById('videoPlayerHost');if(!e)return null;var r=e.getBoundingClientRect();return JSON.stringify({x:r.left,y:r.top,w:r.width,h:r.height,visible:r.bottom>0&&r.top<window.innerHeight});})()"""){raw->
     runCatching {
@@ -304,6 +304,7 @@ class MainActivity:ComponentActivity(){
   webView.loadDataWithBaseURL("https://rush.local/",html,"text/html","UTF-8",null)
   onBackPressedDispatcher.addCallback(this,object:androidx.activity.OnBackPressedCallback(true){
    override fun handleOnBackPressed(){
+    if(nativeVideoFullscreen){setNativeVideoFullscreen(false);return}
     if(webView.canGoBack())webView.goBack()
     else webView.evaluateJavascript("location.hash='#home'",null)
    }

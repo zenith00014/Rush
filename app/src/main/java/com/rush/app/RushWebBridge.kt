@@ -622,7 +622,7 @@ class RushWebBridge(
                 controller.prepare()
                 controller.play()
                 LocalLibrary.rememberPlayback(prefs, videoId, title, creator, false, thumbnail, videoId)
-                activity.runOnUiThread { activity.showNativeVideo(controller) }
+                activity.runOnUiThread { activity.showNativeVideo(controller, fullscreen = true) }
                 publish("rushVideoPlaybackState", JSONObject().put("state", "playing")
                     .put("title", title).put("creator", creator).put("captionTracks", subtitleConfigs.size).toString())
             } catch (error: Exception) {
@@ -639,7 +639,7 @@ class RushWebBridge(
                 val controller = getController()
                 val item = controller.currentMediaItem ?: return@launch
                 val audioOnly = item.mediaMetadata.extras?.getBoolean(PlaybackMetadata.AUDIO_ONLY, false) == true
-                if (!audioOnly) activity.runOnUiThread { activity.showNativeVideo(controller) }
+                if (!audioOnly) activity.runOnUiThread { activity.showNativeVideo(controller, fullscreen = true) }
             }
         }
     }
@@ -691,6 +691,39 @@ class RushWebBridge(
 
     @JavascriptInterface
     fun musicPosition(): Long = runCatching { controllerFuture?.get()?.currentPosition ?: 0L }.getOrDefault(0L)
+
+    @JavascriptInterface
+    fun musicDuration(): Long = runCatching {
+        controllerFuture?.get()?.duration?.takeIf { it > 0L } ?: 0L
+    }.getOrDefault(0L)
+
+    @JavascriptInterface
+    fun seekPlaybackTo(positionMs: Long) {
+        activity.lifecycleScope.launch {
+            runCatching {
+                val controller = getController()
+                val duration = controller.duration.takeIf { it > 0L } ?: positionMs.coerceAtLeast(0L)
+                controller.seekTo(positionMs.coerceIn(0L, duration))
+            }.onFailure {
+                publish("rushMusicPlaybackState", JSONObject().put("state", "error")
+                    .put("message", it.message ?: "Could not seek this track.").toString())
+            }
+        }
+    }
+
+    @JavascriptInterface
+    fun skipPrevious() {
+        activity.lifecycleScope.launch {
+            runCatching { getController().seekToPreviousMediaItem() }
+        }
+    }
+
+    @JavascriptInterface
+    fun skipNext() {
+        activity.lifecycleScope.launch {
+            runCatching { getController().seekToNextMediaItem() }
+        }
+    }
 
     @JavascriptInterface
     fun loadCurrentMusicLyrics() {
@@ -791,8 +824,10 @@ class RushWebBridge(
                             title = ""; link = ""; date = ""; description = ""; source = ""; thumbnail = ""
                         } else if (insideItem) {
                             field = parser.name
-                            if (parser.name == "media:thumbnail" || parser.name == "media:content" || parser.name == "enclosure") {
-                                thumbnail = parser.getAttributeValue(null, "url").orEmpty()
+                            val mediaTag = parser.name.substringAfter(':').lowercase()
+                            if (mediaTag in setOf("thumbnail", "content", "enclosure")) {
+                                val candidate = parser.getAttributeValue(null, "url").orEmpty()
+                                if (candidate.isNotBlank()) thumbnail = candidate
                             }
                         }
                     }
@@ -814,10 +849,6 @@ class RushWebBridge(
                                     .ifBlank { description.substringAfter("src='", "").substringBefore("'") }
                             }
                             if (thumbnail.startsWith("//")) thumbnail = "https:$thumbnail"
-                            if (thumbnail.isBlank()) {
-                                val host = runCatching { android.net.Uri.parse(link).host }.getOrNull().orEmpty()
-                                if (host.isNotBlank()) thumbnail = "https://www.google.com/s2/favicons?domain=$host&sz=128"
-                            }
                             val cleanSummary = description.replace(Regex("<[^>]+>"), " ")
                                 .replace(Regex("\\s+"), " ").trim()
                             if (title.isNotBlank() && link.startsWith("https://")) {
@@ -836,8 +867,56 @@ class RushWebBridge(
                 }
                 event = parser.next()
             }
+            for (index in 0 until minOf(output.length(), 2)) {
+                val article = output.optJSONObject(index) ?: continue
+                if (article.optString("thumbnail").isBlank()) {
+                    val image = extractArticleThumbnail(article.optString("url"))
+                    if (image.isNotBlank()) article.put("thumbnail", image)
+                }
+            }
             return output
         }
+    }
+
+    private fun extractArticleThumbnail(articleUrl: String): String {
+        return runCatching {
+            val uri = android.net.Uri.parse(articleUrl)
+            if (uri.scheme != "https" || uri.host.isNullOrBlank() || !uri.userInfo.isNullOrBlank()) return ""
+            val request = okhttp3.Request.Builder().url(articleUrl)
+                .header("User-Agent", "Mozilla/5.0 (compatible; Rush/1.0)")
+                .header("Accept", "text/html").build()
+            val client = RushNetwork.newBuilder()
+                .callTimeout(2200, java.util.concurrent.TimeUnit.MILLISECONDS)
+                .connectTimeout(1100, java.util.concurrent.TimeUnit.MILLISECONDS)
+                .readTimeout(1400, java.util.concurrent.TimeUnit.MILLISECONDS)
+                .build()
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) return@use ""
+                val body = response.body ?: return@use ""
+                val source = body.charStream().use { reader ->
+                    val outputText = StringBuilder()
+                    val buffer = CharArray(4096)
+                    while (outputText.length < 96 * 1024) {
+                        val count = reader.read(buffer, 0, minOf(buffer.size, 96 * 1024 - outputText.length))
+                        if (count <= 0) break
+                        outputText.append(buffer, 0, count)
+                    }
+                    outputText.toString()
+                }
+                var imageUrl = ""
+                for (tag in Regex("""(?is)<meta\b[^>]*>""").findAll(source)) {
+                    val attrs = Regex("""([a-zA-Z:-]+)\s*=\s*["']([^"']*)["']""")
+                        .findAll(tag.value).associate { it.groupValues[1].lowercase() to it.groupValues[2] }
+                    val property = (attrs["property"] ?: attrs["name"]).orEmpty().lowercase()
+                    if (property in setOf("og:image", "og:image:url", "twitter:image", "twitter:image:src")) {
+                        imageUrl = attrs["content"].orEmpty().replace("&amp;", "&")
+                        if (imageUrl.isNotBlank()) break
+                    }
+                }
+                val resolved = imageUrl.takeIf { it.isNotBlank() }?.let { response.request.url.resolve(it) }
+                resolved?.takeIf { it.isHttps && it.host.isNotBlank() }?.toString().orEmpty()
+            }
+        }.getOrDefault("")
     }
 
     @JavascriptInterface
@@ -1183,7 +1262,7 @@ class RushWebBridge(
                     }
                 }
                 if (controller.currentMediaItem?.mediaMetadata?.extras?.getBoolean(PlaybackMetadata.AUDIO_ONLY, false) != true) {
-                    activity.runOnUiThread { activity.showNativeVideo(controller) }
+                    activity.runOnUiThread { activity.showNativeVideo(controller, fullscreen = true) }
                 } else {
                     activity.hideNativeVideo()
                 }
@@ -1386,7 +1465,7 @@ class RushWebBridge(
                     media.file.absolutePath
                 )
                 if (media.isAudio) activity.hideNativeVideo()
-                else activity.runOnUiThread { activity.showNativeVideo(controller) }
+                else activity.runOnUiThread { activity.showNativeVideo(controller, fullscreen = true) }
                 publish("rushCurrentPlayback", JSONObject()
                     .put("hasItem", true)
                     .put("isMusic", media.isAudio)
