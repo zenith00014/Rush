@@ -136,6 +136,7 @@ class RushWebBridge(
             val newsPayloads = LinkedHashMap<String, JSONObject>()
             val following = mode.equals("following", true)
             val selectedChannels = FeedPreferences.forYouChannels(sources)
+            val topicVideoQueries = RushDiscoveryEngine.videoDiscoveryQueries(profile.topics, following)
 
             try {
                 withContext(Dispatchers.IO) {
@@ -165,6 +166,52 @@ class RushWebBridge(
                                 }
                         }
                     }
+                    topicVideoQueries.forEach { query ->
+                        runCatching {
+                            val raw = LiveYouTubeSearch.search(query, music = false)
+                                .filter { it.videoId.isNotBlank() }
+                            val results = rankYouTubeSearch(query, raw, RushDiscoveryEngine.Kind.VIDEO).take(25)
+                            results.forEach itemLoop@{ item ->
+                                if (item.videoId.isBlank()) return@itemLoop
+                                val creator = item.creator.trim()
+                                val followedSource = selectedChannels.firstOrNull { source ->
+                                    creator.isNotBlank() && (
+                                        creator.contains(source.name, true) ||
+                                            source.name.contains(creator, true)
+                                        )
+                                }
+                                val searchableText = item.title + " " + item.description
+                                val matchedTopics = profile.topics.filter {
+                                    searchableText.contains(it, ignoreCase = true)
+                                }.toSet()
+                                val candidate = RushDiscoveryEngine.Candidate(
+                                    id = item.videoId,
+                                    kind = RushDiscoveryEngine.Kind.VIDEO,
+                                    title = item.title,
+                                    creator = item.creator,
+                                    summary = item.description,
+                                    sourceFollowed = followedSource != null,
+                                    durationSeconds = parseDurationSeconds(item.duration),
+                                    topicTags = matchedTopics
+                                )
+                                val score = RushDiscoveryEngine.scoreFeed(candidate, profile)
+                                val json = JSONObject()
+                                    .put("id", item.videoId)
+                                    .put("title", item.title)
+                                    .put("artist", item.creator)
+                                    .put("duration", item.duration)
+                                    .put("thumbnail", item.thumbnailUrl)
+                                    .put("sourceId", followedSource?.id.orEmpty())
+                                    .put("sourceName", followedSource?.name.orEmpty())
+                                val previous = videoHits[item.videoId]
+                                if (previous == null || score > previous.score) {
+                                    videoHits[item.videoId] = RushDiscoveryEngine.FeedHit(candidate, score)
+                                    videoPayloads[item.videoId] = json
+                                }
+                            }
+                        }
+                    }
+
                     sources.filter { it.kind == "artist" }.take(6).forEach { source ->
                         runCatching {
                             LiveYouTubeSearch.search(source.name, music = true).forEach itemLoop@{ item ->
