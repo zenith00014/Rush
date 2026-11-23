@@ -119,12 +119,16 @@ def main():
         fail("For You channel eligibility must use followed sources without a second opt-in")
     if "ADD TO FOR YOU" in html or "data-recommend-channel" in html:
         fail("Obsolete separate For You channel opt-in remains in the UI")
-    if "topicQuery" not in html or "function filterTopicNames" not in js:
-        fail("Personalisation topic search is missing")
-    if not all(marker in html for marker in ("data-home-filter", "data-refresh-feed")):
-        fail("Home feed filters and refresh action are missing")
+    if 'id="q"' not in html or "data-search-submit" not in js or 'id="searchSort"' not in html:
+        fail("The single global Search page and sort controls are missing")
+    if any(marker in js for marker in ("data-home-filter", "data-refresh-feed")):
+        fail("Obsolete Home filter buttons or manual refresh button remain")
+    if any(marker in js for marker in ("videoQuery", "channelQuery", "musicQuery", "newsQuery", "topicQuery")):
+        fail("Per-page search controls must be removed in favour of global Search")
+    if not all(marker in html for marker in ('id="refreshIndicator"', 'id="refreshLabel"')) or "setupNavigationBehavior();" not in js:
+        fail("Home pull-to-refresh interaction is missing")
     if "function mixHomeFeedItems(" not in js or "homeFeedData=" not in js:
-        fail("Home feed must interleave content types and retain data for filtering")
+        fail("Home feed must interleave content types and retain data for rendering")
     if "videoDiscoveryQueries(profile.topics, following)" not in bridge or "fun videoDiscoveryQueries" not in engine:
         fail("For You feed must retrieve video candidates from selected topics")
     if "fonts.googleapis.com" in html or "fonts.gstatic.com" in html:
@@ -134,13 +138,20 @@ def main():
         "no preloaded fixed video player": 'id="videoPlayerHost"' not in html,
         "dedicated music player screen": "function renderPlayerPage()" in js,
         "lyrics are inside player": 'id="playerLyricsPanel"' in html and 'id="lyricsPanel"' not in html,
-        "responsive media row grid": "grid-template-columns:64px minmax(0,1fr) auto!important" in html,
+        "title-first full thumbnails": "media-copy" in js and "mediaThumbnail(thumb,x.title)" in js and "object-fit:contain" in html and "aspect-ratio:16/9" in html,
         "explicit video resume button": "data-video-resume" in html and "RushNative.showCurrentVideo()" in js,
         "no automatic video popup on tab navigation": "if(page!=='videos')RushNative.hideVideo();" in js,
         "obsolete productive-channel copy removed": "selected productive channels" not in html and "productive channel selection" not in html,
         "conditional mini-player spacing": ".app.has-mini #sc" in html,
-        "rounded selected feed segment": ".seg button{border-radius:14px!important}" in html and ".seg i{border-radius:14px!important}" in html,
-        "solid feed segment without glass": ".seg{border-radius:18px!important;background:#131b21!important" in html,
+        "rounded selected feed segment": ".seg button,.seg i{border-radius:14px!important}" in html,
+        "glass feed segment": "backdrop-filter:blur(18px)" in html,
+        "glass top and bottom navigation": "backdrop-filter:blur(28px)" in html and "backdrop-filter:blur(30px)" in html,
+        "active navigation icons stay visible": ".nav a .ic{display:block!important" in html and "visibility:visible!important" in html,
+        "adaptive navigation hides on downward scroll": "nav-hidden .top" in html and "nav-hidden .nav" in html and "sc.addEventListener('scroll'" in js,
+        "swipe navigation between pages": "Math.abs(dx)>72" in js and "location.hash='#'+NAV[next][0]" in js,
+        "single global Search CTA removed": "data-unified-search" not in js and "SEARCH ALL SOURCES" not in html,
+        "music now-playing placeholder removed": 'id="musicNowPlaying"' not in html,
+        "search no longer reports result counts": "results found" not in js and "videos found" not in js and "tracks found" not in js,
         "library uses library icon": "library:'M4 4h13v16H4z" in js and "['library','Library','follow']" not in js,
         "edge-to-edge root uses dark surface": "setBackgroundColor(android.graphics.Color.rgb(11,16,20))" in activity,
     }
