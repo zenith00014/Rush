@@ -506,10 +506,7 @@ html,body{background:#070b10;color:var(--ink)}
 <div class="app">
 <header class="top">
     <div class="wm" aria-label="Rush">rush<i></i></div>
-    <div>
-      <button class="ib" id="searchShortcut" data-open-search aria-label="Search all Rush">⌕</button>
-      <button class="ib" id="topicsShortcut" aria-label="Personalise Rush">☷</button>
-    </div>
+    <div><button class="ib top-profile" id="profileShortcut" aria-label="Open profile and library">◉</button></div>
   </header>
 <main id="sc"><div id="refreshIndicator" class="refresh-indicator" aria-hidden="true"><span class="refresh-spinner"></span><span id="refreshLabel">Pull to refresh</span></div><div id="v"></div></main>
   <section class="mini" id="mini" aria-label="Now playing" inert>
@@ -539,8 +536,8 @@ const PAL=['#FF6B3D','#4D7DFF','#D8FF3F','#35E0E0','#B58CFF','#3DDC84'];
 const TOPICS=['Science','Technology','AI and machine learning','Programming','Cybersecurity','History','Geography','Education','Languages','Literature','Books','Philosophy','Psychology','Mathematics','Space','Engineering','Economics','Business','Startups','Personal finance','Investing','Politics','Current affairs','World news','Environment','Climate','Health','Medicine','Fitness','Sports','Football','Basketball','Cricket','Esports','Gaming','Game development','Design','Art','Photography','Architecture','Fashion','Beauty','Makeup','Cooking','Food','Travel','Cars','Motorcycles','Nature','Wildlife','Pets','Gardening','Home improvement','Music','Music production','Classical music','Hip-hop','K-pop','Film analysis','Anime','Manga','Podcasts','Documentaries','Vlogs','Comedy','Memes','Viral clips','Celebrity gossip','Pranks','Internet drama','Rage bait','Reality TV','Shorts','ASMR','Luxury','Shopping','Product reviews','Relationships','Parenting','Lifestyle','Meditation','Self-improvement','Romance','Horror','Internet culture','Streaming','Live streams','Board games','Collecting','Crafts'];
 const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const safeUrl=v=>/^https:\/\/[^\s"'<>]+$/i.test(String(v||''))?String(v):'';
-let prefs={topics:['Science','Technology','History','Education','Design','Engineering','Economics','Culture','Environment','Sports','Music','Health','Language','Business','Art','Documentaries'],sources:[]};
-let page='home',homeTab='fy',unifiedMode='all',unifiedQuery='',unifiedPending=0,searchSort='relevance',refreshFallback=0,mediaState={hasItem:false,isMusic:false,isVideo:false,isPlaying:false,title:'',artist:'',artwork:''};
+let prefs={topics:['Science','Technology','History','Education','Design','Engineering','Economics','Culture','Environment','Sports','Music','Health','Language','Business','Art','Documentaries'],allTopics:[],snoozedTopics:[],sources:[]};
+let page='home',homeTab='fy',activeTopic='',activeVideo=null,homeFeedCache={},unifiedMode='all',unifiedQuery='',unifiedPending=0,searchSort='relevance',refreshFallback=0,mediaState={hasItem:false,isMusic:false,isVideo:false,isPlaying:false,title:'',artist:'',artwork:''};
 function finishRefreshIndicator(){
  if(refreshFallback){clearTimeout(refreshFallback);refreshFallback=0}
  const indicator=$('#refreshIndicator'),label=$('#refreshLabel');
@@ -549,7 +546,16 @@ function finishRefreshIndicator(){
 }
 const unifiedData={videos:[],music:[],news:[],channels:[],playlists:[]};
 let publicPlaylistData=null;
-const selectedTopics=()=>prefs.topics||[];
+const selectedTopics=()=>prefs.allTopics&&prefs.allTopics.length?prefs.allTopics:(prefs.topics||[]);
+const activeTopics=()=>prefs.topics||selectedTopics();
+const snoozedTopics=()=>Array.isArray(prefs.snoozedTopics)?prefs.snoozedTopics:[];
+function topicSnoozed(topic){return snoozedTopics().some(item=>item.topic===topic&&Number(item.until)>Date.now())}
+function currentFeedMode(){return activeTopic?'topic:'+activeTopic:(homeTab==='fy'?'forYou':'following')}
+function renderHomeTopicTabs(){
+ const root=$('#homeTopicTabs');if(!root)return;
+ const tabs=activeTopics().map(topic=>'<div class="topic-tab-wrap"><button class="topic-tab" data-topic-filter="'+esc(topic)+'" aria-pressed="'+(activeTopic===topic)+'">'+esc(topic)+'</button><button class="topic-snooze" data-snooze-topic="'+esc(topic)+'" aria-label="Snooze '+esc(topic)+' for one day" title="Snooze for 24 hours">···</button></div>').join('');
+ root.innerHTML='<button class="topic-tab topic-all" data-topic-filter="" aria-pressed="'+(!activeTopic)+'">ALL</button>'+tabs+'<button class="topic-manage" data-open-topics>＋ TOPICS</button>';
+}
 function loadPrefs(){
  try{if(window.RushNative){const raw=RushNative.getFeedPreferences();if(raw)prefs=JSON.parse(raw)}}catch(e){}
 }
@@ -583,9 +589,9 @@ function mediaThumbnail(url,alt){
  const thumb=safeUrl(url);
  return '<span class="media-thumb">'+(thumb?'<img src="'+esc(thumb)+'" alt="'+esc(alt||'')+'" loading="lazy" decoding="async" onerror="this.hidden=true">':'<span class="media-thumb-empty">NO PREVIEW</span>')+'</span>';
 }
-function videoRow(x){
+function videoRow(x,showActions=true){
  const thumb=safeUrl(x.thumbnail);
- return '<article class="result-wrap"><button class="media-main" data-video-id="'+esc(x.id)+'" data-title="'+esc(x.title)+'" data-creator="'+esc(x.artist||x.creator)+'" data-thumbnail="'+esc(thumb)+'"><span class="media-copy"><b>'+esc(x.title)+'</b><span>'+esc(x.artist||x.creator||'YouTube')+' · '+esc(x.duration||'')+'</span></span>'+mediaThumbnail(thumb,x.title)+'<span class="media-play">'+ic('play')+'</span></button>'+mediaActions(x,false)+'</article>';
+ return '<article class="result-wrap"><button class="media-main" data-video-id="'+esc(x.id)+'" data-title="'+esc(x.title)+'" data-creator="'+esc(x.artist||x.creator)+'" data-source-id="'+esc(x.sourceId||'')+'" data-source-name="'+esc(x.sourceName||x.artist||x.creator||'')+'" data-thumbnail="'+esc(thumb)+'"><span class="media-copy"><b>'+esc(x.title)+'</b><span>'+esc(x.artist||x.creator||'YouTube')+' · '+esc(x.duration||'')+'</span></span>'+mediaThumbnail(thumb,x.title)+'<span class="media-play">'+ic('play')+'</span></button>'+(showActions?mediaActions(x,false):'')+'</article>';
 }
 function musicRow(x){
  const thumb=safeUrl(x.thumbnail);
@@ -720,7 +726,7 @@ function refreshLibrary(){
  if(page==='library')loadLibrary();
 }
 
-const NAV=[['home','Home','home'],['videos','Videos','vid'],['music','Music','music'],['news','News','news'],['library','Library','library']];
+const NAV=[['home','Home','home'],['videos','Videos','vid'],['music','Music','music'],['news','News','news'],['search','Search','search']];
 $('#nav').innerHTML='<i class="pill"></i>'+NAV.map(([key,label,icon])=>'<a href="#'+key+'" data-k="'+key+'">'+ic(icon)+'<span>'+label+'</span></a>').join('');
 function setupNavigationBehavior(){
  const sc=$('#sc'),app=$('.app'),indicator=$('#refreshIndicator'),label=$('#refreshLabel');
