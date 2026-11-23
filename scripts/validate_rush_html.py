@@ -152,6 +152,8 @@ def main():
         fail("LRC fractional timestamps must preserve 1-, 2-, and 3-digit precision")
     if "window.rushMusicLyricsLoading=()=>{" not in js:
         fail("Player lyrics loading feedback callback is missing")
+    if "android.text.Html.fromHtml(" not in bridge or ".replace('\\u00A0', ' ')" not in bridge:
+        fail("RSS headlines and summaries must decode HTML entities and normalize non-breaking spaces")
     if "if (!future.isDone || future.isCancelled) return null" not in bridge:
         fail("Playback position polling must never block waiting for the media service")
     if "robolectric.dependency.repo.url" not in gradle or "maven-central.storage-download.googleapis.com/maven2/" not in gradle:

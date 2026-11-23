@@ -872,11 +872,17 @@ class RushWebBridge(
                                     .ifBlank { description.substringAfter("src='", "").substringBefore("'") }
                             }
                             if (thumbnail.startsWith("//")) thumbnail = "https:$thumbnail"
-                            val cleanSummary = description.replace(Regex("<[^>]+>"), " ")
-                                .replace(Regex("\\s+"), " ").trim()
-                            if (title.isNotBlank() && link.startsWith("https://")) {
+                            val plainTitle = android.text.Html.fromHtml(
+                                title,
+                                android.text.Html.FROM_HTML_MODE_LEGACY
+                            ).toString().replace('\u00A0', ' ').replace(Regex("\\s+"), " ").trim()
+                            val cleanSummary = android.text.Html.fromHtml(
+                                description,
+                                android.text.Html.FROM_HTML_MODE_LEGACY
+                            ).toString().replace('\u00A0', ' ').replace(Regex("\\s+"), " ").trim()
+                            if (plainTitle.isNotBlank() && link.startsWith("https://")) {
                                 output.put(JSONObject()
-                                    .put("title", title.trim())
+                                    .put("title", plainTitle)
                                     .put("url", link.trim())
                                     .put("date", date.trim())
                                     .put("source", source.trim().ifBlank { "News source" })
