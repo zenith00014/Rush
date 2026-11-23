@@ -142,8 +142,9 @@ class RushWebBridge(
                 withContext(Dispatchers.IO) {
                     selectedChannels.take(10).forEach { source ->
                         runCatching {
-                            LiveYouTubeSearch.search(source.name, music = false)
-                                .filter { it.videoId.isNotBlank() && (it.creator.equals(source.name, true) || it.creator.contains(source.name, true)) }
+                            LiveYouTubeSearch.latestUploads(source.id)
+                                .filter { it.videoId.isNotBlank() }
+                                .take(12)
                                 .forEach { item ->
                                     val candidate = RushDiscoveryEngine.Candidate(
                                         id = item.videoId, kind = RushDiscoveryEngine.Kind.VIDEO,
@@ -627,7 +628,9 @@ class RushWebBridge(
                     results.forEach { item ->
                         put(JSONObject().put("id", item.videoId).put("title", item.title)
                             .put("artist", item.creator).put("duration", item.duration)
-                            .put("thumbnail", thumbnailFor(item.videoId, item.thumbnailUrl)))
+                            .put("thumbnail", thumbnailFor(item.videoId, item.thumbnailUrl))
+                            .put("publishedText", item.publishedText)
+                            .put("viewCount", item.viewCount))
                     }
                 }
                 publish("rushVideoSearchResults", payload.toString())
