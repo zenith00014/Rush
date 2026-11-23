@@ -275,7 +275,7 @@ html,body{background:var(--paper);color:var(--ink)}
 .player-track{display:flex;align-items:center;justify-content:space-between;gap:12px}.player-track-copy{min-width:0}.player-track h2{display:block;padding:0;margin:0;font:850 clamp(22px,6vw,30px)/1.08 var(--f);letter-spacing:-.025em;overflow-wrap:anywhere}
 .player-track p{margin-top:6px;color:var(--mu);font-size:14px}.player-track .meta{font:10px var(--m)}.player-progress{display:block;margin-top:22px}#playerSeek{display:block;width:100%;accent-color:var(--sp);min-height:32px}
 .player-time{display:flex;justify-content:space-between;color:var(--mu);font:11px var(--m)}.player-controls{display:flex;justify-content:center;align-items:center;gap:26px;margin:16px 0 20px}
-.player-controls .ib{width:48px;height:48px}.player-controls .player-play{width:66px;height:66px;border-radius:50%!important}
+.player-controls .ib{width:48px;height:48px}.player-controls .player-play{width:66px;height:66px;border-radius:50%!important}.player-controls button:disabled,.player-utilities button:disabled{opacity:.38;cursor:not-allowed}
 .player-utilities{display:flex;justify-content:space-between;gap:10px}.player-utilities .chip{flex:1}.player-lyrics{margin-top:28px;padding:12px 0 30px;border-top:1px solid var(--border)}
 .player-lyrics h2{padding:22px 0 12px}.player-lyrics .lyrics-panel{padding:8px 0;max-height:52vh;overflow:auto}.player-lyrics .lyric-line{border-bottom:1px solid var(--border);padding:12px 4px;border-radius:8px}.player-lyrics .lyric-line.active{background:rgba(255,118,95,.12);transform:none}
 @media(max-width:380px){.news-open{grid-template-columns:minmax(0,1fr) 88px;gap:9px}.row,.row.n{gap:9px!important;grid-template-columns:56px minmax(0,1fr) auto!important}.row img{width:56px!important;height:56px!important}.player-art{width:min(100%,300px)}.player-controls{gap:16px}}
@@ -413,8 +413,8 @@ function renderPlayerPage(){
  '<div class="player-art"><img id="playerArtwork" alt="Track artwork" hidden><span id="playerArtFallback">RUSH MUSIC</span></div>'+
  '<div class="player-track"><div class="player-track-copy"><h2 id="playerTitle">Choose a track</h2><p id="playerArtist">Your next favourite song starts here.</p><p class="meta" id="playerStatus" aria-live="polite">Nothing is playing yet.</p></div><button class="ib" id="playerSave" data-player-save aria-label="Save current track" disabled>♡</button></div>'+
  '<div class="player-progress"><input id="playerSeek" type="range" min="0" max="1000" step="1" value="0" disabled aria-label="Seek through track"><div class="player-time"><span id="playerElapsed">0:00</span><span id="playerDuration">0:00</span></div></div>'+
- '<div class="player-controls"><button class="ib" data-player-prev aria-label="Previous track">|◀</button><button class="ib p player-play" id="playerToggle" data-player-toggle aria-label="Play or pause">'+ic('play')+'</button><button class="ib" data-player-next aria-label="Next track">▶|</button></div>'+
- '<div class="player-utilities"><button class="chip" id="playerLyricsToggle" data-player-lyrics-toggle aria-expanded="false">SHOW LYRICS</button><button class="chip" data-player-queue>UP NEXT</button></div>'+
+ '<div class="player-controls"><button class="ib" data-player-prev aria-label="Previous track" disabled>|◀</button><button class="ib p player-play" id="playerToggle" data-player-toggle aria-label="Play or pause" disabled>'+ic('play')+'</button><button class="ib" data-player-next aria-label="Next track" disabled>▶|</button></div>'+
+ '<div class="player-utilities"><button class="chip" id="playerLyricsToggle" data-player-lyrics-toggle aria-expanded="false" disabled>SHOW LYRICS</button><button class="chip" data-player-queue>UP NEXT</button></div>'+
  '<section class="player-lyrics" id="playerLyrics" hidden><h2>Lyrics</h2><p class="meta" id="playerLyricsStatus" aria-live="polite">Open lyrics for the current track.</p><div class="lyrics-panel" id="playerLyricsPanel"></div></section></section>';
 }
 function renderNewsPage(){
@@ -859,18 +859,8 @@ setInterval(()=>{
  });
 },350);
 setInterval(()=>{if(page==='player'&&window.RushNative&&mediaState.hasItem&&mediaState.isMusic)renderPlayerProgress(RushNative.musicPosition(),RushNative.musicDuration())},1000);
- let nativeVideoPositionPending=false;
-const contentScroller=$('#sc');
-if(contentScroller)contentScroller.addEventListener('scroll',()=>{
- if(nativeVideoPositionPending||page!=='videos'||!window.RushNative)return;
- nativeVideoPositionPending=true;
- requestAnimationFrame(()=>{
-  nativeVideoPositionPending=false;
-  if(page==='videos'&&window.RushNative)RushNative.updateVideoPosition();
- });
-},{passive:true});
 window.addEventListener('hashchange',go);
-window.addEventListener('resize',()=>{navPosition();indicator();if(window.RushNative&&page==='videos')RushNative.updateVideoPosition()});
+window.addEventListener('resize',()=>{navPosition();indicator()});
 loadPrefs();
 go();
 </script>
