@@ -410,6 +410,9 @@ class MainActivity:ComponentActivity(){
  }
  @androidx.media3.common.util.UnstableApi
  override fun onDestroy(){
+  newsArticleDialog?.dismiss()
+  newsArticleDialog=null
+  newsArticleWebView=null
   if(::rushWebBridge.isInitialized)rushWebBridge.release()
   nativeVideoView?.player=null
   nativeVideoView?.let { (it.parent as? android.view.ViewGroup)?.removeView(it) }
