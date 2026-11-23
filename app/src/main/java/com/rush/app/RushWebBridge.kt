@@ -35,6 +35,28 @@ class RushWebBridge(
     }
 
     @JavascriptInterface
+    fun snoozeTopic(topic: String) {
+        val prefs = activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)
+        runCatching { FeedPreferences.snoozeTopic(prefs, topic) }
+            .onSuccess { publish("rushFeedPreferences", FeedPreferences.asJson(prefs).toString()) }
+            .onFailure {
+                publish("rushFeedPreferencesError", JSONObject()
+                    .put("message", it.message ?: "Could not snooze this topic.").toString())
+            }
+    }
+
+    @JavascriptInterface
+    fun unsnoozeTopic(topic: String) {
+        val prefs = activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)
+        runCatching { FeedPreferences.unsnoozeTopic(prefs, topic) }
+            .onSuccess { publish("rushFeedPreferences", FeedPreferences.asJson(prefs).toString()) }
+            .onFailure {
+                publish("rushFeedPreferencesError", JSONObject()
+                    .put("message", it.message ?: "Could not restore this topic.").toString())
+            }
+    }
+
+    @JavascriptInterface
     fun followSource(kind: String, id: String, name: String, productive: Boolean) {
         val prefs = activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)
         runCatching { FeedPreferences.follow(prefs, kind, id, name, productive) }
@@ -134,15 +156,18 @@ class RushWebBridge(
             val musicPayloads = LinkedHashMap<String, JSONObject>()
             val newsHits = LinkedHashMap<String, RushDiscoveryEngine.FeedHit>()
             val newsPayloads = LinkedHashMap<String, JSONObject>()
+            val topicFilter = mode.takeIf { it.startsWith("topic:", true) }
+                ?.substringAfter(":")?.trim()?.takeIf { it in FeedPreferences.allTopics(prefs) }
             val following = mode.equals("following", true)
             val selectedChannels = FeedPreferences.forYouChannels(sources)
-            val topicVideoQueries = RushDiscoveryEngine.videoDiscoveryQueries(profile.topics, following)
+            val topicVideoQueries = topicFilter?.let { listOf("$it explained OR documentary OR analysis") }
+                ?: RushDiscoveryEngine.videoDiscoveryQueries(profile.topics, following)
 
             try {
                 withContext(Dispatchers.IO) {
-                    selectedChannels.take(10).forEach { source ->
+                    selectedChannels.take(4).forEach { source ->
                         runCatching {
-                            LiveYouTubeSearch.latestUploads(source.id, 12)
+                            LiveYouTubeSearch.latestUploads(source.id, 8)
                                 .filter { it.videoId.isNotBlank() }
                                 .forEach { item ->
                                     val candidate = RushDiscoveryEngine.Candidate(
@@ -166,11 +191,11 @@ class RushWebBridge(
                                 }
                         }
                     }
-                    topicVideoQueries.forEach { query ->
+                    topicVideoQueries.take(3).forEach { query ->
                         runCatching {
                             val raw = LiveYouTubeSearch.search(query, music = false)
                                 .filter { it.videoId.isNotBlank() }
-                            val results = rankYouTubeSearch(query, raw, RushDiscoveryEngine.Kind.VIDEO).take(25)
+                            val results = rankYouTubeSearch(query, raw, RushDiscoveryEngine.Kind.VIDEO).take(15)
                             results.forEach itemLoop@{ item ->
                                 if (item.videoId.isBlank()) return@itemLoop
                                 val creator = item.creator.trim()
@@ -212,7 +237,7 @@ class RushWebBridge(
                         }
                     }
 
-                    sources.filter { it.kind == "artist" }.take(6).forEach { source ->
+                    sources.filter { it.kind == "artist" }.take(3).forEach { source ->
                         runCatching {
                             LiveYouTubeSearch.search(source.name, music = true).forEach itemLoop@{ item ->
                                 if (item.videoId.isBlank()) return@itemLoop
@@ -235,9 +260,9 @@ class RushWebBridge(
                     }
 
                     val newsQueries = if (following) {
-                        sources.filter { it.kind == "news" }.take(6).map { it.name }
+                        sources.filter { it.kind == "news" }.take(3).map { it.name }
                     } else {
-                        (profile.topics.take(4) + sources.filter { it.kind == "news" }.take(3).map { it.name }).distinct()
+                        (profile.topics.take(2) + sources.filter { it.kind == "news" }.take(2).map { it.name }).distinct()
                     }
                     newsQueries.forEach { query ->
                         runCatching {
@@ -270,7 +295,7 @@ class RushWebBridge(
             val news = RushDiscoveryEngine.diversifyFeed(newsHits.values.toList(), 20, 3)
                 .mapNotNull { newsPayloads[it.candidate.id] }
             publish("rushHomeFeedResults", JSONObject()
-                .put("mode", if (following) "following" else "forYou")
+                .put("mode", if (topicFilter != null) "topic:$topicFilter" else if (following) "following" else "forYou")
                 .put("videos", JSONArray(videos)).put("music", JSONArray(music)).put("news", JSONArray(news))
                 .put("message", when {
                     following && sources.isEmpty() -> "Follow YouTube channels, news publishers or musicians in Search to build this feed."
@@ -671,7 +696,7 @@ class RushWebBridge(
                 controller.prepare()
                 controller.play()
                 LocalLibrary.rememberPlayback(prefs, videoId, title, creator, false, thumbnail, videoId)
-                activity.runOnUiThread { activity.showNativeVideo(controller, fullscreen = true) }
+                activity.runOnUiThread { activity.showNativeVideo(controller, fullscreen = false) }
                 publish("rushVideoPlaybackState", JSONObject().put("state", "playing")
                     .put("title", title).put("creator", creator).put("captionTracks", subtitleConfigs.size).toString())
             } catch (error: Exception) {
