@@ -838,13 +838,7 @@ class RushWebBridge(
     fun openNews(url: String) {
         val uri = runCatching { android.net.Uri.parse(url.trim().take(4096)) }.getOrNull() ?: return
         if (uri.scheme != "https" || uri.host.isNullOrBlank() || uri.userInfo != null) return
-        activity.runOnUiThread {
-            runCatching {
-                activity.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, uri))
-            }.onFailure {
-                publish("rushNewsError", JSONObject().put("message", "No browser is available to open this article.").toString())
-            }
-        }
+        activity.showNewsArticle(uri.toString())
     }
 
     private fun fetchNews(query: String) {
@@ -897,9 +891,18 @@ class RushWebBridge(
                         } else if (insideItem) {
                             field = parser.name
                             val mediaTag = parser.name.substringAfter(':').lowercase()
-                            if (mediaTag in setOf("thumbnail", "content", "enclosure")) {
-                                val candidate = parser.getAttributeValue(null, "url").orEmpty()
-                                if (candidate.isNotBlank()) thumbnail = candidate
+                            val candidate = when (mediaTag) {
+                                "thumbnail", "content", "enclosure" -> parser.getAttributeValue(null, "url")
+                                    ?: parser.getAttributeValue("http://search.yahoo.com/mrss/", "url")
+                                "img" -> parser.getAttributeValue(null, "src")
+                                    ?: parser.getAttributeValue(null, "data-src")
+                                else -> null
+                            }.orEmpty()
+                            val mediaType = parser.getAttributeValue(null, "type").orEmpty()
+                            if (candidate.startsWith("https://") &&
+                                (mediaTag == "thumbnail" || mediaTag == "img" || mediaType.startsWith("image/") ||
+                                    candidate.substringBefore('?').substringAfterLast('.').lowercase() in setOf("jpg", "jpeg", "png", "webp", "gif"))) {
+                                thumbnail = candidate
                             }
                         }
                     }
@@ -917,8 +920,9 @@ class RushWebBridge(
                     org.xmlpull.v1.XmlPullParser.END_TAG -> {
                         if (parser.name == "item") {
                             if (thumbnail.isBlank()) {
-                                thumbnail = description.substringAfter("src=\"", "").substringBefore("\"")
-                                    .ifBlank { description.substringAfter("src='", "").substringBefore("'") }
+                                val imageTag = Regex("""(?is)<img\\b[^>]*>""").find(description)?.value.orEmpty()
+                                thumbnail = Regex("""(?is)\\b(?:src|data-src)\\s*=\\s*["']([^"']+)["']""")
+                                    .find(imageTag)?.groupValues?.getOrNull(1).orEmpty()
                             }
                             if (thumbnail.startsWith("//")) thumbnail = "https:$thumbnail"
                             val plainTitle = android.text.Html.fromHtml(
@@ -945,7 +949,7 @@ class RushWebBridge(
                 }
                 event = parser.next()
             }
-            for (index in 0 until minOf(output.length(), 2)) {
+            for (index in 0 until minOf(output.length(), 10)) {
                 val article = output.optJSONObject(index) ?: continue
                 if (article.optString("thumbnail").isBlank()) {
                     val image = extractArticleThumbnail(article.optString("url"))
@@ -964,9 +968,9 @@ class RushWebBridge(
                 .header("User-Agent", "Mozilla/5.0 (compatible; Rush/1.0)")
                 .header("Accept", "text/html").build()
             val client = RushNetwork.newBuilder()
-                .callTimeout(2200, java.util.concurrent.TimeUnit.MILLISECONDS)
-                .connectTimeout(1100, java.util.concurrent.TimeUnit.MILLISECONDS)
-                .readTimeout(1400, java.util.concurrent.TimeUnit.MILLISECONDS)
+                .callTimeout(1800, java.util.concurrent.TimeUnit.MILLISECONDS)
+                .connectTimeout(800, java.util.concurrent.TimeUnit.MILLISECONDS)
+                .readTimeout(1100, java.util.concurrent.TimeUnit.MILLISECONDS)
                 .build()
             client.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) return@use ""
