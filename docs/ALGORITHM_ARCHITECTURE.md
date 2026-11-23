@@ -8,7 +8,7 @@ Rush has one shared intelligence layer plus a specialist scorer for each content
 
 ## Pipeline
 
-1. Retrieve candidates from the existing YouTube, YouTube Music and Google News RSS providers.
+1. Retrieve candidates from YouTube, YouTube Music and Google News RSS. For You video discovery combines followed-channel searches with up to five unique selected-topic searches; Following searches only followed sources.
 2. Normalise Unicode, case and punctuation while preserving provider IDs and metadata.
 3. Score common signals from interests, follows, local history, freshness, completeness, novelty and engagement when genuinely available.
 4. Apply a dedicated scorer for video, news, music, channel or playlist content.
@@ -37,6 +37,8 @@ Popularity stays low-weighted so already viral items do not overwhelm useful, pe
 ## Section specialists
 
 ### Videos
+
+For You retrieval is seeded by the selected topic list and supplemented by searches for every followed YouTube channel. The Following tab remains restricted to followed channels. Topic queries are deduplicated case-insensitively and bounded to five requests per refresh, then candidates enter the same scoring and creator-diversity pipeline. This lets the feed produce useful video candidates before a user has followed channels without weakening the source-only contract of Following.
 
 Video ranking favours explainers, tutorials, lectures, research, documentaries, science, engineering, lessons and analysis. Longer material receives a modest depth signal, not an eligibility rule. Low-information patterns such as rage bait, pranks, memes and gossip are soft penalties only. Useful short videos remain eligible.
 
