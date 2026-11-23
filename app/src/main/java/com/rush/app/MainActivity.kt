@@ -245,6 +245,7 @@ class MainActivity:ComponentActivity(){
    isAppearanceLightNavigationBars=false
   }
   rootLayout=android.widget.FrameLayout(this).apply {
+   setBackgroundColor(android.graphics.Color.rgb(11,16,20))
    setOnApplyWindowInsetsListener { view, windowInsets ->
     val safeInsets=WindowInsetsCompat.toWindowInsetsCompat(windowInsets,view)
      .getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout())

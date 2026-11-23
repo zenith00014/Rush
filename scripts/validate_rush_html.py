@@ -13,6 +13,7 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 HTML_PATH = ROOT / "app/src/main/assets/rush.html"
 BRIDGE_PATH = ROOT / "app/src/main/java/com/rush/app/RushWebBridge.kt"
+ACTIVITY_PATH = ROOT / "app/src/main/java/com/rush/app/MainActivity.kt"
 
 
 class RushHtmlParser(HTMLParser):
@@ -56,9 +57,12 @@ def main():
         fail(f"Missing WebView asset: {HTML_PATH}")
     if not BRIDGE_PATH.is_file():
         fail(f"Missing native bridge: {BRIDGE_PATH}")
+    if not ACTIVITY_PATH.is_file():
+        fail(f"Missing Android activity: {ACTIVITY_PATH}")
 
     html = HTML_PATH.read_text(encoding="utf-8")
     bridge = BRIDGE_PATH.read_text(encoding="utf-8")
+    activity = ACTIVITY_PATH.read_text(encoding="utf-8")
     parser = RushHtmlParser()
     parser.feed(html)
     parser.close()
@@ -125,6 +129,8 @@ def main():
         "no automatic video popup on tab navigation": "if(page!=='videos')RushNative.hideVideo();" in js,
         "obsolete productive-channel copy removed": "selected productive channels" not in html and "productive channel selection" not in html,
         "conditional mini-player spacing": ".app.has-mini #sc" in html,
+        "library uses library icon": "library:'M4 4h13v16H4z" in js and "['library','Library','follow']" not in js,
+        "edge-to-edge root uses dark surface": "setBackgroundColor(android.graphics.Color.rgb(11,16,20))" in activity,
     }
     for contract, valid in ui_contracts.items():
         if not valid:

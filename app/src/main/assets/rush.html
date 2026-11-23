@@ -315,7 +315,7 @@ const IC={
  news:'M4 4h13v16H4zM17 8h3v10a2 2 0 01-2 2M7 8h7M7 12h7M7 16h4',
  search:'M11 4a7 7 0 100 14 7 7 0 000-14zM20 20l-4-4',
  play:'M7 4l13 8-13 8z', pause:'M7 5h3v14H7zM14 5h3v14h-3z',
- arrow:'M5 12h14M13 6l6 6-6 6', follow:'M12 5v14M5 12h14'
+ arrow:'M5 12h14M13 6l6 6-6 6', follow:'M12 5v14M5 12h14', library:'M4 4h13v16H4zM7 8h7M7 12h7M7 16h4M19 7v13'
 };
 const FILL=['play','pause'];
 const ic=n=>'<svg class="ic'+(FILL.includes(n)?' f':'')+'" viewBox="0 0 24 24" aria-hidden="true"><path d="'+(IC[n]||IC.arrow)+'"/></svg>';
@@ -506,7 +506,7 @@ function refreshLibrary(){
  if(page==='library')loadLibrary();
 }
 
-const NAV=[['home','Home','home'],['videos','Videos','vid'],['music','Music','music'],['news','News','news'],['library','Library','follow']];
+const NAV=[['home','Home','home'],['videos','Videos','vid'],['music','Music','music'],['news','News','news'],['library','Library','library']];
 $('#nav').innerHTML='<i class="pill"></i>'+NAV.map(([key,label,icon])=>'<a href="#'+key+'" data-k="'+key+'">'+ic(icon)+'<span>'+label+'</span></a>').join('');
 function navPosition(){
  const active=$('#nav a[aria-current]'),nav=$('#nav');if(!active)return;
@@ -626,7 +626,7 @@ function updateCurrentPlayback(data){
   if(title)title.textContent=isMusic?(mediaState.title||'Unknown track'):'No music playing';
   if(artist)artist.textContent=isMusic?(mediaState.artist||'Unknown artist'):'Choose a track to start listening.';
   if(status)status.textContent=isMusic?(mediaState.isPlaying?'PLAYING':'PAUSED'):'Your player will appear here when a track starts.';
-  if(img&&box){if(isMusic&&mediaState.artwork){img.src=mediaState.artwork;box.classList.add('has-art')}else{img.removeAttribute('src');box.classList.remove('has-art')}}
+  if(img&&box){const artwork=safeUrl(mediaState.artwork);img.onerror=()=>{img.removeAttribute('src');box.classList.remove('has-art')};if(isMusic&&artwork){img.src=artwork;box.classList.add('has-art')}else{img.removeAttribute('src');box.classList.remove('has-art')}}
   const toggle=$('[data-music-toggle]');if(toggle)toggle.innerHTML=ic(isMusic&&mediaState.isPlaying?'pause':'play')+(isMusic&&mediaState.isPlaying?' PAUSE':' PLAY');
  }
  renderPlayerState();
@@ -649,7 +649,8 @@ function renderPlayerState(){
  if(artist)artist.textContent=isMusic?(mediaState.artist||'Unknown artist'):'Search or browse music, then select a track.';
  if(status)status.textContent=isMusic?(mediaState.isPlaying?'PLAYING':'PAUSED'):'Nothing is playing yet.';
  if(img&&fallback){
-  if(isMusic&&/^https:\/\/[^\s"'<>]+$/i.test(mediaState.artwork||'')){img.src=mediaState.artwork;img.hidden=false;fallback.hidden=true}
+  const artwork=safeUrl(mediaState.artwork);
+  if(isMusic&&artwork){img.onerror=()=>{img.hidden=true;fallback.hidden=false};img.src=artwork;img.hidden=false;fallback.hidden=true}
   else{img.removeAttribute('src');img.hidden=true;fallback.hidden=false}
  }
  const toggle=$('#playerToggle');if(toggle)toggle.innerHTML=ic(isMusic&&mediaState.isPlaying?'pause':'play');
