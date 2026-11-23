@@ -156,8 +156,10 @@ def main():
         fail("RSS headlines and summaries must decode HTML entities and normalize non-breaking spaces")
     if "if (!future.isDone || future.isCancelled) return null" not in bridge:
         fail("Playback position polling must never block waiting for the media service")
-    if "robolectric.dependency.repo.url" not in gradle or "maven-central.storage-download.googleapis.com/maven2/" not in gradle:
-        fail("Robolectric tests must use the configured Maven Central mirror")
+    if "robolectric.dependency.dir" not in gradle or 'robolectric.offline", "true"' not in gradle:
+        fail("Robolectric tests must use the prefetched offline Android runtime")
+    if "android-all-instrumented-15-robolectric-12650502-i7.jar" not in gradle:
+        fail("Robolectric SDK prefetch must match the API 35 instrumented runtime")
     if '.put("state", "info")' not in bridge or "No next track is loaded." not in bridge:
         fail("Empty music queue must produce a persistent informational message")
 
