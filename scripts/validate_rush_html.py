@@ -129,6 +129,8 @@ def main():
         "no automatic video popup on tab navigation": "if(page!=='videos')RushNative.hideVideo();" in js,
         "obsolete productive-channel copy removed": "selected productive channels" not in html and "productive channel selection" not in html,
         "conditional mini-player spacing": ".app.has-mini #sc" in html,
+        "rounded selected feed segment": ".seg button{border-radius:14px!important}" in html and ".seg i{border-radius:14px!important}" in html,
+        "solid feed segment without glass": ".seg{border-radius:18px!important;background:#131b21!important" in html,
         "library uses library icon": "library:'M4 4h13v16H4z" in js and "['library','Library','follow']" not in js,
         "edge-to-edge root uses dark surface": "setBackgroundColor(android.graphics.Color.rgb(11,16,20))" in activity,
     }
