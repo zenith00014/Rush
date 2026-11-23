@@ -662,9 +662,9 @@ function renderSearchPage(){
 }
 function updateTopicOptions(){
  const buttons=[...document.querySelectorAll('[data-topic]')];
- buttons.forEach(button=>{button.hidden=false});
+ buttons.forEach(button=>{button.hidden=false;button.classList.toggle('snoozed',topicSnoozed(button.dataset.topic))});
  const status=$('#topicStatus');
- if(status)status.textContent=buttons.filter(b=>b.getAttribute('aria-pressed')==='true').length+' selected · '+TOPICS.length+' interests';
+ if(status)status.textContent=activeTopics().length+' active · '+snoozedTopics().length+' snoozed';
 }
 function renderTopicsPage(){
  const sleeping=snoozedTopics().map(x=>'<div class="snoozed-topic"><span>'+esc(x.topic)+' <small>· '+Math.max(1,Math.ceil((Number(x.until)-Date.now())/3600000))+'h left</small></span><button class="chip" data-unsnooze-topic="'+esc(x.topic)+'">RESTORE</button></div>').join('');
@@ -808,10 +808,20 @@ function renderSources(){
 
 function applyPrefs(data){
  if(data&&data.topics&&data.sources)prefs=data;
+ if(activeTopic&&!activeTopics().includes(activeTopic))activeTopic='';
  const root=$('#topicOptions');
- if(root)root.querySelectorAll('[data-topic]').forEach(b=>b.setAttribute('aria-pressed',selectedTopics().includes(b.dataset.topic)));
- const status=$('#topicStatus');if(status)status.textContent=selectedTopics().length+' selected · '+TOPICS.length+' interests';
- renderSources();updateTopicOptions();
+ if(root)root.querySelectorAll('[data-topic]').forEach(b=>{
+  b.setAttribute('aria-pressed',selectedTopics().includes(b.dataset.topic));
+  b.classList.toggle('snoozed',topicSnoozed(b.dataset.topic));
+ });
+ const status=$('#topicStatus');if(status)status.textContent=activeTopics().length+' active · '+snoozedTopics().length+' snoozed';
+ renderSources();updateTopicOptions();renderHomeTopicTabs();renderSnoozedTopics();
+ if(page==='library'){const copy=$('.profile-copy span');if(copy)copy.textContent=activeTopics().length+' active topics · '+prefs.sources.length+' followed sources'}
+}
+function renderSnoozedTopics(){
+ const root=$('#snoozedTopicList');if(!root)return;
+ const sleeping=snoozedTopics().map(x=>'<div class="snoozed-topic"><span>'+esc(x.topic)+' <small>· '+Math.max(1,Math.ceil((Number(x.until)-Date.now())/3600000))+'h left</small></span><button class="chip" data-unsnooze-topic="'+esc(x.topic)+'">RESTORE</button></div>').join('');
+ root.innerHTML=sleeping||'<p class="meta pad">No topics are snoozed.</p>';
 }
 function loadFeedPreferences(){
  try{if(window.RushNative){const raw=RushNative.getFeedPreferences();if(raw)applyPrefs(JSON.parse(raw))}}catch(e){}
@@ -828,17 +838,27 @@ function go(){
  $('#sc').scrollTop=0;navPosition();indicator();loadFeedPreferences();
  if(window.RushNative){
   RushNative.loadCurrentPlayback();
-  if(page==='home'){loadHomeFeed();if(homeTab==='fy')RushNative.loadMusicSuggestions()}
-  if(page!=='videos')RushNative.hideVideo();
+  if(page==='home'){renderHomeTopicTabs();loadHomeFeed();if(homeTab==='fy')RushNative.loadMusicSuggestions()}
+  if(page==='videos')renderWatchDetails();
   if(page==='music'){RushNative.loadMusicHistory();RushNative.loadMusicSuggestions()}
   if(page==='player')RushNative.loadCurrentMusicLyrics();
   if(page==='news')RushNative.loadPersonalizedNews();
   if(page==='library')loadLibrary();
+  RushNative.updateVideoPosition();
  }
 }
-function loadHomeFeed(){
- const status=$('#homeFeedStatus');if(status)status.textContent=homeTab==='fy'?'Finding a mix of videos, music and news for you…':'Loading posts from sources you follow…';
- if(window.RushNative)RushNative.loadHomeFeed(homeTab==='fy'?'forYou':'following');
+function loadHomeFeed(force=false){
+ const mode=currentFeedMode(),status=$('#homeFeedStatus'),now=Date.now();
+ let cached=homeFeedCache[mode];
+ if(!cached){
+  try{const raw=localStorage.getItem('rush-feed:'+mode);if(raw)cached=JSON.parse(raw)}catch(e){}
+ }
+ if(cached&&cached.data){
+  renderFeedResults(cached.data);
+  if(status)status.textContent='Showing recent posts · updating in background';
+  if(!force&&now-Number(cached.savedAt||0)<5*60*1000)return;
+ }else if(status)status.textContent=activeTopic?'Loading '+activeTopic+'…':(homeTab==='fy'?'Finding your mix…':'Loading followed sources…');
+ if(window.RushNative)RushNative.loadHomeFeed(mode);
 }
 function mixHomeFeedItems(videos,music,articles){
  const pools={video:videos||[],music:music||[],news:articles||[]};
@@ -856,19 +876,29 @@ function mixHomeFeedItems(videos,music,articles){
  return mixed;
 }
 function renderFeedResults(data){
- if(page!=='home')return;
  const incoming=Object.assign({videos:[],music:[],news:[],message:''},data||{});
  const rankedMusic=[...(incoming.music||[]),...(homeTab==='fy'?homeTasteMusic:[])];
  const seenMusic=new Set();
  incoming.music=rankedMusic.filter(item=>item&&item.id&&!seenMusic.has(item.id)&&seenMusic.add(item.id));
  homeFeedData=incoming;
- const root=$('#homeFeedResults'),status=$('#homeFeedStatus');if(!root)return;
+ const root=$('#homeFeedResults'),status=$('#homeFeedStatus');if(!root||page!=='home')return;
  const mixed=mixHomeFeedItems(incoming.videos,incoming.music,incoming.news);
- const cards=mixed.map(entry=>'<div class="feed-mixed-item" data-kind="'+entry.kind+'">'+(entry.kind==='video'?videoRow(entry.item):entry.kind==='music'?musicRow(entry.item):newsCard(entry.item))+'</div>').join('');
- const heading=homeTab==='fy'?'Your personalised mix':'From sources you follow';
+ const cards=mixed.map(entry=>'<div class="feed-mixed-item" data-kind="'+entry.kind+'">'+(entry.kind==='video'?videoRow(entry.item,false):entry.kind==='music'?musicRow(entry.item,false):newsCard(entry.item,false))+'</div>').join('');
+ const heading=activeTopic?activeTopic:(homeTab==='fy'?'Your personalised mix':'From sources you follow');
  if(cards)root.innerHTML=section(heading,cards);
- else root.innerHTML='<div class="empty-state"><b>'+esc(incoming.message||'No recommendations yet.')+'</b><p>Choose your interests or follow channels, musicians and publishers to shape this feed. Saved sources are kept on this device.</p><button class="btn k" data-open-topics>CHOOSE TOPICS</button></div>';
+ else root.innerHTML='<div class="empty-state"><b>'+esc(incoming.message||'No recommendations yet.')+'</b><p>Choose topics or follow channels and publishers to shape your feed.</p><button class="btn k" data-open-topics>CHOOSE TOPICS</button></div>';
  if(status)status.textContent=incoming.message||'Your feed is up to date.';
+}
+function renderWatchDetails(){
+ if(page!=='videos')return;
+ const item=activeVideo||{};
+ const title=$('#watchTitle'),creator=$('#watchCreator');
+ if(title)title.textContent=item.title||mediaState.title||'Select a video';
+ if(creator)creator.textContent=item.creator||mediaState.artist||'Rush video player';
+ const options=$('.watch-actions');
+ if(options&&item.id)options.innerHTML='<button class="chip" data-save-item data-id="'+esc(item.id)+'" data-title="'+esc(item.title)+'" data-creator="'+esc(item.creator)+'" data-music="false" data-thumbnail="'+esc(safeUrl(item.thumbnail))+'">SAVE</button><button class="chip" data-queue-item data-id="'+esc(item.id)+'" data-title="'+esc(item.title)+'" data-creator="'+esc(item.creator)+'" data-music="false" data-thumbnail="'+esc(safeUrl(item.thumbnail))+'">ADD TO QUEUE</button><button class="chip" data-download-media data-id="'+esc(item.id)+'" data-title="'+esc(item.title)+'" data-creator="'+esc(item.creator)+'" data-music="false">DOWNLOAD</button>'+(item.sourceId?sourceButton('channel',item.sourceId,item.sourceName||item.creator,'FOLLOW CHANNEL'):'');
+ const suggestions=$('#watchSuggestions');
+ if(suggestions)suggestions.innerHTML=(homeFeedData.videos||[]).filter(x=>x.id&&x.id!==item.id).slice(0,12).map(x=>videoRow(x,false)).join('')||'<p class="meta pad">Video suggestions will appear here as your feed loads.</p>';
 }
 function renderChannels(items){
  const root=$('#channelResults');if(!root)return;
@@ -921,7 +951,7 @@ function runUnifiedSearch(){
 }
 function updateMini(){
  const mini=$('#mini');if(!mini)return;
- const show=!!mediaState.hasItem&&!(!mediaState.title);
+ const show=!!mediaState.hasItem&&!!mediaState.title&&!!mediaState.isMusic;
  mini.classList.toggle('on',show);mini.inert=!show;
  $('.app').classList.toggle('has-mini',show);
  if(!show)return;
@@ -936,7 +966,8 @@ function updateMini(){
 }
 function updateCurrentPlayback(data){
  mediaState=Object.assign({},mediaState,data||{});updateMini();
- if(page==='videos'){const resume=$('[data-video-resume]');if(resume)resume.hidden=!(mediaState.hasItem&&mediaState.isVideo)}
+ if(mediaState.hasItem&&mediaState.isVideo&&!activeVideo)activeVideo={id:mediaState.sourceId||mediaState.mediaId,title:mediaState.title,creator:mediaState.artist,thumbnail:mediaState.artwork};
+ if(page==='videos')renderWatchDetails();
  if(page==='videos'||page==='music'){
   const currentDownload=$('[data-current-download]'),currentMp3=$('[data-current-mp3]'),currentSave=$('[data-current-save]');
   if(currentDownload)currentDownload.disabled=!mediaState.hasItem||!!mediaState.isOffline;
@@ -991,10 +1022,10 @@ function handleFollow(kind,id,name,productive){
  RushNative.followSource(kind,id,name,!!productive);
 }
 function refreshCurrentPage(){
- if(page==='home')loadHomeFeed();
- if(page==='topics')renderPreferencePage();
+ if(page==='home'){renderHomeTopicTabs();loadHomeFeed(true)}
+ if(page==='topics'){$('#v').innerHTML=R.topics();applyPrefs(prefs)}
  if(page==='search')renderSearchResults();
- if(page==='library')renderLibraryContent();
+ if(page==='library'){const copy=$('#v');if(copy)copy.innerHTML=R.library();applyPrefs(prefs);loadLibrary()}
 }
 document.addEventListener('click',e=>{
  const b=e.target.closest('button');if(!b)return;
@@ -1082,7 +1113,13 @@ window.rushQueuePlayback=state=>{const status=$('#libraryStatus');if(status)stat
 window.rushOpenDownloads=()=>{libraryView='downloads';if(page==='library'){renderLibraryContent();if(window.RushNative)RushNative.loadDownloads()}else location.hash='#library'};
 window.rushFeedPreferencesError=error=>{const t=$('#topicStatus');if(t)t.textContent=error.message||'Could not save preferences.'};
 window.rushCurrentPlayback=updateCurrentPlayback;
-window.rushHomeFeedResults=data=>{renderFeedResults(data);finishRefreshIndicator()};
+window.rushHomeFeedResults=data=>{
+ const key=data&&data.mode?data.mode:currentFeedMode(),entry={savedAt:Date.now(),data:data||{}};
+ homeFeedCache[key]=entry;
+ try{localStorage.setItem('rush-feed:'+key,JSON.stringify(entry))}catch(e){}
+ if(page==='home'&&key===currentFeedMode())renderFeedResults(data);
+ finishRefreshIndicator()
+};
 window.rushChannelSearchResults=items=>{if(page==='search'){unifiedData.channels=items||[];finishUnifiedSearch()}else renderChannels(items||[])};
 window.rushPlaylistSearchResults=items=>{unifiedData.playlists=items||[];finishUnifiedSearch()};
 window.rushPlaylistSearchError=error=>{const s=$('#unifiedStatus');if(s)s.textContent=error.message||'Playlist search failed.';finishUnifiedSearch()};
