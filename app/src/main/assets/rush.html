@@ -778,7 +778,7 @@ function setupNavigationBehavior(){
    if(label)label.textContent='Refreshing…';
    if(refreshFallback)clearTimeout(refreshFallback);
    refreshFallback=setTimeout(finishRefreshIndicator,20000);
-   loadHomeFeed();if(homeTab==='fy'&&window.RushNative)RushNative.loadMusicSuggestions();
+   loadHomeFeed(true);if(homeTab==='fy'&&window.RushNative)RushNative.loadMusicSuggestions();
   }else if(pull>0){
    setTimeout(finishRefreshIndicator,180);
   }
@@ -1029,7 +1029,8 @@ function refreshCurrentPage(){
 }
 document.addEventListener('click',e=>{
  const b=e.target.closest('button');if(!b)return;
- if(b.id==='topicsShortcut'||b.hasAttribute('data-open-topics')||b.id==='profileShortcut'){location.hash='#topics';return}
+ if(b.id==='profileShortcut'){location.hash='#library';return}
+ if(b.hasAttribute('data-open-topics')){location.hash='#topics';return}
  if(b.dataset.libraryView){
   libraryView=b.dataset.libraryView;renderLibraryContent();
   if(window.RushNative){RushNative.loadLibrary();if(libraryView==='downloads')RushNative.loadDownloads()}
@@ -1058,8 +1059,20 @@ document.addEventListener('click',e=>{
  if(b.hasAttribute('data-current-download')||b.hasAttribute('data-current-mp3')||b.hasAttribute('data-current-save')){const d=mediaState;if(!d.hasItem||!d.mediaId)return;if(window.RushNative){if(b.hasAttribute('data-current-save'))RushNative.saveLibraryItem(d.sourceId||d.mediaId,d.title||'',d.artist||'',!!d.isMusic,d.artwork||'');else if(!d.isOffline)RushNative.downloadMedia(d.sourceId||d.mediaId,d.title||'',d.artist||'',!!d.isMusic,b.hasAttribute('data-current-mp3'))}return}
  if(b.hasAttribute('data-open-search')){location.hash='#search';return}
  if(b.hasAttribute('data-search-submit')){runUnifiedSearch();return}
- if(b.dataset.tab){homeTab=b.dataset.tab;if(homeTab==='fo')homeTasteMusic=[];$('#v').innerHTML=R.home();indicator();loadHomeFeed();if(homeTab==='fy'&&window.RushNative)RushNative.loadMusicSuggestions();return}
+ if(b.dataset.tab){homeTab=b.dataset.tab;activeTopic='';if(homeTab==='fo')homeTasteMusic=[];$('#v').innerHTML=R.home();renderHomeTopicTabs();indicator();loadHomeFeed(true);if(homeTab==='fy'&&window.RushNative)RushNative.loadMusicSuggestions();return}
  if(b.hasAttribute('data-save-topics')){saveTopics();return}
+ if(b.dataset.topicFilter!==undefined){
+  activeTopic=b.dataset.topicFilter||'';
+  renderHomeTopicTabs();
+  loadHomeFeed(true);
+  return
+ }
+ if(b.dataset.snoozeTopic){
+  if(activeTopic===b.dataset.snoozeTopic)activeTopic='';
+  if(window.RushNative)RushNative.snoozeTopic(b.dataset.snoozeTopic);
+  return
+ }
+ if(b.dataset.unsnoozeTopic){if(window.RushNative)RushNative.unsnoozeTopic(b.dataset.unsnoozeTopic);return}
  if(b.dataset.topic){const on=b.getAttribute('aria-pressed')!=='true';b.setAttribute('aria-pressed',String(on));updateTopicOptions();return}
  if(b.dataset.searchFilter){unifiedMode=b.dataset.searchFilter;document.querySelectorAll('[data-search-filter]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));const publicRoot=$('#publicPlaylistContent');if(publicRoot)publicRoot.innerHTML='';renderSearchResults();return}
  if(b.hasAttribute('data-public-playlist-open')){
@@ -1076,8 +1089,17 @@ document.addEventListener('click',e=>{
  if(b.dataset.newsCategory){document.querySelectorAll('[data-news-category]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));if(b.dataset.newsCategory==='Personalized')RushNative.loadPersonalizedNews();else if(window.RushNative)RushNative.loadNews(b.dataset.newsCategory);return}
  if(b.dataset.followKind){if(sourceExists(b.dataset.followKind,b.dataset.sourceId))RushNative.unfollowSource(b.dataset.followKind,b.dataset.sourceId);else handleFollow(b.dataset.followKind,b.dataset.sourceId,b.dataset.sourceName,false);return}
  if(b.dataset.unfollowKind){if(window.RushNative)RushNative.unfollowSource(b.dataset.unfollowKind,b.dataset.sourceId);return}
- if(b.dataset.videoId){const d=b.dataset;const status=$('#videoPlaybackStatus');if(status){status.hidden=false;status.textContent='Preparing video…'}if(window.RushNative)RushNative.playVideo(d.videoId,d.title,d.creator,d.thumbnail);return}
-  if(b.hasAttribute('data-video-resume')){if(window.RushNative)RushNative.showCurrentVideo();return}
+ if(b.dataset.videoId){
+  const d=b.dataset;
+  activeVideo={id:d.videoId,title:d.title,creator:d.creator,sourceId:d.sourceId||'',sourceName:d.sourceName||'',thumbnail:d.thumbnail||''};
+  const startPlayback=()=>{
+   if(page==='videos'){$('#v').innerHTML=R.videos();renderWatchDetails()}
+   if(window.RushNative)RushNative.playVideo(d.videoId,d.title,d.creator,d.thumbnail)
+  };
+  if(page!=='videos'){location.hash='#videos';setTimeout(startPlayback,180)}else startPlayback();
+  return
+ }
+  if(b.hasAttribute('data-video-resume')){location.hash='#videos';if(window.RushNative)RushNative.showCurrentVideo();return}
  if(b.dataset.track){const d=b.dataset;const status=$('#musicStatus');if(status)status.textContent='Preparing track…';if(window.RushNative)RushNative.playMusic(d.track,d.title,d.artist,d.thumbnail);location.hash='#player';return}
  if(b.dataset.newsUrl){if(window.RushNative)RushNative.openNews(b.dataset.newsUrl);return}
  if(b.hasAttribute('data-video-fullscreen')){if(window.RushNative)RushNative.setVideoFullscreen(true);return}
