@@ -121,6 +121,12 @@ def main():
         fail("Obsolete separate For You channel opt-in remains in the UI")
     if "topicQuery" not in html or "function filterTopicNames" not in js:
         fail("Personalisation topic search is missing")
+    if not all(marker in html for marker in ("data-home-filter", "data-refresh-feed")):
+        fail("Home feed filters and refresh action are missing")
+    if "function mixHomeFeedItems(" not in js or "homeFeedData=" not in js:
+        fail("Home feed must interleave content types and retain data for filtering")
+    if "videoDiscoveryQueries(profile.topics, following)" not in bridge or "fun videoDiscoveryQueries" not in engine:
+        fail("For You feed must retrieve video candidates from selected topics")
     if "fonts.googleapis.com" in html or "fonts.gstatic.com" in html:
         fail("WebView must not require remote font downloads")
 
