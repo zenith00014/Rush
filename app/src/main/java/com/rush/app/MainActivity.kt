@@ -70,6 +70,9 @@ class MainActivity:ComponentActivity(){
  private lateinit var rootLayout: android.widget.FrameLayout
  @androidx.media3.common.util.UnstableApi
  private var nativeVideoView: androidx.media3.ui.PlayerView? = null
+ private var nativeVideoOverlay: android.widget.FrameLayout? = null
+ private var nativeVideoCloseButton: android.widget.TextView? = null
+ private var nativeVideoExpandButton: android.widget.TextView? = null
  @Volatile private var nativeVideoRequested=false
  private var nativeVideoFullscreen=false
  private var previousRequestedOrientation=android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
@@ -113,21 +116,92 @@ class MainActivity:ComponentActivity(){
   webView.evaluateJavascript("window.rushOpenDownloads ? window.rushOpenDownloads() : (location.hash='#library')",null)
  }
  @androidx.media3.common.util.UnstableApi
+ private fun videoDp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
+
+ private fun ensureNativeVideoWindow(player: androidx.media3.common.Player) {
+  val overlay = nativeVideoOverlay ?: android.widget.FrameLayout(this).apply {
+   setBackgroundColor(android.graphics.Color.BLACK)
+   elevation = resources.displayMetrics.density * 12f
+  }.also {
+   nativeVideoOverlay = it
+   rootLayout.addView(it, android.widget.FrameLayout.LayoutParams(1, 1))
+  }
+  val view = nativeVideoView ?: androidx.media3.ui.PlayerView(this).apply {
+   useController = true
+   controllerAutoShow = true
+   setShowSubtitleButton(true)
+   setKeepContentOnPlayerReset(true)
+   setBackgroundColor(android.graphics.Color.BLACK)
+   resizeMode = androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_FIT
+  }.also {
+   nativeVideoView = it
+   overlay.addView(it, android.widget.FrameLayout.LayoutParams(
+    android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
+    android.widget.FrameLayout.LayoutParams.MATCH_PARENT
+   ))
+  }
+  view.player = player
+  view.visibility = android.view.View.VISIBLE
+  fun overlayAction(label: String, existing: android.widget.TextView?, action: () -> Unit): android.widget.TextView {
+   return existing ?: android.widget.TextView(this).apply {
+    text = label
+    textSize = 20f
+    gravity = android.view.Gravity.CENTER
+    setTextColor(android.graphics.Color.WHITE)
+    background = android.graphics.drawable.GradientDrawable().apply {
+     setColor(0xCC101820.toInt())
+     setStroke(videoDp(1), 0x88FFFFFF.toInt())
+     cornerRadius = 0f
+    }
+    elevation = resources.displayMetrics.density * 16f
+    setOnClickListener { action() }
+   }
+  }
+  val close = overlayAction("×", nativeVideoCloseButton) { hideNativeVideo() }
+  nativeVideoCloseButton = close
+  if (close.parent == null) overlay.addView(close,
+   android.widget.FrameLayout.LayoutParams(videoDp(40), videoDp(40),
+    android.view.Gravity.TOP or android.view.Gravity.END).apply {
+     topMargin = videoDp(8); marginEnd = videoDp(8)
+    })
+  val expand = overlayAction("↗", nativeVideoExpandButton) { setNativeVideoFullscreen(true) }
+  nativeVideoExpandButton = expand
+  if (expand.parent == null) overlay.addView(expand,
+   android.widget.FrameLayout.LayoutParams(videoDp(40), videoDp(40),
+    android.view.Gravity.TOP or android.view.Gravity.END).apply {
+     topMargin = videoDp(8); marginEnd = videoDp(56)
+    })
+  var startX = 0f
+  var startY = 0f
+  view.setOnTouchListener { _, event ->
+   when (event.actionMasked) {
+    android.view.MotionEvent.ACTION_DOWN -> {
+     startX = event.rawX
+     startY = event.rawY
+     false
+    }
+    android.view.MotionEvent.ACTION_UP -> {
+     val dx = event.rawX - startX
+     val dy = event.rawY - startY
+     val threshold = videoDp(88).toFloat()
+     if ((dy > threshold && dy > kotlin.math.abs(dx) * 1.2f) ||
+      (kotlin.math.abs(dx) > threshold && kotlin.math.abs(dx) > kotlin.math.abs(dy) * 1.3f)) {
+      hideNativeVideo()
+      true
+     } else false
+    }
+    else -> false
+   }
+  }
+  overlay.visibility = android.view.View.VISIBLE
+  setPipEligible(true)
+ }
+
  fun showNativeVideo(player: androidx.media3.common.Player, fullscreen: Boolean = false) {
-  nativeVideoRequested=true
+  nativeVideoRequested = true
   runOnUiThread {
-   val view=nativeVideoView?:androidx.media3.ui.PlayerView(this).apply {
-    useController=true
-    controllerAutoShow=true
-    setShowSubtitleButton(true)
-    setKeepContentOnPlayerReset(true)
-    setBackgroundColor(android.graphics.Color.BLACK)
-    elevation=resources.displayMetrics.density*8
-   }.also { nativeVideoView=it }
-   view.player=player
-   if(view.parent==null)rootLayout.addView(view,android.widget.FrameLayout.LayoutParams(1,1))
-   setPipEligible(true)
-   if(fullscreen)setNativeVideoFullscreen(true) else updateNativeVideoPosition()
+   ensureNativeVideoWindow(player)
+   if (fullscreen) setNativeVideoFullscreen(true) else updateNativeVideoPosition()
   }
  }
  fun showNewsArticle(rawUrl:String) {
@@ -232,11 +306,33 @@ class MainActivity:ComponentActivity(){
  }
 
  fun updateNativeVideoPosition() {
-  if(!nativeVideoRequested||nativeVideoFullscreen)return
+  if (!nativeVideoRequested || nativeVideoFullscreen) return
   runOnUiThread {
-   if(!nativeVideoFullscreen){
-    nativeVideoView?.visibility=android.view.View.GONE
-    setPipEligible(false)
+   val overlay = nativeVideoOverlay ?: return@runOnUiThread
+   if (!::webView.isInitialized) return@runOnUiThread
+   webView.evaluateJavascript(
+    "(function(){var e=document.getElementById('videoPlayerHost');if(!e)return '';var r=e.getBoundingClientRect();if(r.width<80||r.height<45||r.bottom<0||r.top>innerHeight)return '';return [Math.round(r.left),Math.round(r.top),Math.round(r.width),Math.round(r.height)].join(',')})()"
+   ) { raw ->
+    if (!nativeVideoRequested || nativeVideoFullscreen || isFinishing) return@evaluateJavascript
+    val values = raw.trim().trim('"').split(',').mapNotNull { it.toIntOrNull() }
+    val params = if (values.size == 4 && values[2] > 80 && values[3] > 45) {
+     android.widget.FrameLayout.LayoutParams(values[2], values[3],
+      android.view.Gravity.TOP or android.view.Gravity.START).apply {
+      leftMargin = videoDp(values[0])
+      topMargin = videoDp(values[1])
+     }
+    } else {
+     android.widget.FrameLayout.LayoutParams(videoDp(184), videoDp(128),
+      android.view.Gravity.BOTTOM or android.view.Gravity.END).apply {
+      bottomMargin = videoDp(104)
+      marginEnd = videoDp(12)
+     }
+    }
+    overlay.layoutParams = params
+    overlay.visibility = android.view.View.VISIBLE
+    nativeVideoView?.visibility = android.view.View.VISIBLE
+    overlay.bringToFront()
+    setPipEligible(true)
    }
   }
  }
@@ -252,12 +348,18 @@ class MainActivity:ComponentActivity(){
     val insetsController=WindowInsetsControllerCompat(window,window.decorView)
     insetsController.systemBarsBehavior=WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
     insetsController.hide(WindowInsetsCompat.Type.systemBars())
-    nativeVideoView?.apply {
+    nativeVideoOverlay?.apply {
      layoutParams=android.widget.FrameLayout.LayoutParams(
       android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
       android.widget.FrameLayout.LayoutParams.MATCH_PARENT)
      visibility=android.view.View.VISIBLE
      bringToFront()
+    }
+    nativeVideoView?.apply {
+     layoutParams=android.widget.FrameLayout.LayoutParams(
+      android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
+      android.widget.FrameLayout.LayoutParams.MATCH_PARENT)
+     visibility=android.view.View.VISIBLE
     }
     val exit=fullscreenExitButton?:android.widget.TextView(this).apply {
      text="×"
@@ -291,7 +393,10 @@ class MainActivity:ComponentActivity(){
   nativeVideoRequested=false
   setPipEligible(false)
   if(nativeVideoFullscreen)setNativeVideoFullscreen(false)
-  runOnUiThread { nativeVideoView?.visibility=android.view.View.GONE }
+  runOnUiThread {
+   nativeVideoOverlay?.visibility = android.view.View.GONE
+   nativeVideoView?.visibility = android.view.View.GONE
+  }
  }
  private fun buildPipParams():android.app.PictureInPictureParams {
   val builder=android.app.PictureInPictureParams.Builder().setAspectRatio(pipAspectRatio)
@@ -415,8 +520,11 @@ class MainActivity:ComponentActivity(){
   newsArticleWebView=null
   if(::rushWebBridge.isInitialized)rushWebBridge.release()
   nativeVideoView?.player=null
-  nativeVideoView?.let { (it.parent as? android.view.ViewGroup)?.removeView(it) }
+  nativeVideoOverlay?.let { (it.parent as? android.view.ViewGroup)?.removeView(it) }
+  nativeVideoOverlay=null
   nativeVideoView=null
+  nativeVideoCloseButton=null
+  nativeVideoExpandButton=null
   if(::webView.isInitialized){webView.stopLoading();webView.destroy()}
   super.onDestroy()
  }
