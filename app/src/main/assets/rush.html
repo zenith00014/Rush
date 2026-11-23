@@ -448,7 +448,7 @@ html,body{background:#070b10;color:var(--ink)}
 .nav .pill{display:none!important}
 .nav a{position:relative;z-index:1;height:100%;min-height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:0!important;border-radius:19px!important;background:transparent!important;color:rgba(213,224,236,.70)!important;text-shadow:none!important;font:650 10px/1.1 var(--f);letter-spacing:.02em;transition:background .2s ease,color .2s ease,transform .2s ease}
 .nav a .ic{display:block!important;position:relative;z-index:2;width:23px;height:23px;opacity:1!important;visibility:visible!important;color:currentColor;stroke:currentColor;transform:none!important;animation:none!important}
-.nav a span{position:relative;z-index:2;display:block}
+.nav a:not(.sr) span{position:relative;z-index:2;display:block!important}
 .nav a[aria-current="page"]{color:#fff!important;background:rgba(255,208,0,.15)!important;box-shadow:inset 0 0 0 1px rgba(255,208,0,.20)}
 .nav a[aria-current="page"] .ic{color:var(--sp)!important;stroke:var(--sp)!important}
 .nav a:active{transform:scale(.96)}
