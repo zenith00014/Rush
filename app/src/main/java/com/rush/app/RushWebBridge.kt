@@ -722,6 +722,7 @@ class RushWebBridge(
                 val controller = getController()
                 if (controller.hasPreviousMediaItem()) controller.seekToPreviousMediaItem()
                 else controller.seekTo(0L)
+                loadCurrentPlayback()
             }
         }
     }
@@ -731,11 +732,15 @@ class RushWebBridge(
         activity.lifecycleScope.launch {
             runCatching {
                 val controller = getController()
-                if (controller.hasNextMediaItem()) controller.seekToNextMediaItem()
-                else publish("rushMusicPlaybackState", JSONObject()
-                    .put("state", "paused")
-                    .put("message", "No next track is loaded. Add tracks with QUEUE, then play them from Library → Queue.")
-                    .toString())
+                if (controller.hasNextMediaItem()) {
+                    controller.seekToNextMediaItem()
+                    loadCurrentPlayback()
+                } else {
+                    publish("rushMusicPlaybackState", JSONObject()
+                        .put("state", "info")
+                        .put("message", "No next track is loaded. Add tracks with QUEUE, then play them from Library → Queue.")
+                        .toString())
+                }
             }.onFailure {
                 publish("rushMusicPlaybackState", JSONObject()
                     .put("state", "error").put("message", it.message ?: "Could not skip this track.").toString())

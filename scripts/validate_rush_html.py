@@ -14,6 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 HTML_PATH = ROOT / "app/src/main/assets/rush.html"
 BRIDGE_PATH = ROOT / "app/src/main/java/com/rush/app/RushWebBridge.kt"
 ACTIVITY_PATH = ROOT / "app/src/main/java/com/rush/app/MainActivity.kt"
+GRADLE_PATH = ROOT / "app/build.gradle.kts"
 
 
 class RushHtmlParser(HTMLParser):
@@ -59,10 +60,13 @@ def main():
         fail(f"Missing native bridge: {BRIDGE_PATH}")
     if not ACTIVITY_PATH.is_file():
         fail(f"Missing Android activity: {ACTIVITY_PATH}")
+    if not GRADLE_PATH.is_file():
+        fail(f"Missing app Gradle configuration: {GRADLE_PATH}")
 
     html = HTML_PATH.read_text(encoding="utf-8")
     bridge = BRIDGE_PATH.read_text(encoding="utf-8")
     activity = ACTIVITY_PATH.read_text(encoding="utf-8")
+    gradle = GRADLE_PATH.read_text(encoding="utf-8")
     parser = RushHtmlParser()
     parser.feed(html)
     parser.close()
@@ -143,6 +147,10 @@ def main():
             fail(f"Native media control missing: {native_method}")
     if "if (!future.isDone || future.isCancelled) return null" not in bridge:
         fail("Playback position polling must never block waiting for the media service")
+    if "robolectric.dependency.repo.url" not in gradle or "maven-central.storage-download.googleapis.com/maven2/" not in gradle:
+        fail("Robolectric tests must use the configured Maven Central mirror")
+    if '.put("state", "info")' not in bridge or "No next track is loaded." not in bridge:
+        fail("Empty music queue must produce a persistent informational message")
 
     with tempfile.NamedTemporaryFile("w", suffix=".js", encoding="utf-8") as handle:
         handle.write(js)

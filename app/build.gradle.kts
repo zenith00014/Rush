@@ -21,7 +21,18 @@ android {
 
     buildFeatures { compose = true; buildConfig = true }
     testOptions {
-        unitTests { isIncludeAndroidResources = true }
+        unitTests {
+            isIncludeAndroidResources = true
+            all {
+                // Robolectric fetches its Android runtime separately from Gradle dependencies.
+                // Use the same mirror configured in settings.gradle.kts, not repo1.maven.org.
+                it.systemProperty(
+                    "robolectric.dependency.repo.url",
+                    "https://maven-central.storage-download.googleapis.com/maven2/"
+                )
+                it.systemProperty("robolectric.dependency.repo.id", "google-maven-central-mirror")
+            }
+        }
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
