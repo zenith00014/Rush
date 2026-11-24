@@ -5,7 +5,33 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class RushDiscoveryEngineTest {
-    @Test fun productiveSignalsWinVideoFeedRanking() {
+    @Test
+    fun explicitViewerFeedbackChangesRecommendationRanking() {
+        val profile = RushDiscoveryEngine.Profile(
+            topics = listOf("music"),
+            likedIds = setOf("liked"),
+            dislikedIds = setOf("disliked"),
+            notInterestedIds = setOf("hidden")
+        )
+        fun candidate(id: String) = RushDiscoveryEngine.Candidate(
+            id = id,
+            kind = RushDiscoveryEngine.Kind.VIDEO,
+            title = "Live music performance",
+            creator = "Artist",
+            topicTags = setOf("music")
+        )
+
+        val liked = RushDiscoveryEngine.scoreFeed(candidate("liked"), profile)
+        val neutral = RushDiscoveryEngine.scoreFeed(candidate("neutral"), profile)
+        val disliked = RushDiscoveryEngine.scoreFeed(candidate("disliked"), profile)
+        val hidden = RushDiscoveryEngine.scoreFeed(candidate("hidden"), profile)
+
+        assertTrue(liked > neutral)
+        assertTrue(neutral > disliked)
+        assertEquals(0, hidden)
+    }
+
+    @Test fun topicAndFollowSignalsRankRelevantVideoOverLowSignalAlternative() {
         val profile = RushDiscoveryEngine.Profile(topics = listOf("Science", "Technology"))
         val useful = RushDiscoveryEngine.Candidate(
             "useful", RushDiscoveryEngine.Kind.VIDEO,
