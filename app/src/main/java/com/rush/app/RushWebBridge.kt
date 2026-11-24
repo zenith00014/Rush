@@ -47,6 +47,7 @@ class RushWebBridge(
     @Volatile private var controllerFuture: com.google.common.util.concurrent.ListenableFuture<MediaController>? = null
     private var captionListener: androidx.media3.common.Player.Listener? = null
     private var sleepTimerJob: kotlinx.coroutines.Job? = null
+    private val activeHomeFeedRequests = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
 
     @JavascriptInterface
     fun getFeedPreferences(): String =
@@ -180,14 +181,21 @@ class RushWebBridge(
     @JavascriptInterface
     fun loadHomeFeed(mode: String) {
         val prefs = activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)
+        val sourcesSnapshot = FeedPreferences.sources(prefs)
+        val profileSnapshot = discoveryProfile(prefs)
+        val followingSnapshot = mode.equals("following", true)
+        val feedModeSnapshot = if (followingSnapshot) "following" else "forYou"
+        val cacheSignatureSnapshot = profileSnapshot.topics.joinToString("|") + "|" +
+            sourcesSnapshot.joinToString("|") { "${it.kind}:${it.id}:${it.name}" }
+        val cacheKeySnapshot = "rush_home_feed_v4_${feedModeSnapshot}_${Integer.toHexString(cacheSignatureSnapshot.hashCode())}"
+        if (!activeHomeFeedRequests.add(cacheKeySnapshot)) return
         activity.lifecycleScope.launch {
-            val sources = FeedPreferences.sources(prefs)
-            val profile = discoveryProfile(prefs)
-            val following = mode.equals("following", true)
-            val feedMode = if (following) "following" else "forYou"
-            val cacheSignature = profile.topics.joinToString("|") + "|" +
-                sources.joinToString("|") { "${it.kind}:${it.id}:${it.name}" }
-            val cacheKey = "rush_home_feed_v4_${feedMode}_${Integer.toHexString(cacheSignature.hashCode())}"
+            try {
+            val sources = sourcesSnapshot
+            val profile = profileSnapshot
+            val following = followingSnapshot
+            val feedMode = feedModeSnapshot
+            val cacheKey = cacheKeySnapshot
             val cachedPayload = prefs.getString(cacheKey, null)?.let {
                 runCatching { JSONObject(it) }.getOrNull()
             }
@@ -427,6 +435,9 @@ class RushWebBridge(
                     prefs.edit().putString(cacheKey, payload.toString()).apply()
                     publish("rushHomeFeedResults", payload.toString())
                 }
+            }
+            } finally {
+                activeHomeFeedRequests.remove(cacheKeySnapshot)
             }
         }
     }
