@@ -312,9 +312,11 @@ class MainActivity:ComponentActivity(){
   }
  }
  override fun onStop(){
-  // Unbind the Activity controller so a dismissed video session can stop cleanly.
-  // Keep the controller attached in PiP so native video controls remain available.
-  if(!pipModeState.value&&::rushWebBridge.isInitialized)rushWebBridge.release()
+  // Allow PiP to keep its video; elsewhere only actively playing audio may continue.
+  if(!pipModeState.value&&!isInPictureInPictureMode){
+   RushPlaybackService.activeInstance?.enforceBackgroundPlaybackPolicy()
+   if(::rushWebBridge.isInitialized)rushWebBridge.release()
+  }
   super.onStop()
  }
  override fun onNewIntent(intent:android.content.Intent){

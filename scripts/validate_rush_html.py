@@ -135,6 +135,7 @@ def main():
         "video mode keeps current track details visible": "VIDEO MODE · PLAYING" in js and "const hasMedia=isMusic||isVideo;" in js,
         "music playback resolves audio only": "resolvePlaybackMedia(videoId, audioOnly = true" in bridge,
         "video dismissed with app task": "override fun onTaskRemoved(rootIntent: android.content.Intent?)" in service and "pauseAllPlayersAndStopSelf()" in service,
+        "video stops whenever app leaves foreground": "enforceBackgroundPlaybackPolicy()" in service and "RushPlaybackService.activeInstance?.enforceBackgroundPlaybackPolicy()" in activity and "!isInPictureInPictureMode" in activity,
         "background task queue excludes video": "queuedIsAudioOnly" in service and "player.removeMediaItem(index)" in service,
         "WebView timers pause while app is backgrounded": "webView.pauseTimers()" in activity and "webView.resumeTimers()" in activity,
         "background Activity releases its controller": "rushWebBridge.release()" in activity and "override fun onStop()" in activity,
