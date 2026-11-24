@@ -262,10 +262,13 @@ function renderSelectedChannelFeed(){
  const root=$('#subscriptionFeed');if(!root)return;
  let kind=selectedSubscriptionKind==='artist'?'music':selectedSubscriptionKind==='news'?'news':'video';
  let items=selectedChannelUploads||[];
- if(subscriptionFilter==='Videos'||subscriptionFilter==='Movies')kind='video';
- else if(subscriptionFilter==='Music')kind='music';
- else if(subscriptionFilter==='News')kind='news';
- if(subscriptionFilter==='Movies')items=items.filter(item=>durationSeconds(item.duration)>=900);
+ if(subscriptionFilter==='Videos'){kind='video';if(selectedSubscriptionKind!=='channel')items=[]}
+ else if(subscriptionFilter==='Music'){kind='music';if(selectedSubscriptionKind!=='artist')items=[]}
+ else if(subscriptionFilter==='News'){kind='news';if(selectedSubscriptionKind!=='news')items=[]}
+ else if(subscriptionFilter==='Movies'){
+  kind='video';
+  items=selectedSubscriptionKind==='channel'?items.filter(item=>durationSeconds(item.duration)>=900):[];
+ }
  const rows=items.map(item=>subscriptionPost(item,kind));
  root.innerHTML=rows.length?rows.join(''):'<div class="section-empty">No recent '+esc(subscriptionFilter.toLowerCase())+' updates from '+esc(selectedSubscriptionName)+'.</div>';
  const status=$('#subscriptionStatus');if(status)status.textContent=rows.length+' UPDATES';
