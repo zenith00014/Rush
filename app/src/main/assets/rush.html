@@ -314,14 +314,15 @@ h2::after{height:2px}
 .nav a[aria-current] .ic{stroke-width:2.4}
 .nav a.sr .pg{display:none}
 .mini{left:12px;right:12px;bottom:calc(var(--nav) + var(--sa) + 24px);border:1px solid rgba(242,245,246,.24);border-radius:0!important;background:rgba(19,27,33,.95);-webkit-backdrop-filter:blur(14px) saturate(1.1);backdrop-filter:blur(14px) saturate(1.1);box-shadow:4px 4px 0 rgba(0,0,0,.7)}
+.mini .ib{width:44px;height:44px;min-width:44px;min-height:44px}
 .btn,.ib,.chip,.card,.si,.seg,.source-card,.video-player-tools,.a,.cat,.library-item,.library-playlist,.music-now,.news-card,.bento-card,.profile-summary,.profile-stats>div,.music-mood{border-radius:0!important}
 .btn,.ib,.chip{border:2px solid var(--ink);box-shadow:none}
 .btn{min-height:46px;background:var(--ink);color:var(--paper);font-size:12px}
 .btn.k{background:var(--sp);color:var(--k)}
 .btn.o{background:var(--paper);color:var(--ink)}
-.ib{background:var(--paper2);width:42px;height:42px;min-width:42px;min-height:42px;box-shadow:3px 3px 0 var(--ink)}
+.ib{background:var(--paper2);width:44px;height:44px;min-width:44px;min-height:44px;box-shadow:3px 3px 0 var(--ink)}
 .ib.p{background:var(--sp);color:var(--k)}
-.chip{min-height:38px;padding:0 12px;background:var(--paper2);font-size:10px;letter-spacing:.055em}
+.chip{min-height:44px;padding:0 12px;background:var(--paper2);font-size:10px;letter-spacing:.055em}
 .chip[aria-pressed=true]{background:var(--sp);color:var(--k);border-color:var(--ink)}
 .btn:active,.ib:active{transform:translate(2px,2px);box-shadow:none}
 @media(hover:hover){.btn:hover,.ib:hover{transform:translate(-2px,-2px);box-shadow:3px 3px 0 var(--ink)}.chip:hover{background:#25313a}}
@@ -358,7 +359,7 @@ h2::after{height:2px}
 .bento-news .bento-type{background:var(--cyan)}
 .bento-news .bento-copy b{font-size:17px}
 .bento-actions{position:relative;z-index:2;display:flex;gap:6px;flex-wrap:wrap;padding:8px;border-top:2px solid var(--ink);background:var(--paper2)}
-.bento-actions .chip{min-height:32px;padding:0 9px}
+.bento-actions .chip{min-height:40px;padding:0 9px}
 .bento-collection{grid-column:1/-1;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:10px;min-height:170px;padding:20px;border:2px solid var(--ink);background:var(--lime);color:var(--k);box-shadow:4px 4px 0 var(--ink)}
 .bento-collection b{font:900 clamp(30px,8vw,48px)/.88 var(--f);letter-spacing:-.05em;text-transform:uppercase}
 .bento-collection p{max-width:42ch;font-size:13px;line-height:1.4}
@@ -392,7 +393,7 @@ h2::after{height:2px}
 .library-tabs{padding-top:8px;padding-bottom:8px}
 .library-tabs .chip{min-width:68px}
 .search-input{margin:14px 16px 10px}
-.search-input .search-clear{display:grid;place-items:center;width:32px;height:32px;min-width:32px;min-height:32px;border:0;color:var(--mu);font:24px/1 var(--f)}
+.search-input .search-clear{display:grid;place-items:center;width:40px;height:40px;min-width:40px;min-height:40px;border:0;color:var(--mu);font:24px/1 var(--f)}
 .search-discovery{padding:10px 16px 18px}
 .search-discovery[hidden]{display:none}
 .search-discovery h2{font-size:20px;padding:20px 0 10px}
@@ -534,7 +535,7 @@ const IC={
  bell:'M18 8a6 6 0 00-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4',
  profile:'M20 21a8 8 0 00-16 0M12 12a4 4 0 100-8 4 4 0 000 8z',
  play:'M7 4l13 8-13 8z', pause:'M7 5h3v14H7zM14 5h3v14h-3z',
- arrow:'M5 12h14M13 6l6 6-6 6', follow:'M12 5v14M5 12h14', library:'M4 4h13v16H4zM7 8h7M7 12h7M7 16h4M19 7v13'
+ arrow:'M5 12h14M13 6l6 6-6 6', follow:'M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM20 8v6M17 11h6', library:'M4 4h13v16H4zM7 8h7M7 12h7M7 16h4M19 7v13'
 };
 const FILL=['play','pause'];
 const ic=n=>'<svg class="ic'+(FILL.includes(n)?' f':'')+'" viewBox="0 0 24 24" aria-hidden="true"><path d="'+(IC[n]||IC.arrow)+'"/></svg>';
