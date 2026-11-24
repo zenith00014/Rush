@@ -121,7 +121,7 @@ object LiveYouTubeSearch {
             }
             runCatching { searchWithNewPipe(query, listOf(filter), false) }.getOrNull()
         }
-        if (music && extractorPage != null && extractorPage.items.size >= 8) return extractorPage
+        if (extractorPage != null && extractorPage.items.size >= 8) return extractorPage
 
         val body = searchContext(music)
             .put("query", query)
