@@ -933,17 +933,78 @@ class RushWebBridge(
             }
         }
     }
+    private suspend fun enrichNewsThumbnails(
+        items: List<JSONObject>,
+        prefs: android.content.SharedPreferences,
+        limit: Int = 12
+    ): List<JSONObject> {
+        if (items.isEmpty() || limit <= 0) return items
+        val cachedImages = runCatching {
+            JSONObject(prefs.getString(NEWS_THUMBNAIL_CACHE_KEY, "{}") ?: "{}")
+        }.getOrDefault(JSONObject())
+        val imageSlots = Semaphore(4)
+        val results = coroutineScope {
+            items.take(limit).map { article ->
+                async(Dispatchers.IO) {
+                    if (article.optString("thumbnail").startsWith("https://")) {
+                        return@async article to ""
+                    }
+                    val articleUrl = article.optString("url").trim()
+                    if (articleUrl.isBlank() || !articleUrl.startsWith("https://")) {
+                        return@async article to ""
+                    }
+                    if (cachedImages.has(articleUrl)) {
+                        return@async article to cachedImages.optString(articleUrl)
+                    }
+                    val image = imageSlots.withPermit { extractArticleThumbnail(articleUrl) }
+                    article to image
+                }
+            }.awaitAll()
+        }
+
+        results.forEach { (article, image) ->
+            val articleUrl = article.optString("url").trim()
+            if (articleUrl.isBlank() || article.optString("thumbnail").startsWith("https://")) return@forEach
+            if (!cachedImages.has(articleUrl)) cachedImages.put(articleUrl, image)
+            if (image.startsWith("https://")) article.put("thumbnail", image)
+        }
+        while (cachedImages.length() > 160) {
+            val keys = cachedImages.keys()
+            if (!keys.hasNext()) break
+            cachedImages.remove(keys.next())
+        }
+        prefs.edit().putString(NEWS_THUMBNAIL_CACHE_KEY, cachedImages.toString()).apply()
+        return items
+    }
+
+    private fun normalizeNewsImageUrl(value: String): String {
+        var candidate = android.text.Html.fromHtml(
+            value.trim(),
+            android.text.Html.FROM_HTML_MODE_LEGACY
+        ).toString().replace("&amp;", "&").trim()
+        if (candidate.startsWith("//")) candidate = "https:$candidate"
+        val uri = runCatching { android.net.Uri.parse(candidate) }.getOrNull() ?: return ""
+        if (uri.scheme != "https" || uri.host.isNullOrBlank() || !uri.userInfo.isNullOrBlank()) return ""
+        return candidate
+    }
+
+    private fun imageFromRssMarkup(markup: String): String {
+        val tag = Regex("""(?is)<img\b[^>]*>""").find(markup)?.value ?: return ""
+        val attrs = Regex("""([a-zA-Z:-]+)\s*=\s*["']([^"']*)["']""")
+            .findAll(tag).associate { it.groupValues[1].lowercase() to it.groupValues[2] }
+        val raw = attrs["src"] ?: attrs["data-src"] ?: attrs["data-original"] ?:
+            attrs["srcset"]?.substringBefore(",")?.trim()?.substringBefore(" ")
+        return normalizeNewsImageUrl(raw.orEmpty())
+    }
+
     private fun requestNews(query: String): JSONArray {
         val encoded = java.net.URLEncoder.encode(query, "UTF-8")
         val request = okhttp3.Request.Builder()
             .url("https://news.google.com/rss/search?q=$encoded&hl=en&gl=US&ceid=US:en")
             .header("User-Agent", "Rush/1.0 (Android)")
             .build()
-        val client = RushNetwork.newBuilder()
-            .callTimeout(20, java.util.concurrent.TimeUnit.SECONDS)
-            .build()
-        client.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) throw java.io.IOException("News feed failed (HTTP ${response.code}).")
+        NEWS_RSS_CLIENT.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) throw java.io.IOException("News feed failed (HTTP \${response.code}).")
             val parser = android.util.Xml.newPullParser()
             parser.setInput(response.body?.byteStream(), null)
             val output = JSONArray()
@@ -964,9 +1025,14 @@ class RushWebBridge(
                             title = ""; link = ""; date = ""; description = ""; source = ""; thumbnail = ""
                         } else if (insideItem) {
                             field = parser.name
-                            val mediaTag = parser.name.substringAfter(':').lowercase()
-                            if (mediaTag in setOf("thumbnail", "content", "enclosure")) {
-                                val candidate = parser.getAttributeValue(null, "url").orEmpty()
+                            val localName = parser.name.substringAfter(":").lowercase()
+                            val type = parser.getAttributeValue(null, "type").orEmpty().lowercase()
+                            val medium = parser.getAttributeValue(null, "medium").orEmpty().lowercase()
+                            val isImageElement = localName == "thumbnail" ||
+                                (localName == "content" && (type.startsWith("image/") || medium == "image")) ||
+                                (localName == "enclosure" && type.startsWith("image/"))
+                            if (isImageElement) {
+                                val candidate = normalizeNewsImageUrl(parser.getAttributeValue(null, "url").orEmpty())
                                 if (candidate.isNotBlank()) thumbnail = candidate
                             }
                         }
@@ -984,27 +1050,21 @@ class RushWebBridge(
                     }
                     org.xmlpull.v1.XmlPullParser.END_TAG -> {
                         if (parser.name == "item") {
-                            if (thumbnail.isBlank()) {
-                                thumbnail = description.substringAfter("src=\"", "").substringBefore("\"")
-                                    .ifBlank { description.substringAfter("src='", "").substringBefore("'") }
-                            }
-                            if (thumbnail.startsWith("//")) thumbnail = "https:$thumbnail"
+                            if (thumbnail.isBlank()) thumbnail = imageFromRssMarkup(description)
                             val plainTitle = android.text.Html.fromHtml(
-                                title,
-                                android.text.Html.FROM_HTML_MODE_LEGACY
+                                title, android.text.Html.FROM_HTML_MODE_LEGACY
                             ).toString().replace('\u00A0', ' ').replace(Regex("\\s+"), " ").trim()
                             val cleanSummary = android.text.Html.fromHtml(
-                                description,
-                                android.text.Html.FROM_HTML_MODE_LEGACY
+                                description, android.text.Html.FROM_HTML_MODE_LEGACY
                             ).toString().replace('\u00A0', ' ').replace(Regex("\\s+"), " ").trim()
-                            if (plainTitle.isNotBlank() && link.startsWith("https://")) {
+                            if (plainTitle.isNotBlank() && link.trim().startsWith("https://")) {
                                 output.put(JSONObject()
                                     .put("title", plainTitle)
                                     .put("url", link.trim())
                                     .put("date", date.trim())
                                     .put("source", source.trim().ifBlank { "News source" })
                                     .put("summary", cleanSummary.take(280))
-                                    .put("thumbnail", thumbnail.takeIf { it.startsWith("https://") }.orEmpty()))
+                                    .put("thumbnail", thumbnail))
                             }
                             insideItem = false
                         }
@@ -1012,13 +1072,6 @@ class RushWebBridge(
                     }
                 }
                 event = parser.next()
-            }
-            for (index in 0 until minOf(output.length(), 2)) {
-                val article = output.optJSONObject(index) ?: continue
-                if (article.optString("thumbnail").isBlank()) {
-                    val image = extractArticleThumbnail(article.optString("url"))
-                    if (image.isNotBlank()) article.put("thumbnail", image)
-                }
             }
             return output
         }
@@ -1030,20 +1083,15 @@ class RushWebBridge(
             if (uri.scheme != "https" || uri.host.isNullOrBlank() || !uri.userInfo.isNullOrBlank()) return ""
             val request = okhttp3.Request.Builder().url(articleUrl)
                 .header("User-Agent", "Mozilla/5.0 (compatible; Rush/1.0)")
-                .header("Accept", "text/html").build()
-            val client = RushNetwork.newBuilder()
-                .callTimeout(2200, java.util.concurrent.TimeUnit.MILLISECONDS)
-                .connectTimeout(1100, java.util.concurrent.TimeUnit.MILLISECONDS)
-                .readTimeout(1400, java.util.concurrent.TimeUnit.MILLISECONDS)
-                .build()
-            client.newCall(request).execute().use { response ->
+                .header("Accept", "text/html,application/xhtml+xml").build()
+            NEWS_ARTICLE_CLIENT.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) return@use ""
                 val body = response.body ?: return@use ""
                 val source = body.charStream().use { reader ->
                     val outputText = StringBuilder()
                     val buffer = CharArray(4096)
-                    while (outputText.length < 96 * 1024) {
-                        val count = reader.read(buffer, 0, minOf(buffer.size, 96 * 1024 - outputText.length))
+                    while (outputText.length < 64 * 1024) {
+                        val count = reader.read(buffer, 0, minOf(buffer.size, 64 * 1024 - outputText.length))
                         if (count <= 0) break
                         outputText.append(buffer, 0, count)
                     }
@@ -1053,13 +1101,31 @@ class RushWebBridge(
                 for (tag in Regex("""(?is)<meta\b[^>]*>""").findAll(source)) {
                     val attrs = Regex("""([a-zA-Z:-]+)\s*=\s*["']([^"']*)["']""")
                         .findAll(tag.value).associate { it.groupValues[1].lowercase() to it.groupValues[2] }
-                    val property = (attrs["property"] ?: attrs["name"]).orEmpty().lowercase()
-                    if (property in setOf("og:image", "og:image:url", "twitter:image", "twitter:image:src")) {
-                        imageUrl = attrs["content"].orEmpty().replace("&amp;", "&")
+                    val names = listOf(attrs["property"], attrs["name"]).mapNotNull { it?.lowercase() }
+                    if (names.any { it in setOf("og:image", "og:image:url", "og:image:secure_url", "twitter:image", "twitter:image:src") }) {
+                        imageUrl = attrs["content"].orEmpty()
                         if (imageUrl.isNotBlank()) break
                     }
                 }
-                val resolved = imageUrl.takeIf { it.isNotBlank() }?.let { response.request.url.resolve(it) }
+                if (imageUrl.isBlank()) {
+                    for (tag in Regex("""(?is)<link\b[^>]*>""").findAll(source)) {
+                        val attrs = Regex("""([a-zA-Z:-]+)\s*=\s*["']([^"']*)["']""")
+                            .findAll(tag.value).associate { it.groupValues[1].lowercase() to it.groupValues[2] }
+                        if (attrs["rel"].orEmpty().contains("image_src", true)) {
+                            imageUrl = attrs["href"].orEmpty()
+                            if (imageUrl.isNotBlank()) break
+                        }
+                    }
+                }
+                if (imageUrl.isBlank()) {
+                    imageUrl = Regex("""(?is)["'](?:image|thumbnailUrl)["']\s*:\s*["']([^"']+)["']""")
+                        .find(source)?.groupValues?.getOrNull(1).orEmpty()
+                }
+                val decoded = android.text.Html.fromHtml(
+                    imageUrl.replace("&amp;", "&"),
+                    android.text.Html.FROM_HTML_MODE_LEGACY
+                ).toString().trim()
+                val resolved = decoded.takeIf { it.isNotBlank() }?.let { response.request.url.resolve(it) }
                 resolved?.takeIf { it.isHttps && it.host.isNotBlank() }?.toString().orEmpty()
             }
         }.getOrDefault("")
