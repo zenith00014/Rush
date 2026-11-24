@@ -223,7 +223,7 @@ go = function(){
  if(page==='explore'){
   followingFeedRequested=false;
   loadHomeFeed();
-  if(window.RushNative){RushNative.loadLibrary()}
+  if(window.RushNative)RushNative.loadLibrary();
  }else if(page==='subscribed'){
   if(window.RushNative)RushNative.loadHomeFeed('following');
  }
@@ -288,6 +288,12 @@ const previousNewsResults=window.rushNewsResults;
 window.rushNewsResults=function(items){
  if(page==='subscribed'&&selectedSubscription!=='all'){const root=$('#subscriptionFeed');if(root)root.innerHTML=(items||[]).map(newsCard).join('');return}
  if(previousNewsResults)previousNewsResults(items);
+};
+const previousFeedPreferences=window.rushFeedPreferences;
+window.rushFeedPreferences=function(data){
+ followingFeedRequested=false;
+ followingFeedCache={videos:[],music:[],news:[]};
+ if(previousFeedPreferences)previousFeedPreferences(data);
 };
 const previousLibraryData=window.rushLibraryData;
 window.rushLibraryData=function(data){libraryData=data||libraryData;if(page==='explore')renderExploreContent(homeFeedCache);else if(page==='library')renderLibraryContent()};
