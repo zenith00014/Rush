@@ -691,6 +691,11 @@ class RushWebBridge(
                         val lines = cueGroup.cues.mapNotNull { it.text?.toString()?.takeIf { it.isNotBlank() } }
                         publish("rushVideoCaptions", JSONArray(lines).toString())
                     }
+
+                    override fun onPlaybackStateChanged(playbackState: Int) {
+                        publish("rushMusicBuffering", JSONObject()
+                            .put("buffering", playbackState == androidx.media3.common.Player.STATE_BUFFERING).toString())
+                    }
                 }
                 captionListener = listener
                 controller.addListener(listener)
