@@ -289,6 +289,29 @@ class RushPlaybackService : MediaSessionService() {
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? =
         mediaSession
 
+    override fun onTaskRemoved(rootIntent: android.content.Intent?) {
+        val player = mediaSession?.player
+        val currentItem = player?.currentMediaItem
+        val currentIsAudioOnly = currentItem?.mediaMetadata?.extras
+            ?.getBoolean(PlaybackMetadata.AUDIO_ONLY, false) == true
+
+        if (player?.isPlaying == true && currentIsAudioOnly) {
+            // Keep background music, but never let a queued video start after the app is dismissed.
+            val firstQueuedIndex = (player.currentMediaItemIndex + 1).coerceAtLeast(0)
+            for (index in player.mediaItemCount - 1 downTo firstQueuedIndex) {
+                val queuedItem = player.getMediaItemAt(index)
+                val queuedIsAudioOnly = queuedItem.mediaMetadata.extras
+                    ?.getBoolean(PlaybackMetadata.AUDIO_ONLY, false) == true
+                if (!queuedIsAudioOnly) player.removeMediaItem(index)
+            }
+            super.onTaskRemoved(rootIntent)
+            return
+        }
+
+        // Video is an in-app activity. Dismissing Rush ends video playback and the session.
+        pauseAllPlayersAndStopSelf()
+    }
+
     override fun onDestroy() {
         mediaSession?.player?.let { player ->
             val mediaId = player.currentMediaItem?.mediaId.orEmpty()
