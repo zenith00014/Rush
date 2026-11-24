@@ -212,7 +212,8 @@ window.rushHomeFeedError=function(error){
  const message=error.message||"Feed refresh failed.";
  const status=$("#homeFeedStatus");if(status)status.textContent=message+" Showing your last saved picks where available.";
  const root=$("#exploreShelves");
- if(root&&!root.children.length)root.innerHTML='<div class="feed-recovery"><b>Could not reach your feed</b><p>'+esc(message)+'</p><button class="btn" data-feed-retry>TRY AGAIN</button></div>';
+ const cachedCount=(homeFeedCache.videos||[]).length+(homeFeedCache.music||[]).length+(homeFeedCache.news||[]).length;
+ if(root&&!cachedCount)root.innerHTML='<div class="feed-recovery"><b>Could not reach your feed</b><p>'+esc(message)+'</p><button class="btn" data-feed-retry>TRY AGAIN</button></div>';
 };
 window.rushVideoPreparation=function(){
  const overlay=$("#videoBuffering");if(!overlay)return;
