@@ -24,7 +24,7 @@ function renderProfileSetup(){
  '<label class="onboarding-field"><span>DISPLAY NAME</span><input id="profileName" type="text" maxlength="40" autocomplete="nickname" placeholder="What should we call you?" value="'+esc(rushProfile.displayName||"")+'"></label>'+
  '<label class="onboarding-field"><span>HANDLE <em>OPTIONAL</em></span><input id="profileHandle" type="text" maxlength="24" autocapitalize="none" autocomplete="off" placeholder="your.handle" value="'+esc(rushProfile.handle||"")+'"></label>'+
  '<div class="onboarding-topic-head"><b>Choose a few interests</b><span>EDIT ANYTIME IN SETTINGS</span></div><div class="onboarding-topics">'+all.map(x=>'<button type="button" class="onboarding-topic" data-onboarding-topic="'+esc(x)+'" aria-pressed="'+onboardingTopics.has(x)+'">'+esc(x)+'</button>').join("")+'</div>'+
- '<p class="onboarding-error" id="onboardingError" role="alert" hidden></p><button class="btn onboarding-continue" data-profile-complete>BUILD MY FEED <span>↗</span></button>'+
+ '<p class="onboarding-error" id="onboardingError" role="alert" hidden></p><button class="btn onboarding-continue" data-profile-complete>BUILD MY FEED <span>↗</span></button><button class="guest-continue" data-profile-guest>Continue as guest</button>'+
  '<p class="onboarding-footnote">Your profile, saved items and preferences stay on this device.</p></section>';
 }
 function renderProfilePage(){
@@ -118,22 +118,30 @@ go=function(){
  goBeforeProfile();
  const root=$("#v");if(root){root.classList.remove("screen-enter");requestAnimationFrame(()=>root.classList.add("screen-enter"))}
 };
-function saveOnboarding(){
- const name=$("#profileName")?.value.trim()||"";
- const handle=$("#profileHandle")?.value.trim()||"";
- const error=$("#onboardingError");
- if(!name){if(error){error.textContent="Enter a display name to continue.";error.hidden=false}return}
- if(!onboardingTopics.size){if(error){error.textContent="Choose at least one interest.";error.hidden=false}return}
- if(!persistProfile(name,handle)){if(error){error.textContent="Could not save the profile on this device.";error.hidden=false}return}
+function finishOnboarding(name,handle){
+ if(!persistProfile(name,handle))return false;
  if(window.RushNative)RushNative.saveFeedTopics(JSON.stringify([...onboardingTopics]));
  prefs.topics=[...onboardingTopics];
  history.replaceState(null,"","#explore");
  rushProfile=readProfile();
  go();
+ return true;
+}
+function saveOnboarding(){
+ const name=$("#profileName")?.value.trim()||"";
+ const handle=$("#profileHandle")?.value.trim()||"";
+ const error=$("#onboardingError");
+ if(!name){if(error){error.textContent="Enter a display name to continue, or use guest mode.";error.hidden=false}return}
+ if(!onboardingTopics.size){if(error){error.textContent="Choose at least one interest, or use guest mode.";error.hidden=false}return}
+ if(!finishOnboarding(name,handle)&&error){error.textContent="Could not save the profile on this device.";error.hidden=false}
+}
+function continueAsGuest(){
+ if(!onboardingTopics.size)onboardingTopics=new Set(["Science","Technology","Music","Design"]);
+ finishOnboarding("Guest","");
 }
 document.addEventListener("click",event=>{
  const button=event.target.closest("button");if(!button)return;
- const profileAction=button.hasAttribute("data-profile-complete")||button.hasAttribute("data-onboarding-topic")||button.hasAttribute("data-open-notifications")||button.hasAttribute("data-close-sheet")||button.hasAttribute("data-sheet-subscriptions")||button.hasAttribute("data-notification-settings")||button.hasAttribute("data-app-settings")||button.hasAttribute("data-pip-settings")||button.hasAttribute("data-open-settings")||button.hasAttribute("data-edit-profile")||button.hasAttribute("data-open-profile")||button.hasAttribute("data-open-interests")||button.hasAttribute("data-open-privacy")||button.hasAttribute("data-profile-save")||button.hasAttribute("data-cancel-profile")||button.hasAttribute("data-video-retry")||button.hasAttribute("data-feed-retry");
+ const profileAction=button.hasAttribute("data-profile-complete")||button.hasAttribute("data-profile-guest")||button.hasAttribute("data-onboarding-topic")||button.hasAttribute("data-open-notifications")||button.hasAttribute("data-close-sheet")||button.hasAttribute("data-sheet-subscriptions")||button.hasAttribute("data-notification-settings")||button.hasAttribute("data-app-settings")||button.hasAttribute("data-pip-settings")||button.hasAttribute("data-open-settings")||button.hasAttribute("data-edit-profile")||button.hasAttribute("data-open-profile")||button.hasAttribute("data-open-interests")||button.hasAttribute("data-open-privacy")||button.hasAttribute("data-profile-save")||button.hasAttribute("data-cancel-profile")||button.hasAttribute("data-video-retry")||button.hasAttribute("data-feed-retry");
  if(!profileAction)return;
  event.preventDefault();event.stopImmediatePropagation();
  if(button.hasAttribute("data-video-retry")){
@@ -143,11 +151,12 @@ document.addEventListener("click",event=>{
  if(button.hasAttribute("data-feed-retry")){
   if(window.RushNative){
    if(page==="subscribed")RushNative.loadHomeFeed("following");
-   else{RushNative.loadHomeFeed("forYou");RushNative.loadHomeFeed("following")}
+   else{followingFeedRequested=false;RushNative.loadHomeFeed("forYou")}
   }
   return;
  }
  if(button.hasAttribute("data-profile-complete")){saveOnboarding();return}
+ if(button.hasAttribute("data-profile-guest")){continueAsGuest();return}
  if(button.hasAttribute("data-onboarding-topic")){
   const topic=button.dataset.onboardingTopic;if(onboardingTopics.has(topic))onboardingTopics.delete(topic);else onboardingTopics.add(topic);
   button.setAttribute("aria-pressed",String(onboardingTopics.has(topic)));return;
@@ -192,7 +201,7 @@ window.rushHandleBack=function(){
  if(page==="watch"){location.hash="#explore";return true}
  if(page==="player"){location.hash="#explore";return true}
  if(page==="explore"){return false}
- if(page==="setup"){return true}
+ if(page==="setup"){if(window.RushNative)RushNative.closeActivity();return true}
  location.hash="#explore";return true;
 };
 window.rushAppForeground=function(force){
@@ -201,7 +210,7 @@ window.rushAppForeground=function(force){
  if(page==="settings"){refreshPermissionStatus();const settingsRoot=$("#v");if(settingsRoot)settingsRoot.innerHTML=renderSettingsPage();return}
  if(!window.RushNative||!["explore","subscribed"].includes(page))return;
  rushRefreshAt=now;
- if(page==="explore"){RushNative.loadHomeFeed("forYou");RushNative.loadHomeFeed("following")}
+ if(page==="explore"){followingFeedRequested=false;RushNative.loadHomeFeed("forYou")}
  if(page==="subscribed")RushNative.loadHomeFeed("following");
 };
 window.rushHomeFeedLoading=function(state){
@@ -221,6 +230,10 @@ window.rushHomeFeedError=function(error){
   return;
  }
  if(page!=="explore"||(error.mode&&error.mode==="following"))return;
+ if(error.mode==="forYou"&&!followingFeedRequested&&window.RushNative){
+  followingFeedRequested=true;
+  window.setTimeout(()=>{if(page==="explore")RushNative.loadHomeFeed("following")},120);
+ }
  const status=$("#homeFeedStatus");if(status)status.textContent=message+" Showing your last saved picks where available.";
  const root=$("#exploreShelves");
  const cachedCount=(homeFeedCache.videos||[]).length+(homeFeedCache.music||[]).length+(homeFeedCache.news||[]).length;
