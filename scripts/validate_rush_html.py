@@ -149,9 +149,9 @@ def main():
         "creator avatars can use followed channel artwork": "data-source-thumbnail" in js and "safeUrl(followed&&followed.thumbnail)" in js,
         "Search auto-focus and local history": "input.focus()" in js and "rush_search_history_v1" in js,
         "Search can dismiss the keyboard with Back": "window.rushHandleBack=function()" in js and 'document.activeElement?.id==="q"' in js,
-        "Subscribed page has a source rail and combined feed": "source-rail subscriptions" in styles and "function renderSubscribedFeed(data)" in js,
+        "Subscribed page has a source rail and combined feed": "source-rail subscriptions" in js and "function renderSubscribedFeed(data)" in js,
         "Library has watchlist and liked collections": "'watchlist','Watchlist'" in js and "'liked','Liked'" in js,
-        "local-first profile onboarding": "function renderProfileSetup()" in js and "RushProfileStore.save" in profile_store and "startRush();" in (ASSET_ROOT / "scripts/bootstrap.js").read_text(encoding="utf-8"),
+        "local-first profile onboarding": "function renderProfileSetup()" in js and "fun save(context: Context" in profile_store and "startRush();" in (ASSET_ROOT / "scripts/bootstrap.js").read_text(encoding="utf-8"),
         "profile is editable from Library": "function renderEditProfilePage()" in js and "data-open-profile" in js,
         "notification permission controls exist": "getPermissionStatus()" in bridge and "requestNotificationPermission()" in bridge,
         "Android app and PiP settings links exist": "openApplicationSettings()" in bridge and "openPictureInPictureSettings()" in bridge,
@@ -218,7 +218,7 @@ def main():
         fail("Robolectric SDK prefetch must match the API 35 instrumented runtime")
     if "RushProfileStore.save" not in bridge or "RushPermissionManager.notificationState" not in bridge:
         fail("Native local profile and permission settings must be exposed to the WebView")
-    if "setNativeVideoFullscreen(true)" not in bridge:
+    if "fun setVideoFullscreen(enabled: Boolean)" not in bridge or "activity.setNativeVideoFullscreen(enabled)" not in bridge:
         fail("Fullscreen video handoff is missing")
     if "android:usesCleartextTraffic=\"false\"" not in manifest:
         fail("Cleartext traffic must remain disabled")
