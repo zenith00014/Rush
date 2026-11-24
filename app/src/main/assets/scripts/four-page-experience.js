@@ -24,15 +24,15 @@ function rememberSearch(query){
  safeLocalWrite('rush_search_history_v1',items);
 }
 function creatorInitial(name){return (String(name||'R').trim().replace(/^@/,'')[0]||'R').toUpperCase()}
-function creatorAvatar(name){
- const followed=(prefs.sources||[]).find(source=>source.kind==="channel"&&source.name.toLowerCase()===String(name||"").toLowerCase());
- const thumbnail=safeUrl(followed&&followed.thumbnail);
+function creatorAvatar(name,providedThumbnail=""){
+ const followed=(prefs.sources||[]).find(source=>(source.kind==="channel"||source.kind==="artist")&&source.name.toLowerCase()===String(name||"").toLowerCase());
+ const thumbnail=safeUrl(providedThumbnail)||safeUrl(followed&&followed.thumbnail);
  return '<span class="creator-avatar" aria-hidden="true">'+(thumbnail?'<img src="'+esc(thumbnail)+'" alt="" loading="lazy" decoding="async" onerror="this.hidden=true">':esc(creatorInitial(name)))+'</span>';
 }
 function videoTile(x,index=0,priorityImage=false){
  const thumb=safeUrl(x.thumbnail),creator=x.artist||x.creator||'YouTube';
  const priority=priorityImage?' loading="eager" fetchpriority="high"':' loading="lazy"';
- return '<article class="media-tile"><button class="home-media-open" data-video-id="'+esc(x.id)+'" data-title="'+esc(x.title)+'" data-creator="'+esc(creator)+'" data-thumbnail="'+esc(thumb)+'" aria-label="Watch '+esc(x.title)+'"><span class="media-art video">'+(thumb?'<img src="'+esc(thumb)+'" alt="" width="190" height="107" decoding="async"'+priority+' onerror="this.hidden=true">':'')+'<span class="media-kind">VIDEO</span><span class="media-play">'+ic('play')+'</span></span></button><span class="media-copy">'+creatorAvatar(creator)+'<span><b>'+esc(x.title)+'</b><span>'+esc(creator)+(x.duration?' · '+esc(x.duration):'')+'</span></span></span></article>';
+ return '<article class="media-tile"><button class="home-media-open" data-video-id="'+esc(x.id)+'" data-title="'+esc(x.title)+'" data-creator="'+esc(creator)+'" data-thumbnail="'+esc(thumb)+'" aria-label="Watch '+esc(x.title)+'"><span class="media-art video">'+(thumb?'<img src="'+esc(thumb)+'" alt="" width="190" height="107" decoding="async"'+priority+' onerror="this.hidden=true">':'')+'<span class="media-kind">VIDEO</span><span class="media-play">'+ic('play')+'</span></span></button><span class="media-copy">'+creatorAvatar(creator,x.creatorThumbnail)+'<span><b>'+esc(x.title)+'</b><span>'+esc(creator)+(x.duration?' · '+esc(x.duration):'')+'</span></span></span></article>';
 }
 function movieTile(x,index=0,priorityImage=false){
  const thumb=safeUrl(x.thumbnail),creator=x.artist||x.creator||'YouTube';
@@ -199,6 +199,7 @@ function renderSubscribedFeed(data){
 function subscriptionSourceSearch(index){
  const source=prefs.sources[index];if(!source)return;
  selectedSubscription=source.name;
+ document.querySelectorAll('#subscriptionSources [data-subscription-all],#subscriptionSources [data-subscription-source]').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.subscriptionSource!==undefined&&Number(x.dataset.subscriptionSource)===index)));
  const title=$('#subscriptionTitle');if(title)title.textContent=source.name;
  const root=$('#subscriptionFeed');if(root)root.innerHTML='<p class="meta pad">Loading '+esc(source.name)+'…</p>';
  if(!window.RushNative)return;
@@ -485,7 +486,10 @@ document.addEventListener('click',e=>{
   safeLocalWrite('rush_search_history_v1',[]);renderSearchHistory();return;
  }
  if(b.hasAttribute('data-subscription-all')){
-  selectedSubscription='all';const title=$('#subscriptionTitle');if(title)title.textContent='All subscriptions';
+  selectedSubscription='all';
+  document.querySelectorAll('#subscriptionSources [data-subscription-all],#subscriptionSources [data-subscription-source]').forEach(x=>x.setAttribute('aria-pressed',String(x.hasAttribute('data-subscription-all'))));
+  const title=$('#subscriptionTitle');if(title)title.textContent='All subscriptions';
+  const root=$('#subscriptionFeed');if(root)root.innerHTML='<p class="meta pad">Loading all subscriptions…</p>';
   if(window.RushNative)RushNative.loadHomeFeed('following');return;
  }
  if(b.hasAttribute('data-search-clear')){
