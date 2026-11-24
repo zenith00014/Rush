@@ -8,6 +8,7 @@ import androidx.activity.ComponentActivity
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.webkit.WebViewAssetLoader
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -66,6 +67,7 @@ class MainActivity:ComponentActivity(){
  private val pipEligible=androidx.compose.runtime.mutableStateOf(false)
  private var pipAspectRatio=android.util.Rational(16,9)
  private lateinit var webView:android.webkit.WebView
+ private lateinit var webViewAssetLoader:WebViewAssetLoader
  private lateinit var rushWebBridge: RushWebBridge
  private lateinit var rootLayout: android.widget.FrameLayout
  @androidx.media3.common.util.UnstableApi
@@ -103,7 +105,29 @@ class MainActivity:ComponentActivity(){
     prefs.edit().putBoolean("notification_permission_requested",true).apply()
     notificationPermissionLauncher.launch(permission)
    }
-   else->android.widget.Toast.makeText(this,"Enable notifications in Android Settings to see download progress.",android.widget.Toast.LENGTH_LONG).show()
+   else->android.app.AlertDialog.Builder(this)
+    .setTitle("Notifications are turned off")
+    .setMessage("You can enable Rush notifications in Android settings. Playback and downloads can still work without notification permission.")
+    .setPositiveButton("Open settings"){_,_->openApplicationSettings()}
+    .setNegativeButton("Not now",null)
+    .show()
+  }
+ }
+ fun openApplicationSettings(){
+  runCatching {
+   startActivity(android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+    android.net.Uri.fromParts("package",packageName,null)))
+  }.onFailure {
+   android.widget.Toast.makeText(this,"Open Rush in Android app settings to manage permissions.",android.widget.Toast.LENGTH_LONG).show()
+  }
+ }
+ fun openPictureInPictureSettings(){
+  runCatching {
+   startActivity(android.content.Intent(android.provider.Settings.ACTION_PICTURE_IN_PICTURE_SETTINGS,
+    android.net.Uri.fromParts("package",packageName,null)))
+  }.recoverCatching {
+   startActivity(android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+    android.net.Uri.fromParts("package",packageName,null)))
   }
  }
  private fun openDownloadsFromNotification(){
@@ -118,6 +142,7 @@ class MainActivity:ComponentActivity(){
     useController=true
     controllerAutoShow=true
     setShowSubtitleButton(true)
+    setShowBuffering(androidx.media3.ui.PlayerView.SHOW_BUFFERING_WHEN_PLAYING)
     setKeepContentOnPlayerReset(true)
     setBackgroundColor(android.graphics.Color.BLACK)
     elevation=resources.displayMetrics.density*8
@@ -252,6 +277,10 @@ class MainActivity:ComponentActivity(){
     windowInsets
    }
   }
+  webViewAssetLoader=WebViewAssetLoader.Builder()
+   .setDomain("rush.local")
+   .addPathHandler("/assets/",WebViewAssetLoader.AssetsPathHandler(this))
+   .build()
   webView=android.webkit.WebView(this).apply{
    setBackgroundColor(android.graphics.Color.rgb(14,14,14))
    isVerticalScrollBarEnabled=false
@@ -269,6 +298,10 @@ class MainActivity:ComponentActivity(){
    settings.setSupportMultipleWindows(false)
    settings.safeBrowsingEnabled=true
    webViewClient=object:android.webkit.WebViewClient(){
+    override fun shouldInterceptRequest(
+     view:android.webkit.WebView,
+     request:android.webkit.WebResourceRequest
+    ):android.webkit.WebResourceResponse? = webViewAssetLoader.shouldInterceptRequest(request.url)
     override fun shouldOverrideUrlLoading(
      view:android.webkit.WebView,
      request:android.webkit.WebResourceRequest
@@ -303,13 +336,16 @@ class MainActivity:ComponentActivity(){
   webView.setOnScrollChangeListener { _,_,_,_,_-> updateNativeVideoPosition() }
   setContentView(rootLayout)
   androidx.core.view.ViewCompat.requestApplyInsets(rootLayout)
-  val html=assets.open("rush.html").bufferedReader().use{it.readText()}
-  webView.loadDataWithBaseURL("https://rush.local/",html,"text/html","UTF-8",null)
+  webView.loadUrl("https://rush.local/assets/rush.html")
   onBackPressedDispatcher.addCallback(this,object:androidx.activity.OnBackPressedCallback(true){
    override fun handleOnBackPressed(){
     if(nativeVideoFullscreen){setNativeVideoFullscreen(false);return}
-    if(webView.canGoBack())webView.goBack()
-    else webView.evaluateJavascript("location.hash='#home'",null)
+    webView.evaluateJavascript("window.rushHandleBack ? window.rushHandleBack() : false"){handled->
+     if(handled!="true"){
+      if(webView.canGoBack())webView.goBack()
+      else webView.evaluateJavascript("location.hash='#explore'",null)
+     }
+    }
    }
   })
  }
@@ -325,6 +361,7 @@ class MainActivity:ComponentActivity(){
   if(::webView.isInitialized){
    webView.onResume()
    webView.resumeTimers()
+   if(webPageLoaded)webView.evaluateJavascript("window.rushAppForeground&&window.rushAppForeground()",null)
    if(webPageLoaded&&RushPlaybackService.activeInstance?.hasCurrentMediaItem()==true)
     webView.evaluateJavascript("if(window.RushNative)RushNative.loadCurrentPlayback()",null)
   }
