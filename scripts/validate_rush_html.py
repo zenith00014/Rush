@@ -57,6 +57,8 @@ def main():
     bridge = read_required(BRIDGE_PATH)
     activity = read_required(ACTIVITY_PATH)
     service = read_required(SERVICE_PATH)
+    download_worker = read_required(ROOT / "app/src/main/java/com/rush/app/OfflineDownloads.kt")
+    search_client = read_required(SEARCH_PATH)
     manifest = read_required(MANIFEST_PATH)
     gradle = read_required(GRADLE_PATH)
 
