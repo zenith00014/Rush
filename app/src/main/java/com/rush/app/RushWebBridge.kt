@@ -44,7 +44,7 @@ class RushWebBridge(
 ) {
     @Volatile private var controllerFuture: com.google.common.util.concurrent.ListenableFuture<MediaController>? = null
     private var captionListener: androidx.media3.common.Player.Listener? = null
-
+    private var sleepTimerJob: kotlinx.coroutines.Job? = null
 
     @JavascriptInterface
     fun getFeedPreferences(): String =
@@ -778,7 +778,7 @@ class RushWebBridge(
                 controller.prepare()
                 controller.play()
                 LocalLibrary.rememberPlayback(prefs, videoId, title, creator, false, thumbnail, videoId)
-                activity.runOnUiThread { activity.showNativeVideo(controller, fullscreen = true) }
+                activity.runOnUiThread { activity.showNativeVideo(controller, fullscreen = false) }
                 publish("rushVideoPlaybackState", JSONObject().put("state", "playing")
                     .put("title", title).put("creator", creator).put("captionTracks", subtitleConfigs.size).toString())
             } catch (error: Exception) {
@@ -801,13 +801,82 @@ class RushWebBridge(
     }
 
     @JavascriptInterface
-    fun updateVideoPosition() {
-        activity.updateNativeVideoPosition()
+    fun updateVideoPosition(left: Double, top: Double, width: Double, height: Double, mini: Boolean) {
+        activity.positionNativeVideo(left, top, width, height, mini)
     }
 
     @JavascriptInterface
     fun hideVideo() {
         activity.hideNativeVideo()
+    }
+
+    @JavascriptInterface
+    fun closeVideo() {
+        activity.lifecycleScope.launch {
+            runCatching {
+                val controller = getController()
+                controller.pause()
+                controller.clearMediaItems()
+            }
+            activity.hideNativeVideo()
+            publish("rushCurrentPlayback", JSONObject().put("hasItem", false)
+                .put("isMusic", false).put("isVideo", false).put("isPlaying", false).toString())
+        }
+    }
+
+    @JavascriptInterface
+    fun setPlaybackSpeed(speed: Double) {
+        val value = speed.toFloat().coerceIn(0.25f, 3f)
+        activity.lifecycleScope.launch {
+            runCatching { getController().setPlaybackSpeed(value) }
+        }
+    }
+
+    @JavascriptInterface
+    fun setVideoQuality(maxHeight: Int) {
+        val height = maxHeight.coerceIn(0, 2160)
+        val prefs = activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)
+        prefs.edit().putInt("video_quality", height).apply()
+        activity.lifecycleScope.launch {
+            runCatching {
+                val controller = getController()
+                val builder = controller.trackSelectionParameters.buildUpon()
+                if (height <= 0) builder.clearVideoSizeConstraints()
+                else builder.setMaxVideoSize(1920, height)
+                controller.trackSelectionParameters = builder.build()
+            }
+        }
+    }
+
+    @JavascriptInterface
+    fun setVideoCaptionsEnabled(enabled: Boolean) {
+        activity.lifecycleScope.launch {
+            runCatching {
+                val controller = getController()
+                controller.trackSelectionParameters = controller.trackSelectionParameters.buildUpon()
+                    .setTrackTypeDisabled(androidx.media3.common.C.TRACK_TYPE_TEXT, !enabled)
+                    .build()
+            }
+        }
+    }
+
+    @JavascriptInterface
+    fun setSleepTimer(minutes: Int) {
+        sleepTimerJob?.cancel()
+        if (minutes <= 0) {
+            publish("rushSleepTimerState", JSONObject().put("active", false).toString())
+            return
+        }
+        val safeMinutes = minutes.coerceIn(1, 240)
+        val duration = safeMinutes * 60_000L
+        publish("rushSleepTimerState", JSONObject().put("active", true)
+            .put("minutes", safeMinutes).toString())
+        sleepTimerJob = activity.lifecycleScope.launch {
+            kotlinx.coroutines.delay(duration)
+            runCatching { getController().pause() }
+            publish("rushSleepTimerState", JSONObject().put("active", false)
+                .put("finished", true).toString())
+        }
     }
 
     @JavascriptInterface
