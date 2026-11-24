@@ -50,19 +50,6 @@ object RushDiscoveryEngine {
     data class SearchHit<T>(val value: T, val score: Double, val originalIndex: Int)
     data class FeedHit(val candidate: Candidate, val score: Int)
 
-    private val usefulSignals = listOf(
-        "explained", "analysis", "documentary", "research", "lecture", "tutorial",
-        "how it works", "how to", "deep dive", "history of", "investigation", "report",
-        "review", "guide", "course", "lesson", "learn", "masterclass", "breakdown",
-        "case study", "science", "engineering", "theory", "evidence", "walkthrough",
-        "educational", "study", "field notes", "critical analysis"
-    )
-    private val lowInformationSignals = listOf(
-        "brainrot", "meme", "memes", "prank", "pranks", "rage bait", "ragebait",
-        "celebrity gossip", "influencer drama", "internet drama", "viral challenge",
-        "reaction prank", "shocking", "you won't believe", "you will not believe",
-        "exposed", "destroyed", "insane reaction"
-    )
     private val spamSignals = listOf(
         "free gift", "click here", "subscribe now", "watch till end", "watch till the end",
         "giveaway winner", "shocking!!!", "100% guaranteed", "make money fast"
@@ -273,21 +260,6 @@ object RushDiscoveryEngine {
         val strong = (topics + tags).count { normalize(it).let { key -> key.length >= 4 && body.contains(key) } }
         return (0.12 + hits * 0.075 + strong * 0.12).coerceIn(0.0, 1.0)
     }
-
-    private fun utilitySignal(body: String, summary: String): Double {
-        val matches = usefulSignals.count(body::contains)
-        val depth = when {
-            summary.length >= 700 -> 0.30
-            summary.length >= 300 -> 0.22
-            summary.length >= 120 -> 0.14
-            summary.length >= 40 -> 0.07
-            else -> 0.0
-        }
-        return (0.28 + matches * 0.11 + depth).coerceIn(0.0, 1.0)
-    }
-
-    private fun lowInfoPenalty(body: String): Double =
-        (lowInformationSignals.count(body::contains) * 0.095).coerceAtMost(0.42)
 
     private fun freshness(publishedAt: Long, now: Long): Double {
         if (publishedAt <= 0L || publishedAt > now + 86_400L) return 0.42
