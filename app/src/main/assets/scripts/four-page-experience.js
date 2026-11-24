@@ -22,7 +22,11 @@ function rememberSearch(query){
  safeLocalWrite('rush_search_history_v1',items);
 }
 function creatorInitial(name){return (String(name||'R').trim().replace(/^@/,'')[0]||'R').toUpperCase()}
-function creatorAvatar(name){return '<span class="creator-avatar" aria-hidden="true">'+esc(creatorInitial(name))+'</span>'}
+function creatorAvatar(name){
+ const followed=(prefs.sources||[]).find(source=>source.kind==="channel"&&source.name.toLowerCase()===String(name||"").toLowerCase());
+ const thumbnail=safeUrl(followed&&followed.thumbnail);
+ return '<span class="creator-avatar" aria-hidden="true">'+(thumbnail?'<img src="'+esc(thumbnail)+'" alt="" loading="lazy" decoding="async" onerror="this.hidden=true">':esc(creatorInitial(name)))+'</span>';
+}
 function videoTile(x){
  const thumb=safeUrl(x.thumbnail),creator=x.artist||x.creator||'YouTube';
  return '<article class="media-tile"><button class="home-media-open" data-video-id="'+esc(x.id)+'" data-title="'+esc(x.title)+'" data-creator="'+esc(creator)+'" data-thumbnail="'+esc(thumb)+'" aria-label="Watch '+esc(x.title)+'"><span class="media-art video">'+(thumb?'<img src="'+esc(thumb)+'" alt="" loading="lazy" decoding="async" onerror="this.hidden=true">':'')+'<span class="media-kind">VIDEO</span><span class="media-play">'+ic('play')+'</span></span></button><span class="media-copy">'+creatorAvatar(creator)+'<span><b>'+esc(x.title)+'</b><span>'+esc(creator)+(x.duration?' · '+esc(x.duration):'')+'</span></span></span></article>';
@@ -139,7 +143,7 @@ function subscriptionSourceSearch(index){
 renderLibraryPage = function(){
  const views=[['saved','Saved items','♡','Videos and music you kept'],['history','History','◷','What you watched and played'],['watchlist','Watchlist','▣','Films and videos to watch later'],['liked','Liked','♥','Your liked media'],['playlists','Playlists','≡','Your collections'],['downloads','Downloads','⇩','Available offline'],['queue','Queue','♫','Up next']];
  return pageTop('Library','your collection')+
- '<div class="library-profile"><span class="avatar">R</span><span class="profile-copy"><b>Your Rush library</b><span>Saved locally on this device</span></span><button class="ib" data-open-settings aria-label="Settings">⚙</button></div>'+
+ '<div class="library-profile"><button class="library-profile-main" data-open-profile><span class="avatar">'+esc((rushProfile.displayName||"R").trim().slice(0,1).toUpperCase())+'</span><span class="profile-copy"><b>'+esc(rushProfile.displayName||"Your Rush profile")+'</b><span>'+(rushProfile.handle?"@"+esc(rushProfile.handle):"Saved locally on this device")+'</span></span><i>EDIT ›</i></button><button class="ib" data-open-settings aria-label="Settings">⚙</button></div>'+
  '<div class="library-quick-grid">'+views.slice(0,4).map(([key,name,icon,desc])=>'<button class="library-quick" data-library-view="'+key+'"><span class="hardware-icon">'+icon+'</span><span><b>'+name+'</b><span>'+desc+'</span></span></button>').join('')+'</div>'+
  '<div class="library-menu">'+views.slice(4).map(([key,name,icon,desc])=>'<button data-library-view="'+key+'"><span class="hardware-icon">'+icon+'</span><b>'+name+'</b><span>›</span></button>').join('')+
  '<button data-open-settings><span class="hardware-icon">⚙</span><b>Settings & interests</b><span>›</span></button></div>'+
