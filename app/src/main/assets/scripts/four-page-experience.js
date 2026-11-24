@@ -41,12 +41,12 @@ function movieTile(x,index=0,priorityImage=false){
 }
 function musicTile(x,index=0,priorityImage=false){
  const thumb=safeUrl(x.thumbnail),artist=x.artist||'Unknown artist';
- const priority=index===0?' loading="eager" fetchpriority="high"':' loading="lazy"';
+ const priority=priorityImage?' loading="eager" fetchpriority="high"':' loading="lazy"';
  return '<article class="media-tile music"><button class="home-media-open" data-track="'+esc(x.id)+'" data-title="'+esc(x.title)+'" data-artist="'+esc(artist)+'" data-thumbnail="'+esc(thumb)+'" aria-label="Play '+esc(x.title)+'"><span class="media-art music">'+(thumb?'<img src="'+esc(thumb)+'" alt="" width="144" height="144" decoding="async"'+priority+' onerror="this.hidden=true">':'')+'<span class="media-kind">AUDIO</span><span class="media-play">'+ic('play')+'</span></span></button><span class="media-copy"><span><b>'+esc(x.title)+'</b><span>'+esc(artist)+(x.duration?' · '+esc(x.duration):'')+'</span></span></span></article>';
 }
 function newsShelfCard(x,index=0,priorityImage=false){
  const thumb=safeUrl(x.thumbnail);
- const priority=index===0?' loading="eager" fetchpriority="high"':' loading="lazy"';
+ const priority=priorityImage?' loading="eager" fetchpriority="high"':' loading="lazy"';
  return '<button class="news-shelf-card" data-news-url="'+esc(safeUrl(x.url))+'"><img src="'+esc(thumb)+'" alt="" width="108" height="78" decoding="async"'+priority+' referrerpolicy="no-referrer" onerror="this.hidden=true"><span class="news-shelf-copy"><small>'+esc(x.source||'News')+'</small><b>'+esc(x.title)+'</b><span>'+esc(x.date||'Latest report')+'</span></span></button>';
 }
 function shelf(title,items,renderer,label){
