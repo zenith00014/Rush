@@ -47,6 +47,26 @@ jobs:
           gradle --version
           sdkmanager --list_installed
 
+      - name: Configure optional Play upload signing
+        env:
+          RUSH_UPLOAD_KEYSTORE_BASE64: ${{ secrets.RUSH_UPLOAD_KEYSTORE_BASE64 }}
+          RUSH_UPLOAD_STORE_PASSWORD: ${{ secrets.RUSH_UPLOAD_STORE_PASSWORD }}
+          RUSH_UPLOAD_KEY_ALIAS: ${{ secrets.RUSH_UPLOAD_KEY_ALIAS }}
+          RUSH_UPLOAD_KEY_PASSWORD: ${{ secrets.RUSH_UPLOAD_KEY_PASSWORD }}
+        run: |
+          if [ -z "$RUSH_UPLOAD_KEYSTORE_BASE64" ]; then
+            echo "RUSH_RELEASE_SIGNED=false" >> "$GITHUB_ENV"
+            echo "No upload key configured; the release AAB will be unsigned."
+          else
+            KEYSTORE="$RUNNER_TEMP/rush-upload.jks"
+            printf '%s' "$RUSH_UPLOAD_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE"
+            echo "RUSH_UPLOAD_STORE_FILE=$KEYSTORE" >> "$GITHUB_ENV"
+            printf 'RUSH_UPLOAD_STORE_PASSWORD=%s\n' "$RUSH_UPLOAD_STORE_PASSWORD" >> "$GITHUB_ENV"
+            printf 'RUSH_UPLOAD_KEY_ALIAS=%s\n' "$RUSH_UPLOAD_KEY_ALIAS" >> "$GITHUB_ENV"
+            printf 'RUSH_UPLOAD_KEY_PASSWORD=%s\n' "$RUSH_UPLOAD_KEY_PASSWORD" >> "$GITHUB_ENV"
+            echo "RUSH_RELEASE_SIGNED=true" >> "$GITHUB_ENV"
+          fi
+
       - name: Validate WebView and native bridge
         run: python3 scripts/validate_rush_html.py
 
@@ -66,6 +86,21 @@ jobs:
       - name: Run unit tests and build debug APK
         run: gradle --no-daemon --stacktrace :app:testDebugUnitTest :app:assembleDebug
 
+      - name: Build release Android App Bundle
+        run: gradle --no-daemon --stacktrace :app:bundleRelease
+
+      - name: Verify release bundle
+        run: |
+          BUNDLE="app/build/outputs/bundle/release/app-release.aab"
+          test -s "$BUNDLE"
+          if [ "$RUSH_RELEASE_SIGNED" = "true" ]; then
+            jarsigner -verify "$BUNDLE"
+            echo "SIGNED: upload key supplied" > release-bundle-status.txt
+          else
+            echo "UNSIGNED: configure RUSH_UPLOAD_KEYSTORE_BASE64 and the upload-key secrets before Play Console upload" > release-bundle-status.txt
+          fi
+          sha256sum "$BUNDLE" | tee release-bundle.sha256
+
       - name: Verify APK output
         run: |
           test -s app/build/outputs/apk/debug/app-debug.apk
@@ -78,5 +113,16 @@ jobs:
           path: |
             app/build/outputs/apk/debug/app-debug.apk
             app-debug.apk.sha256
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload release AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: rush-release-aab
+          path: |
+            app/build/outputs/bundle/release/app-release.aab
+            release-bundle.sha256
+            release-bundle-status.txt
           if-no-files-found: error
           retention-days: 14
