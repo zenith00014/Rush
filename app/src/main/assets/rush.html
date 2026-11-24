@@ -497,6 +497,15 @@ h2::after{height:2px}
  .profile-stats{margin-left:12px;margin-right:12px}
 }
 
+
+.profile-settings{margin:18px 0 36px;padding:0 16px 18px;border-top:2px solid var(--ink)}
+.profile-settings .shelf-heading{padding:22px 0 12px}
+.profile-settings .shelf-heading h2{font-size:26px}
+.profile-setting{display:flex;flex-direction:column;align-items:flex-start;gap:6px;width:100%;min-height:64px;padding:13px 14px;border:2px solid var(--ink);background:var(--paper2);text-align:left}
+.profile-setting b{font:800 14px var(--f)}
+.profile-setting span{color:var(--mu);font:500 11px var(--m)}
+@media(min-width:761px){.profile-settings{padding-left:0;padding-right:0;max-width:660px}}
+@media(max-width:380px){.nav a{font-size:9px;letter-spacing:0;gap:4px}}
 </style></head>
 <body>
 <div class="app">
@@ -693,7 +702,8 @@ function renderLibraryPage(){
  '<div class="profile-stats"><div><strong id="profileSavedCount">0</strong><span>SAVED</span></div><div><strong id="profileHistoryCount">0</strong><span>HISTORY</span></div><div><strong id="profilePlaylistCount">0</strong><span>PLAYLISTS</span></div></div>'+
  '<div class="library-heading"><div><span class="eyebrow">YOUR COLLECTION</span><h2>Library</h2></div><button class="chip" data-open-topics>PERSONALISE</button></div>'+
  '<div class="chips library-tabs">'+[['saved','Saved'],['history','History'],['playlists','Playlists'],['queue','Queue'],['downloads','Downloads']].map(([key,label])=>'<button class="chip" data-library-view="'+key+'" aria-pressed="'+(libraryView===key)+'">'+label+'</button>').join('')+'</div>'+
- '<p class="meta pad" id="libraryStatus">Your collection is stored on this device.</p><div id="libraryContent"></div>';
+ '<p class="meta pad" id="libraryStatus">Your collection is stored on this device.</p><div id="libraryContent"></div>'+
+ '<section class="profile-settings"><div class="shelf-heading"><div><span class="eyebrow">PREFERENCES</span><h2>Settings</h2></div></div><button class="profile-setting" data-open-topics><b>Content preferences</b><span>Manage interests and followed sources →</span></button><p class="meta pad">Your profile and library are currently stored locally on this device.</p></section>';
 }
 function updateProfileStats(){
  const saved=$('#profileSavedCount'),history=$('#profileHistoryCount'),playlists=$('#profilePlaylistCount');
