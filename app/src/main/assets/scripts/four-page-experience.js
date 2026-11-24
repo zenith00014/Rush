@@ -79,10 +79,6 @@ function librarySection(title,items,renderer,view){
  if(!items||!items.length)return '';
  return '<section class="library-shelf"><div class="shelf-heading"><h2>'+esc(title)+'</h2><button class="shelf-view-all" data-library-view="'+esc(view)+'">VIEW ALL ›</button></div><div class="shelf-row">'+items.map(renderer).join('')+'</div></section>';
 }
-function librarySection(title,items,renderer,view){
- if(!items||!items.length)return '';
- return '<section class="library-shelf"><div class="shelf-heading"><h2>'+esc(title)+'</h2><button class="shelf-view-all" data-library-view="'+esc(view)+'">VIEW ALL ›</button></div><div class="shelf-row">'+items.map(renderer).join('')+'</div></section>';
-}
 function shelf(title,items,renderer,label){
  if(!items||!items.length)return '';
  const rendered=items.map((item,index)=>{
@@ -284,7 +280,7 @@ function subscriptionSourceSearch(index){
  else if(subscriptionFilter==='Music'||source.kind==='artist')RushNative.searchMusic(source.name);
  else RushNative.loadChannelUploads(source.id,source.name);
 }
-renderLibraryPage = function(){renderLibraryPage = function(){
+renderLibraryPage = function(){
  const history=(libraryData.history||[]).slice(0,12).map(id=>{const item=libraryData.items&&libraryData.items[id];return item?Object.assign({id},item):null}).filter(Boolean);
  const playlists=libraryData.playlists||[];
  const watchlist=localItems('watchlist');
@@ -347,7 +343,7 @@ go = function(){
  page=(location.hash||'#explore').slice(1);
  if(page==='home')page='explore';
  if(!R[page])page='explore';
- if(page==='subscribed'){selectedSubscription='all';selectedSubscriptionId='all';selectedSubscriptionName='All subscriptions';subscriptionFilter='All';}
+ if(page==='subscribed'){selectedSubscription='all';selectedSubscriptionId='all';selectedSubscriptionKind='all';selectedSubscriptionName='All subscriptions';subscriptionFilter='All';selectedChannelUploads=[];}
  loadFeedPreferences();
  $('#v').innerHTML=R[page]();
  const activePage=page==='watch'?'explore':page==='player'?'explore':page;
