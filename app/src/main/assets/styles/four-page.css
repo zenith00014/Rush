@@ -591,3 +591,32 @@ h2::after{height:1px;background:var(--border)}
  .deck-disc,.buffer-spinner,.screen-enter{animation:none!important}
  *{scroll-behavior:auto!important}
 }
+
+
+/* Match the prototype's bottom navigation dock: four equal, stable destinations. */
+.nav{
+ position:absolute!important;left:0!important;right:0!important;bottom:0!important;
+ height:calc(var(--nav) + var(--sa))!important;padding:4px 10px var(--sa)!important;
+ display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;
+ align-items:center!important;gap:2px!important;
+ border:0!important;border-top:1px solid #d1d1cd!important;
+ border-radius:14px 14px 0 0!important;
+ background:rgba(232,232,228,.97)!important;
+ -webkit-backdrop-filter:blur(18px) saturate(1.05)!important;
+ backdrop-filter:blur(18px) saturate(1.05)!important;
+ box-shadow:0 -5px 22px rgba(0,0,0,.2)!important;
+}
+.nav .pill{
+ position:absolute!important;top:5px!important;bottom:calc(var(--sa) + 5px)!important;
+ left:var(--lx,0)!important;width:var(--lw,0)!important;
+ background:rgba(224,79,51,.16)!important;border:1px solid rgba(224,79,51,.34)!important;
+ border-radius:11px!important;box-shadow:none!important;pointer-events:none!important;
+}
+.nav a{position:relative;z-index:1;min-width:0;min-height:52px;height:100%;gap:4px;color:#4b4b48!important;font-size:10px;font-weight:650;text-transform:none;letter-spacing:0}
+.nav a .ic{width:21px;height:21px;color:currentColor;filter:none!important}
+.nav a[aria-current]{color:#a93320!important;font-weight:800}
+.nav a[aria-current] .ic{filter:none!important}
+#sc{padding-bottom:calc(var(--nav) + var(--sa) + 28px)!important}
+.mini{bottom:calc(var(--nav) + var(--sa) + 14px)!important}
+.video-mini-dock{bottom:calc(var(--nav) + var(--sa) + 10px)!important}
+.app.has-mini #sc{padding-bottom:calc(var(--nav) + var(--sa) + 112px)!important}
