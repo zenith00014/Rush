@@ -71,9 +71,9 @@ h2::after{height:1px;background:rgba(255,255,255,.18)}
 .media-tile.music .creator-avatar{display:none}
 .media-tile.movie .media-copy{grid-template-columns:1fr}
 .media-tile.movie .creator-avatar{display:none}
-.news-shelf-card{flex:none;width:min(86vw,330px);display:grid;grid-template-columns:minmax(0,1fr) 116px;gap:12px;align-items:center;padding:10px;border:1px solid var(--border);border-radius:11px;background:linear-gradient(140deg,#1b252c,#131a20);text-align:left;scroll-snap-align:start}
-.news-shelf-card img{width:116px;height:82px;object-fit:cover;border-radius:8px;background:#2b3942}
-.news-shelf-copy{min-width:0}
+.news-shelf-card{flex:none;width:min(86vw,330px);display:grid;grid-template-columns:116px minmax(0,1fr);gap:12px;align-items:center;padding:10px;border:1px solid var(--border);border-radius:11px;background:linear-gradient(140deg,#1b252c,#131a20);text-align:left;scroll-snap-align:start}
+.news-shelf-card img{grid-column:1;grid-row:1;width:116px;height:82px;object-fit:cover;border-radius:8px;background:#2b3942}
+.news-shelf-copy{grid-column:2;grid-row:1;min-width:0}
 .news-shelf-copy small{display:block;color:var(--cyan);font:9px var(--m);text-transform:uppercase;margin-bottom:5px}
 .news-shelf-copy b{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden;font:750 13px/1.2 var(--f)}
 .news-shelf-copy span{display:block;margin-top:5px;color:var(--mu);font:9px var(--m)}
@@ -177,7 +177,7 @@ h2::after{height:1px;background:rgba(255,255,255,.18)}
 .local-list-row span{display:block;margin-top:3px;color:var(--mu);font:9px var(--m)}
 @media(max-width:360px){
  .media-tile{width:166px}.media-tile.movie{width:116px}.media-tile.music{width:132px}
- .news-shelf-card{grid-template-columns:minmax(0,1fr) 96px}.news-shelf-card img{width:96px;height:72px}
+ .news-shelf-card{grid-template-columns:96px minmax(0,1fr)}.news-shelf-card img{width:96px;height:72px}
  .deck-display{grid-template-columns:1fr 80px}
 }
 @media(prefers-reduced-motion:reduce){.deck-disc{animation:none!important}.nav .pill{transition:none!important}}
