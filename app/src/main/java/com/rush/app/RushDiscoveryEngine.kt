@@ -126,7 +126,15 @@ object RushDiscoveryEngine {
     }
 
     fun rankFeed(candidates: List<Candidate>, profile: Profile): List<FeedHit> =
-        candidates.map { FeedHit(it, scoreFeed(it, profile)) }.sortedByDescending { it.score }
+        candidates.asSequence()
+            .filter { candidate ->
+                val creator = normalize(candidate.creator)
+                candidate.id.trim() !in profile.notInterestedIds &&
+                    (creator.isBlank() || profile.blockedCreators.none { normalize(it) == creator })
+            }
+            .map { FeedHit(it, scoreFeed(it, profile)) }
+            .sortedByDescending { it.score }
+            .toList()
 
     /** Greedy creator/topic diversification reduces repetitive feeds. */
     fun diversifyFeed(hits: List<FeedHit>, limit: Int, maxPerCreator: Int = 2): List<FeedHit> {
