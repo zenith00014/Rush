@@ -23,6 +23,15 @@ import kotlinx.coroutines.withContext
 
 @androidx.annotation.OptIn(markerClass = [androidx.media3.common.util.UnstableApi::class])
 class RushPlaybackService : MediaSessionService() {
+    companion object {
+        @Volatile
+        var activeInstance: RushPlaybackService? = null
+            private set
+    }
+
+    fun hasCurrentMediaItem(): Boolean =
+        mediaSession?.player?.currentMediaItem != null
+
     private val STREAM_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:153.0) Gecko/20100101 Firefox/153.0"
     private var mediaSession: MediaSession? = null
     private var streamCache: SimpleCache? = null
@@ -33,6 +42,7 @@ class RushPlaybackService : MediaSessionService() {
 
     override fun onCreate() {
         super.onCreate()
+        activeInstance = this
         val streamClient = RushNetwork.newBuilder()
             .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
             .readTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
@@ -327,6 +337,7 @@ class RushPlaybackService : MediaSessionService() {
         mediaSession = null
         streamCache?.release()
         streamCache = null
+        if (activeInstance === this) activeInstance = null
         super.onDestroy()
     }
 }
