@@ -176,19 +176,25 @@ renderSearchPage = function(){
  '<p class="meta pad" id="unifiedStatus">Search across Rush.</p><div id="unifiedResults"></div><div id="publicPlaylistContent"></div>';
 };
 renderSubscribedPage = function(){
- return '<header class="subscribed-head"><h1>Subscribed</h1><p>Updates from the creators and publishers you follow.</p></header>'+
- '<div class="source-rail subscriptions" id="subscriptionSources">'+(prefs.sources.length?prefs.sources.map((x,i)=>'<button class="source-avatar" data-subscription-source="'+i+'"><span class="avatar">'+(safeUrl(x.thumbnail)?'<img src="'+esc(safeUrl(x.thumbnail))+'" alt="" loading="lazy" decoding="async">':esc(creatorInitial(x.name)))+'</span><b>'+esc(x.name)+'</b></button>').join(''):'<button class="source-avatar" data-open-search><span class="avatar">+</span><b>Find creators</b></button>')+'</div>'+
- '<div class="subscription-feed"><div class="subscription-toolbar"><b id="subscriptionTitle">All subscriptions</b><span><small id="subscriptionStatus">LATEST UPDATES</small> <button class="chip" data-subscription-all>All</button></span></div><div id="subscriptionFeed" class="subscription-results"><p class="meta pad">Loading your subscriptions…</p></div></div>';
+ const sources=prefs.sources||[];
+ return '<div class="source-rail subscriptions" id="subscriptionSources">'+
+ '<button class="source-avatar all-source" data-subscription-all aria-pressed="'+(selectedSubscription==="all")+'"><span class="avatar">ALL</span><b>All</b></button>'+
+ (sources.length?sources.map((x,i)=>'<button class="source-avatar" data-subscription-source="'+i+'" aria-pressed="'+(selectedSubscription===x.name)+'"><span class="avatar">'+(safeUrl(x.thumbnail)?'<img src="'+esc(safeUrl(x.thumbnail))+'" alt="" loading="lazy" decoding="async">':esc(creatorInitial(x.name)))+'</span><b>'+esc(x.name)+'</b></button>').join(""):'<button class="source-avatar" data-open-search><span class="avatar">+</span><b>Find creators</b></button>')+
+ '</div><div class="subscription-feed"><div class="subscription-toolbar"><b id="subscriptionTitle">'+(selectedSubscription==="all"?"All subscriptions":esc(selectedSubscription))+'</b><span><small id="subscriptionStatus">LATEST UPDATES</small></span></div><div id="subscriptionFeed" class="subscription-results"><p class="meta pad">Loading your subscriptions…</p></div></div>';
 };
 function renderSubscribedFeed(data){
- const root=$('#subscriptionFeed');if(!root)return;
- const videos=data.videos||[],music=data.music||[],news=data.news||[];
- let items='';
- items+=videos.map(x=>videoRow(x)).join('');
- items+=music.map(x=>musicRow(x)).join('');
- items+=news.map(x=>newsCard(x)).join('');
+ const root=$("#subscriptionFeed");if(!root)return;
+ const queues=[
+  (data.videos||[]).map(x=>({kind:"video",item:x})),
+  (data.music||[]).map(x=>({kind:"music",item:x})),
+  (data.news||[]).map(x=>({kind:"news",item:x}))
+ ];
+ const ordered=[];
+ while(queues.some(queue=>queue.length))queues.forEach(queue=>{if(queue.length)ordered.push(queue.shift())});
+ const items=ordered.map(({kind,item})=>kind==="video"?videoRow(item):kind==="music"?musicRow(item):newsCard(item)).join("");
  root.innerHTML=items||'<div class="section-empty">No recent posts from your subscriptions yet. Follow a channel, artist or publisher to build this feed.</div>';
- const status=$('#subscriptionStatus');if(status)status.textContent=(videos.length+music.length+news.length)+' UPDATES';
+ const status=$("#subscriptionStatus");if(status)status.textContent=ordered.length+" UPDATES";
+ const title=$("#subscriptionTitle");if(title)title.textContent=selectedSubscription==="all"?"All subscriptions":selectedSubscription;
 }
 function subscriptionSourceSearch(index){
  const source=prefs.sources[index];if(!source)return;
