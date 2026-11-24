@@ -175,7 +175,7 @@ def main():
         "provider failures do not overwrite feed cache with empty results": "fetchFailureCount" in bridge and "fetchAttemptCount" in bridge and "rushHomeFeedError" in bridge,
         "Subscribed has a feed retry action": 'page==="subscribed"' in js and "data-feed-retry" in js,
         "feed error callbacks are scoped to the active feed": 'error.mode&&error.mode==="following"' in js and 'error.mode!=="following"' in js,
-        "required profile setup cannot be bypassed with Android Back": 'if(page==="setup"){return true}' in js,
+        "required profile setup has a safe Android Back exit": 'if(page==="setup"){if(window.RushNative)RushNative.closeActivity();return true}' in js and "fun closeActivity()" in bridge,
         "native video playback failure offers retry and close": "showVideoPlaybackError" in activity and 'setPositiveButton("Retry")' in activity and "rushWebBridge.closeVideo()" in activity,
         "watch retry is interactive only in error state": ".watch-buffer-overlay.error-state{pointer-events:auto}" in styles,
         "WebView renderer loss restores the previous route": "onRenderProcessGone" in activity and "rush.local/assets/rush.html#$route" in activity,
