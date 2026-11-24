@@ -561,7 +561,11 @@ window.rushMusicSuggestionResults=data=>{
 };
 window.rushMusicPlaybackState=state=>{
  const status=$('#musicStatus');if(status&&page==='music')status.textContent=state.state==='playing'?'PLAYING · '+(state.title||'track'):state.state==='loading'?'LOADING · '+(state.title||'track'):state.message||state.state;
- const playerStatus=$('#playerStatus');if(playerStatus&&page==='player')playerStatus.textContent=state.state==='playing'?'PLAYING · '+(state.title||'track'):state.message||state.state;
+ const playerStatus=$('#playerStatus');if(playerStatus&&page==='player')playerStatus.textContent=state.state==='playing'?'PLAYING · '+(state.title||'track'):state.state==='loading'?'CONNECTING · '+(state.title||'track'):state.message||state.state;
+ const bufferState=window.rushMusicBufferState||(window.rushMusicBufferState={preparing:false,buffering:false});
+ if(state.state==='loading')bufferState.preparing=true;
+ if(['playing','paused','error'].includes(state.state))bufferState.preparing=false;
+ const indicator=$('#musicBuffering');if(indicator)indicator.hidden=!(bufferState.preparing||bufferState.buffering);
  if(state.state==='playing'||state.state==='paused'||state.state==='error')if(window.RushNative){RushNative.loadCurrentPlayback();if(page==='player'&&state.state==='playing')RushNative.loadCurrentMusicLyrics()}
 };
 window.rushMusicLyricsLoading=()=>{const s=$('#playerLyricsStatus');if(s)s.textContent='Loading lyrics…'};
