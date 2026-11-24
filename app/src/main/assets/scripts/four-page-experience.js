@@ -71,46 +71,81 @@ function renderFeedResults(data){
  if(status)status.textContent=homeFeedCache.message||(count?count+' recommendations for you':'Explore picks will appear as your interests and subscriptions grow.');
  if(typeof renderExploreContent==='function')renderExploreContent(homeFeedCache);
 }
+function libraryEntry(id){
+ const item=libraryData.items&&libraryData.items[id];
+ return item?Object.assign({id},item):null;
+}
+function videoHero(x,label="CONTINUE WATCHING"){
+ if(!x)return "";
+ const thumb=safeUrl(x.thumbnail),creator=x.artist||x.creator||"YouTube";
+ return '<section class="explore-hero"><div class="shelf-heading"><h2>'+esc(label)+'</h2><small>RESUME</small></div>'+
+ '<button class="hero-media-open" data-video-id="'+esc(x.id)+'" data-title="'+esc(x.title)+'" data-creator="'+esc(creator)+'" data-thumbnail="'+esc(thumb)+'" aria-label="Continue watching '+esc(x.title)+'">'+
+ '<span class="media-art video">'+(thumb?'<img src="'+esc(thumb)+'" alt="" width="360" height="203" decoding="async" loading="eager" fetchpriority="high" onerror="this.hidden=true">':'')+'<span class="media-play">'+ic("play")+'</span></span></button>'+
+ '<span class="media-copy">'+creatorAvatar(creator,x.creatorThumbnail)+'<span><b>'+esc(x.title)+'</b><span>'+esc(creator)+(x.duration?' · '+esc(x.duration):'')+'</span></span></span></section>';
+}
+function compactNewsRow(x,index=0,priorityImage=false){
+ const thumb=safeUrl(x.thumbnail),priority=priorityImage?' loading="eager" fetchpriority="high"':' loading="lazy"';
+ return '<button class="news-shelf-card compact" data-news-url="'+esc(safeUrl(x.url))+'">'+
+ (thumb?'<img src="'+esc(thumb)+'" alt="" width="96" height="72" decoding="async"'+priority+' referrerpolicy="no-referrer" onerror="this.hidden=true">':'<span class="news-thumb-placeholder">NEWS</span>')+
+ '<span class="news-shelf-copy"><small>'+esc(x.source||"News")+'</small><b>'+esc(x.title)+'</b><span>'+esc(x.date||"Latest report")+'</span></span></button>';
+}
 function renderExploreContent(feed){
- const root=$('#exploreShelves');if(!root)return;
+ const root=$("#exploreShelves");if(!root)return;
  const videos=feed.videos||[],music=feed.music||[],news=feed.news||[];
+ const historyItems=(libraryData.history||[]).slice(0,12).map(libraryEntry).filter(Boolean);
+ const historyVideos=historyItems.filter(x=>!x.music),historyMusic=historyItems.filter(x=>x.music);
+ const historyIds=new Set(historyItems.map(x=>x.id));
+ const recommendedVideos=videos.filter(x=>!historyIds.has(x.id));
+ const followedVideos=followingFeedCache.videos||[],followedMusic=followingFeedCache.music||[],followedNews=followingFeedCache.news||[];
  const markupKey=JSON.stringify({
-  filter:homeFilter,
-  videos:videos.map(x=>[x.id,x.title,x.thumbnail]),
-  music:music.map(x=>[x.id,x.title,x.thumbnail]),
-  news:news.map(x=>[x.url,x.title,x.thumbnail]),
-  movies:movieResults.map(x=>[x.id,x.title,x.thumbnail]),
-  followingVideos:(followingFeedCache.videos||[]).map(x=>[x.id,x.title,x.thumbnail]),
-  followingMusic:(followingFeedCache.music||[]).map(x=>[x.id,x.title,x.thumbnail]),
-  followingNews:(followingFeedCache.news||[]).map(x=>[x.url,x.title,x.thumbnail]),
-  history:(libraryData.history||[]).slice(0,8),
-  topics:selectedTopics()
+  filter:homeFilter,videos:videos.map(x=>[x.id,x.title,x.thumbnail]),music:music.map(x=>[x.id,x.title,x.thumbnail]),
+  news:news.map(x=>[x.url,x.title,x.thumbnail]),movies:movieResults.map(x=>[x.id,x.title,x.thumbnail]),
+  followingVideos:followedVideos.map(x=>[x.id,x.title,x.thumbnail]),followingMusic:followedMusic.map(x=>[x.id,x.title,x.thumbnail]),
+  followingNews:followedNews.map(x=>[x.url,x.title,x.thumbnail]),history:(libraryData.history||[]).slice(0,12),topics:selectedTopics()
  });
  if(markupKey===lastExploreMarkupKey&&root.childElementCount)return;
- lastExploreMarkupKey=markupKey;
- explorePriorityImageAssigned=false;
- if(homeFilter==='Movies'){
+ lastExploreMarkupKey=markupKey;explorePriorityImageAssigned=false;
+ let html="";
+ if(homeFilter==="Movies"){
   const items=movieResults.length?movieResults:videos;
-  root.innerHTML=items.length?shelf('Movies & long-form films',items,movieTile,'YOUTUBE FILM DISCOVERY'):'<div class="section-empty">Movie discovery is connected to YouTube search at the moment. Search for a film title to find available long-form videos.</div>';
-  return;
+  html=items.length?shelf("Movies & long-form",items,movieTile,"POSTER VIEW"):'<div class="section-empty">Search for a film title to find long-form videos available from the connected provider.</div>';
+  root.innerHTML=html;return;
  }
- const historyItems=(libraryData.history||[]).slice(0,8).map(id=>libraryData.items&&libraryData.items[id]).filter(Boolean);
- const historyVideos=historyItems.filter(x=>!x.music),historyMusic=historyItems.filter(x=>x.music);
- const v=homeFilter==='All'||homeFilter==='Videos'?videos:[];
- const m=homeFilter==='All'||homeFilter==='Music'?music:[];
- const n=homeFilter==='All'||homeFilter==='News'?news:[];
- let html='';
- if(homeFilter==='All')html+=shelf('Continue where you left off',historyVideos,videoTile,'RECENT');
- if(homeFilter==='All')html+=shelf('Recently played',historyMusic,musicTile,'RECENT');
- if(homeFilter==='All'||homeFilter==='Videos')html+=shelf(homeFilter==='Videos'?'Videos':'Recommended for you',v,videoTile);
- if(homeFilter==='All'||homeFilter==='Music')html+=shelf(homeFilter==='Music'?'Music':'Music for your day',m,musicTile);
- if(homeFilter==='All'||homeFilter==='News')html+=shelf(homeFilter==='News'?'News':'Top headlines',n,newsShelfCard);
- if(homeFilter==='All'&&movieResults.length)html+=shelf('Movies & long-form films',movieResults,movieTile,'YOUTUBE FILM DISCOVERY');
- if(homeFilter==='All')html+=shelf('From your subscriptions',followingFeedCache.videos||[],videoTile,'FOLLOWING');
- if(homeFilter==='All')html+=shelf('Latest from followed musicians',followingFeedCache.music||[],musicTile,'FOLLOWING');
- if(homeFilter==='All')html+=shelf('Publisher updates',followingFeedCache.news||[],newsShelfCard,'FOLLOWING');
- if(homeFilter==='All')html+=topicShelf();
- if(!html)html='<div class="section-empty">No '+esc(homeFilter.toLowerCase())+' are available yet. Try Search to discover more.</div>';
+ if(homeFilter==="Videos"){
+  const hero=recommendedVideos[0]||videos[0];
+  if(hero)html+=videoHero(hero,"Recommended videos");
+  const rest=recommendedVideos.length?recommendedVideos.slice(hero===recommendedVideos[0]?1:0):videos.slice(1);
+  html+=shelf("More videos",rest,videoTile);
+  html+=shelf("From your subscriptions",followedVideos,videoTile,"FOLLOWING");
+ }else if(homeFilter==="Music"){
+  html+=shelf("Mixes & albums",music,musicTile,"YOUR LISTENING MIX");
+  html+=shelf("Recently played",historyMusic,musicTile,"HISTORY");
+  html+=shelf("From followed artists",followedMusic,musicTile,"FOLLOWING");
+ }else if(homeFilter==="News"){
+  if(news.length)html+='<section class="explore-shelf news-list-shelf"><div class="shelf-heading"><h2>Top headlines</h2><small>'+news.length+' STORIES</small></div><div class="news-list">'+news.map((x,i)=>compactNewsRow(x,i,i===0)).join("")+'</div></section>';
+  if(followedNews.length)html+='<section class="explore-shelf news-list-shelf"><div class="shelf-heading"><h2>From followed publishers</h2><small>FOLLOWING</small></div><div class="news-list">'+followedNews.map(x=>compactNewsRow(x)).join("")+'</div></section>';
+ }else{
+  if(historyVideos.length){
+   html+=videoHero(historyVideos[0],"Continue watching");
+   if(historyVideos.length>1)html+=shelf("Pick up where you left off",historyVideos.slice(1),videoTile,"WATCH HISTORY");
+  }
+  if(recommendedVideos.length){
+   if(!historyVideos.length)html+=videoHero(recommendedVideos[0],"Recommended for you");
+   html+=shelf("Suggested for you",recommendedVideos.slice(historyVideos.length?0:1),videoTile,"BASED ON YOUR INTERESTS");
+  }
+  if(historyMusic.length)html+=shelf("Recently played",historyMusic,musicTile,"LISTEN AGAIN");
+  if(music.length)html+=shelf("Mixes & albums",music,musicTile);
+  if(movieResults.length)html+=shelf("Featured cinema",movieResults.slice(0,10),movieTile,"MOVIE DISCOVERY");
+  if(news.length)html+='<section class="explore-shelf news-list-shelf"><div class="shelf-heading"><h2>Top headlines</h2><small>NEWS</small></div><div class="news-list">'+news.slice(0,5).map((x,i)=>compactNewsRow(x,i,i===0)).join("")+'</div></section>';
+  if(followedVideos.length)html+=shelf("From your subscriptions",followedVideos,videoTile,"FOLLOWING");
+  if(followedMusic.length)html+=shelf("Latest from followed artists",followedMusic,musicTile,"FOLLOWING");
+  if(followedNews.length)html+='<section class="explore-shelf news-list-shelf"><div class="shelf-heading"><h2>Publisher updates</h2><small>FOLLOWING</small></div><div class="news-list">'+followedNews.slice(0,4).map(x=>compactNewsRow(x)).join("")+'</div></section>';
+  if(music.length>1||recommendedVideos.length>1){
+   html+='<section class="explore-shelf"><div class="shelf-heading"><h2>More to explore</h2><small>YOUR MIX</small></div><div class="explore-mosaic">'+music.slice(0,2).map((x,i)=>musicTile(x,i,i===0)).join("")+(recommendedVideos[1]?videoTile(recommendedVideos[1]):"")+'</div></section>';
+  }
+  html+=topicShelf();
+ }
+ if(!html)html='<div class="section-empty">No '+esc(homeFilter.toLowerCase())+' are available yet. Follow a few sources or explore topics in Search.</div>';
  root.innerHTML=html;
 }
 renderHome = function(){
