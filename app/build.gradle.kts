@@ -8,6 +8,13 @@ plugins {
     id("com.google.protobuf") version "0.9.6"
 }
 
+val releaseStoreFile = providers.environmentVariable("RUSH_UPLOAD_STORE_FILE").orNull
+val releaseStorePassword = providers.environmentVariable("RUSH_UPLOAD_STORE_PASSWORD").orNull
+val releaseKeyAlias = providers.environmentVariable("RUSH_UPLOAD_KEY_ALIAS").orNull
+val releaseKeyPassword = providers.environmentVariable("RUSH_UPLOAD_KEY_PASSWORD").orNull
+val hasReleaseSigning = listOf(releaseStoreFile, releaseStorePassword, releaseKeyAlias, releaseKeyPassword)
+    .all { !it.isNullOrBlank() }
+
 val robolectricSdkRuntime by configurations.creating {
     isCanBeConsumed = false
     isCanBeResolved = true
@@ -32,6 +39,17 @@ val prepareRobolectricRuntime by tasks.registering {
 }
 
 android {
+
+    signingConfigs {
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = file(releaseStoreFile!!)
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
+    }
     namespace = "com.rush.app"
     compileSdk = 36
 
@@ -44,6 +62,19 @@ android {
     }
 
     buildFeatures { compose = true; buildConfig = true }
+
+    buildTypes {
+        getByName("release") {
+            isMinifyEnabled = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
+        }
+    }
     testOptions {
         unitTests {
             isIncludeAndroidResources = true
@@ -68,6 +99,7 @@ android {
 
 dependencies {
     implementation("androidx.core:core-ktx:1.15.0")
+    implementation("androidx.webkit:webkit:1.18.0")
     implementation("androidx.activity:activity-compose:1.10.0")
     implementation(platform("androidx.compose:compose-bom:2024.12.01"))
     implementation("androidx.compose.ui:ui")
