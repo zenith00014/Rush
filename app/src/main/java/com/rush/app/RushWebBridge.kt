@@ -175,7 +175,7 @@ class RushWebBridge(
                     val cachedNews = (0 until cachedNewsArray.length()).mapNotNull {
                         cachedNewsArray.optJSONObject(it)
                     }
-                    if (cachedNews.any { it.optString("thumbnail").isBlank() }) {
+                    if (cachedNews.take(12).any { it.optString("thumbnail").isBlank() }) {
                         val enrichedNews = enrichNewsThumbnails(cachedNews, prefs, 12)
                         if (enrichedNews.any { it.optString("thumbnail").isNotBlank() }) {
                             cachedPayload.put("news", JSONArray(enrichedNews))
@@ -1775,6 +1775,10 @@ class RushWebBridge(
                 val byId = rows.associateBy { it.optString("url") }
                 val ranked = RushDiscoveryEngine.diversifyFeed(hits, 40, 3).mapNotNull { byId[it.candidate.id] }
                 publish("rushNewsResults", JSONArray(ranked).toString())
+                val enriched = enrichNewsThumbnails(ranked, prefs, 16)
+                if (enriched.any { it.optString("thumbnail").isNotBlank() }) {
+                    publish("rushNewsResults", JSONArray(enriched).toString())
+                }
             } catch (error: Exception) {
                 publish("rushNewsError", JSONObject().put("message", playbackErrorMessage(error, "Could not load news.")).toString())
             }
