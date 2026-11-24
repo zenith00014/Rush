@@ -1,5 +1,5 @@
 /* Four-page navigation and screen composition override the earlier prototype UI. */
-let movieResults=[],movieSearchLoaded=false,movieDiscoveryRequested=false;
+let movieResults=[],movieSearchLoaded=false,movieDiscoveryRequested=false,followingFeedRequested=false;
 let followingFeedCache={videos:[],music:[],news:[]};
 let selectedSubscription='all';
 let videoSpeed=1,videoQuality=0,videoCaptions=true;
@@ -28,25 +28,29 @@ function creatorAvatar(name){
  const thumbnail=safeUrl(followed&&followed.thumbnail);
  return '<span class="creator-avatar" aria-hidden="true">'+(thumbnail?'<img src="'+esc(thumbnail)+'" alt="" loading="lazy" decoding="async" onerror="this.hidden=true">':esc(creatorInitial(name)))+'</span>';
 }
-function videoTile(x){
+function videoTile(x,index=0){
  const thumb=safeUrl(x.thumbnail),creator=x.artist||x.creator||'YouTube';
- return '<article class="media-tile"><button class="home-media-open" data-video-id="'+esc(x.id)+'" data-title="'+esc(x.title)+'" data-creator="'+esc(creator)+'" data-thumbnail="'+esc(thumb)+'" aria-label="Watch '+esc(x.title)+'"><span class="media-art video">'+(thumb?'<img src="'+esc(thumb)+'" alt="" loading="lazy" decoding="async" onerror="this.hidden=true">':'')+'<span class="media-kind">VIDEO</span><span class="media-play">'+ic('play')+'</span></span></button><span class="media-copy">'+creatorAvatar(creator)+'<span><b>'+esc(x.title)+'</b><span>'+esc(creator)+(x.duration?' · '+esc(x.duration):'')+'</span></span></span></article>';
+ const priority=index===0?' loading="eager" fetchpriority="high"':' loading="lazy"';
+ return '<article class="media-tile"><button class="home-media-open" data-video-id="'+esc(x.id)+'" data-title="'+esc(x.title)+'" data-creator="'+esc(creator)+'" data-thumbnail="'+esc(thumb)+'" aria-label="Watch '+esc(x.title)+'"><span class="media-art video">'+(thumb?'<img src="'+esc(thumb)+'" alt="" width="190" height="107" decoding="async"'+priority+' onerror="this.hidden=true">':'')+'<span class="media-kind">VIDEO</span><span class="media-play">'+ic('play')+'</span></span></button><span class="media-copy">'+creatorAvatar(creator)+'<span><b>'+esc(x.title)+'</b><span>'+esc(creator)+(x.duration?' · '+esc(x.duration):'')+'</span></span></span></article>';
 }
-function movieTile(x){
+function movieTile(x,index=0){
  const thumb=safeUrl(x.thumbnail),creator=x.artist||x.creator||'YouTube';
- return '<article class="media-tile movie"><button class="home-media-open" data-video-id="'+esc(x.id)+'" data-title="'+esc(x.title)+'" data-creator="'+esc(creator)+'" data-thumbnail="'+esc(thumb)+'" aria-label="Play '+esc(x.title)+'"><span class="media-art movie">'+(thumb?'<img src="'+esc(thumb)+'" alt="" loading="lazy" decoding="async" onerror="this.hidden=true">':'')+'<span class="media-kind">FILM</span><span class="media-play">'+ic('play')+'</span></span></button><span class="media-copy"><span><b>'+esc(x.title)+'</b><span>'+esc(creator)+'</span></span></span></article>';
+ const priority=index===0?' loading="eager" fetchpriority="high"':' loading="lazy"';
+ return '<article class="media-tile movie"><button class="home-media-open" data-video-id="'+esc(x.id)+'" data-title="'+esc(x.title)+'" data-creator="'+esc(creator)+'" data-thumbnail="'+esc(thumb)+'" aria-label="Play '+esc(x.title)+'"><span class="media-art movie">'+(thumb?'<img src="'+esc(thumb)+'" alt="" width="132" height="198" decoding="async"'+priority+' onerror="this.hidden=true">':'')+'<span class="media-kind">FILM</span><span class="media-play">'+ic('play')+'</span></span></button><span class="media-copy"><span><b>'+esc(x.title)+'</b><span>'+esc(creator)+'</span></span></span></article>';
 }
-function musicTile(x){
+function musicTile(x,index=0){
  const thumb=safeUrl(x.thumbnail),artist=x.artist||'Unknown artist';
- return '<article class="media-tile music"><button class="home-media-open" data-track="'+esc(x.id)+'" data-title="'+esc(x.title)+'" data-artist="'+esc(artist)+'" data-thumbnail="'+esc(thumb)+'" aria-label="Play '+esc(x.title)+'"><span class="media-art music">'+(thumb?'<img src="'+esc(thumb)+'" alt="" loading="lazy" decoding="async" onerror="this.hidden=true">':'')+'<span class="media-kind">AUDIO</span><span class="media-play">'+ic('play')+'</span></span></button><span class="media-copy"><span><b>'+esc(x.title)+'</b><span>'+esc(artist)+(x.duration?' · '+esc(x.duration):'')+'</span></span></span></article>';
+ const priority=index===0?' loading="eager" fetchpriority="high"':' loading="lazy"';
+ return '<article class="media-tile music"><button class="home-media-open" data-track="'+esc(x.id)+'" data-title="'+esc(x.title)+'" data-artist="'+esc(artist)+'" data-thumbnail="'+esc(thumb)+'" aria-label="Play '+esc(x.title)+'"><span class="media-art music">'+(thumb?'<img src="'+esc(thumb)+'" alt="" width="144" height="144" decoding="async"'+priority+' onerror="this.hidden=true">':'')+'<span class="media-kind">AUDIO</span><span class="media-play">'+ic('play')+'</span></span></button><span class="media-copy"><span><b>'+esc(x.title)+'</b><span>'+esc(artist)+(x.duration?' · '+esc(x.duration):'')+'</span></span></span></article>';
 }
-function newsShelfCard(x){
+function newsShelfCard(x,index=0){
  const thumb=safeUrl(x.thumbnail);
- return '<button class="news-shelf-card" data-news-url="'+esc(safeUrl(x.url))+'"><img src="'+esc(thumb)+'" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.hidden=true"><span class="news-shelf-copy"><small>'+esc(x.source||'News')+'</small><b>'+esc(x.title)+'</b><span>'+esc(x.date||'Latest report')+'</span></span></button>';
+ const priority=index===0?' loading="eager" fetchpriority="high"':' loading="lazy"';
+ return '<button class="news-shelf-card" data-news-url="'+esc(safeUrl(x.url))+'"><img src="'+esc(thumb)+'" alt="" width="108" height="78" decoding="async"'+priority+' referrerpolicy="no-referrer" onerror="this.hidden=true"><span class="news-shelf-copy"><small>'+esc(x.source||'News')+'</small><b>'+esc(x.title)+'</b><span>'+esc(x.date||'Latest report')+'</span></span></button>';
 }
 function shelf(title,items,renderer,label){
  if(!items||!items.length)return '';
- return '<section class="explore-shelf"><div class="shelf-heading"><h2>'+esc(title)+'</h2><small>'+esc(label||String(items.length)+' PICKS')+'</small></div><div class="shelf-row">'+items.map(renderer).join('')+'</div></section>';
+ return '<section class="explore-shelf"><div class="shelf-heading"><h2>'+esc(title)+'</h2><small>'+esc(label||String(items.length)+' PICKS')+'</small></div><div class="shelf-row">'+items.map((item,index)=>renderer(item,index)).join('')+'</div></section>';
 }
 function topicShelf(){
  return '<section class="explore-shelf"><div class="shelf-heading"><h2>Explore topics</h2><small>FIND YOUR NEXT INTEREST</small></div><div class="topic-shelf">'+(selectedTopics().slice(0,8).length?selectedTopics().slice(0,8):TOPICS.slice(0,8)).map((x,i)=>'<button class="topic-tile" data-topic-search="'+esc(x)+'"><b>'+esc(x)+'</b><span>Explore stories and videos ↗</span></button>').join('')+'</div></section>';
@@ -217,11 +221,9 @@ go = function(){
  if(page==='topics')updateTopicOptions();
  if(page==='library')loadLibrary();
  if(page==='explore'){
+  followingFeedRequested=false;
   loadHomeFeed();
-  if(window.RushNative){
-   RushNative.loadHomeFeed('following');RushNative.loadLibrary();
-   if(!movieSearchLoaded){movieSearchLoaded=true;movieDiscoveryRequested=true;RushNative.searchVideos('full length movie film')}
-  }
+  if(window.RushNative){RushNative.loadLibrary()}
  }else if(page==='subscribed'){
   if(window.RushNative)RushNative.loadHomeFeed('following');
  }
@@ -250,6 +252,10 @@ function runUnifiedSearch(){
 window.rushHomeFeedResults = function(data){
  if(page==='subscribed'&&data&&data.mode==='following'){renderSubscribedFeed(data);return}
  if(page==='explore'&&data&&data.mode==='following'){followingFeedCache=data;renderExploreContent(homeFeedCache);return;}
+ if(page==='explore'&&data&&data.mode==='forYou'&&data.fetchedAt&&!followingFeedRequested){
+  followingFeedRequested=true;
+  window.setTimeout(()=>{if(page==='explore'&&window.RushNative)RushNative.loadHomeFeed('following')},120);
+ }
  renderFeedResults(data);
 };
 const previousVideoResults=window.rushVideoSearchResults;
@@ -270,7 +276,7 @@ window.rushVideoSearchResults=function(items){
 };
 const previousVideoSearchError=window.rushVideoSearchError;
 window.rushVideoSearchError=function(error){
- if(movieDiscoveryRequested){movieDiscoveryRequested=false;if(page==='explore')renderExploreContent(homeFeedCache);return}
+ if(movieDiscoveryRequested){movieDiscoveryRequested=false;movieSearchLoaded=false;if(page==='explore')renderExploreContent(homeFeedCache);return}
  if(previousVideoSearchError)previousVideoSearchError(error);
 };
 const previousMusicResults=window.rushMusicSearchResults;
@@ -335,7 +341,11 @@ document.addEventListener('click',e=>{
  if(b.hasAttribute('data-home-filter')){
   homeFilter=b.dataset.homeFilter||'All';
   document.querySelectorAll('[data-home-filter]').forEach(x=>{x.setAttribute('aria-pressed',String(x===b));x.setAttribute('aria-selected',String(x===b))});
-  if(homeFilter==='Movies'&&window.RushNative){movieResults=[];movieDiscoveryRequested=true;const root=$('#exploreShelves');if(root)root.innerHTML='<p class="meta pad">Finding films on YouTube…</p>';RushNative.searchVideos('full length movie film')}
+  if(homeFilter==='Movies'&&window.RushNative&&!movieSearchLoaded){
+   movieResults=[];movieDiscoveryRequested=true;
+   const root=$('#exploreShelves');if(root)root.innerHTML='<p class="meta pad">Finding films on YouTube…</p>';
+   RushNative.searchVideos('full length movie film');
+  }
   else renderExploreContent(homeFeedCache);
   return;
  }
