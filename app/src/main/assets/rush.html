@@ -965,9 +965,10 @@ function handleFollow(kind,id,name,productive,thumbnail=''){
  RushNative.followSource(kind,id,name,!!productive,thumbnail||'');
 }
 function refreshCurrentPage(){
- if(page==='home')loadHomeFeed();
+ if(page==='home'||page==='explore')loadHomeFeed();
  if(page==='topics')renderPreferencePage();
  if(page==='search')renderSearchResults();
+ if(page==='subscribed'){const root=$('#v');if(root)root.innerHTML=renderSubscribedPage();if(window.RushNative)RushNative.loadHomeFeed('following')}
  if(page==='library')renderLibraryContent();
 }
 document.addEventListener('input',e=>{if(e.target&&e.target.id==='topicQuery')updateTopicOptions()});
@@ -1215,6 +1216,16 @@ function shelf(title,items,renderer,label){
 function topicShelf(){
  return '<section class="explore-shelf"><div class="shelf-heading"><h2>Explore topics</h2><small>FIND YOUR NEXT INTEREST</small></div><div class="topic-shelf">'+(selectedTopics().slice(0,8).length?selectedTopics().slice(0,8):TOPICS.slice(0,8)).map((x,i)=>'<button class="topic-tile" data-topic-search="'+esc(x)+'"><b>'+esc(x)+'</b><span>Explore stories and videos ↗</span></button>').join('')+'</div></section>';
 }
+function renderFeedResults(data){
+ if(page!=='explore'&&page!=='home')return;
+ const expectedMode='forYou';
+ if(data&&data.mode&&data.mode!==expectedMode)return;
+ homeFeedCache=data||{videos:[],music:[],news:[]};
+ const status=$('#homeFeedStatus');
+ const count=(homeFeedCache.videos||[]).length+(homeFeedCache.music||[]).length+(homeFeedCache.news||[]).length;
+ if(status)status.textContent=homeFeedCache.message||(count?count+' recommendations for you':'Explore picks will appear as your interests and subscriptions grow.');
+ if(typeof renderExploreContent==='function')renderExploreContent(homeFeedCache);
+}
 function renderExploreContent(feed){
  const root=$('#exploreShelves');if(!root)return;
  const videos=feed.videos||[],music=feed.music||[],news=feed.news||[];
@@ -1394,7 +1405,12 @@ window.rushHomeFeedResults = function(data){
 };
 const previousVideoResults=window.rushVideoSearchResults;
 window.rushVideoSearchResults=function(items){
- if(page==='explore'&&(homeFilter==='Movies'||movieDiscoveryRequested)){movieResults=items||[];movieDiscoveryRequested=false;renderExploreContent(homeFeedCache);return}
+ if(movieDiscoveryRequested){
+  movieDiscoveryRequested=false;
+  if(page==='explore'){movieResults=items||[];movieSearchLoaded=true;renderExploreContent(homeFeedCache)}
+  return;
+ }
+ if(page==='explore'&&homeFilter==='Movies'){movieResults=items||[];renderExploreContent(homeFeedCache);return}
  if(page==='subscribed'&&selectedSubscription!=='all'){
   const root=$('#subscriptionFeed');if(root)root.innerHTML=(items||[]).map(videoRow).join('')||'<p class="meta pad">No videos found for this creator.</p>';return;
  }
@@ -1402,6 +1418,11 @@ window.rushVideoSearchResults=function(items){
   const root=$('#watchSuggestions');if(root)root.innerHTML=(items||[]).filter(x=>x.id!==currentVideo.id).slice(0,12).map(videoRow).join('');return;
  }
  if(previousVideoResults)previousVideoResults(items);
+};
+const previousVideoSearchError=window.rushVideoSearchError;
+window.rushVideoSearchError=function(error){
+ if(movieDiscoveryRequested){movieDiscoveryRequested=false;if(page==='explore')renderExploreContent(homeFeedCache);return}
+ if(previousVideoSearchError)previousVideoSearchError(error);
 };
 const previousMusicResults=window.rushMusicSearchResults;
 window.rushMusicSearchResults=function(items){
