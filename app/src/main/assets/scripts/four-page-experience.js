@@ -39,17 +39,17 @@ function creatorAvatar(name,providedThumbnail=""){
 function videoTile(x,index=0,priorityImage=false){
  const thumb=safeUrl(x.thumbnail),creator=x.artist||x.creator||'YouTube';
  const priority=priorityImage?' loading="eager" fetchpriority="high"':' loading="lazy"';
- return '<article class="media-tile"><button class="home-media-open" data-video-id="'+esc(x.id)+'" data-title="'+esc(x.title)+'" data-creator="'+esc(creator)+'" data-thumbnail="'+esc(thumb)+'" data-creator-thumbnail="'+esc(x.creatorThumbnail||'')+'" data-source-id="'+esc(x.channelId||x.sourceId||'')+'" aria-label="Watch '+esc(x.title)+'"><span class="media-art video">'+(thumb?'<img src="'+esc(thumb)+'" alt="" width="190" height="107" decoding="async"'+priority+' onerror="this.hidden=true">':'')+'<span class="media-kind">VIDEO</span><span class="media-play">'+ic('play')+'</span></span></button><span class="media-copy">'+creatorAvatar(creator,x.creatorThumbnail)+'<span><b>'+esc(x.title)+'</b><span>'+esc(creator)+(x.duration?' · '+esc(x.duration):'')+'</span></span></span>'+mediaFeedbackMenu(x)+'</article>';
+ return '<article class="media-tile"><button class="home-media-open" data-video-id="'+esc(x.id)+'" data-title="'+esc(x.title)+'" data-creator="'+esc(creator)+'" data-thumbnail="'+esc(thumb)+'" data-creator-thumbnail="'+esc(x.creatorThumbnail||'')+'" data-source-id="'+esc(x.channelId||x.sourceId||'')+'" aria-label="Watch '+esc(x.title)+'"><span class="media-art video">'+(thumb?'<img src="'+esc(thumb)+'" alt="" width="190" height="107" decoding="async"'+priority+' onerror="this.hidden=true">':'')+'<span class="media-kind">VIDEO</span><span class="media-play">'+ic('play')+'</span></span></button><button class="media-copy media-copy-open" data-video-id="'+esc(x.id)+'" data-title="'+esc(x.title)+'" data-creator="'+esc(creator)+'" data-thumbnail="'+esc(thumb)+'" data-creator-thumbnail="'+esc(x.creatorThumbnail||'')+'" data-source-id="'+esc(x.channelId||x.sourceId||'')+'" aria-label="Watch '+esc(x.title)+'">'+creatorAvatar(creator,x.creatorThumbnail)+'<span><b>'+esc(x.title)+'</b><span>'+esc(creator)+(x.duration?' · '+esc(x.duration):'')+'</span></span></button>'+mediaFeedbackMenu(x)+'</article>';
 }
 function movieTile(x,index=0,priorityImage=false){
  const thumb=safeUrl(x.thumbnail),creator=x.artist||x.creator||'YouTube';
  const priority=priorityImage?' loading="eager" fetchpriority="high"':' loading="lazy"';
- return '<article class="media-tile movie"><button class="home-media-open" data-video-id="'+esc(x.id)+'" data-title="'+esc(x.title)+'" data-creator="'+esc(creator)+'" data-thumbnail="'+esc(thumb)+'" data-creator-thumbnail="'+esc(x.creatorThumbnail||'')+'" data-source-id="'+esc(x.channelId||x.sourceId||'')+'" aria-label="Play '+esc(x.title)+'"><span class="media-art movie">'+(thumb?'<img src="'+esc(thumb)+'" alt="" width="132" height="198" decoding="async"'+priority+' onerror="this.hidden=true">':'')+'<span class="media-kind">FILM</span><span class="media-play">'+ic('play')+'</span></span></button><span class="media-copy"><span><b>'+esc(x.title)+'</b><span>'+esc(creator)+'</span></span></span>'+mediaFeedbackMenu(x)+'</article>';
+ return '<article class="media-tile movie"><button class="home-media-open" data-video-id="'+esc(x.id)+'" data-title="'+esc(x.title)+'" data-creator="'+esc(creator)+'" data-thumbnail="'+esc(thumb)+'" data-creator-thumbnail="'+esc(x.creatorThumbnail||'')+'" data-source-id="'+esc(x.channelId||x.sourceId||'')+'" aria-label="Play '+esc(x.title)+'"><span class="media-art movie">'+(thumb?'<img src="'+esc(thumb)+'" alt="" width="132" height="198" decoding="async"'+priority+' onerror="this.hidden=true">':'')+'<span class="media-kind">FILM</span><span class="media-play">'+ic('play')+'</span></span></button><button class="media-copy media-copy-open" data-video-id="'+esc(x.id)+'" data-title="'+esc(x.title)+'" data-creator="'+esc(creator)+'" data-thumbnail="'+esc(thumb)+'" data-creator-thumbnail="'+esc(x.creatorThumbnail||'')+'" data-source-id="'+esc(x.channelId||x.sourceId||'')+'" aria-label="Play '+esc(x.title)+'"><span><b>'+esc(x.title)+'</b><span>'+esc(creator)+'</span></span></button>'+mediaFeedbackMenu(x)+'</article>';
 }
 function musicTile(x,index=0,priorityImage=false){
  const thumb=safeUrl(x.thumbnail),artist=x.artist||'Unknown artist';
  const priority=priorityImage?' loading="eager" fetchpriority="high"':' loading="lazy"';
- return '<article class="media-tile music"><button class="home-media-open" data-track="'+esc(x.id)+'" data-title="'+esc(x.title)+'" data-artist="'+esc(artist)+'" data-thumbnail="'+esc(thumb)+'" aria-label="Play '+esc(x.title)+'"><span class="media-art music">'+(thumb?'<img src="'+esc(thumb)+'" alt="" width="144" height="144" decoding="async"'+priority+' onerror="this.hidden=true">':'')+'<span class="media-kind">AUDIO</span><span class="media-play">'+ic('play')+'</span></span></button><span class="media-copy"><span><b>'+esc(x.title)+'</b><span>'+esc(artist)+(x.duration?' · '+esc(x.duration):'')+'</span></span></span></article>';
+ return '<article class="media-tile music"><button class="home-media-open" data-track="'+esc(x.id)+'" data-title="'+esc(x.title)+'" data-artist="'+esc(artist)+'" data-thumbnail="'+esc(thumb)+'" aria-label="Play '+esc(x.title)+'"><span class="media-art music">'+(thumb?'<img src="'+esc(thumb)+'" alt="" width="144" height="144" decoding="async"'+priority+' onerror="this.hidden=true">':'')+'<span class="media-kind">AUDIO</span><span class="media-play">'+ic('play')+'</span></span></button><button class="media-copy media-copy-open" data-track="'+esc(x.id)+'" data-title="'+esc(x.title)+'" data-artist="'+esc(artist)+'" data-thumbnail="'+esc(thumb)+'" aria-label="Play '+esc(x.title)+'"><span><b>'+esc(x.title)+'</b><span>'+esc(artist)+(x.duration?' · '+esc(x.duration):'')+'</span></span></button></article>';
 }
 function newsShelfCard(x,index=0,priorityImage=false){
  const thumb=safeUrl(x.thumbnail);
@@ -362,13 +362,7 @@ go = function(){
  if(page==='explore'){
   followingFeedRequested=false;
   loadHomeFeed();
-  if(window.RushNative){
-   RushNative.loadLibrary();
-   if(!movieSearchLoaded&&!movieDiscoveryRequested){
-    movieDiscoveryRequested=true;
-    RushNative.searchVideos('full length movies feature films');
-   }
-  }
+  if(window.RushNative)RushNative.loadLibrary();
  }else if(page==='subscribed'){
   if(window.RushNative)RushNative.loadHomeFeed('following');
  }
