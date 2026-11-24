@@ -165,6 +165,8 @@ def main():
         "music player uses a rotating CD": "deck-disc" in js and "disc-spin" in styles,
         "music sleep timer is wired to native playback": "data-sleep-timer" in js and "fun setSleepTimer(minutes: Int)" in bridge,
         "video watch page has an inline native player": 'id="videoPlayerHost"' in js and "showNativeVideo(controller, fullscreen = false)" in bridge,
+        "watch page exposes the source comments handoff": "data-video-comments" in js and "RushNative.openVideoComments(currentVideo.id)" in js and "fun openVideoComments(videoId: String)" in bridge,
+        "video and music players expose the sleep timer": "data-sleep-timer" in js and 'id="sleepTimerOptions"' in js and "fun setSleepTimer(minutes: Int)" in bridge,
         "video in-app mini-player has a separate host": 'id="videoMiniHost"' in html and "RushNative.updateVideoPosition(r.left,r.top,r.width,r.height,true)" in js,
         "video speed quality and captions are connected": all(token in bridge for token in ("fun setPlaybackSpeed", "fun setVideoQuality", "fun setVideoCaptionsEnabled")),
         "video buffering UI and native state exist": 'id="videoBuffering"' in js and "window.rushVideoBuffering=function" in js and "setShowBuffering" in activity,
