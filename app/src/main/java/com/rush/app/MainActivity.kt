@@ -72,7 +72,9 @@ class MainActivity:ComponentActivity(){
  private lateinit var rootLayout: android.widget.FrameLayout
  @androidx.media3.common.util.UnstableApi
  private var nativeVideoView: androidx.media3.ui.PlayerView? = null
- @Volatile private var nativeVideoRequested=false
+ private var observedNativeVideoPlayer: androidx.media3.common.Player? = null
+ private var nativeVideoBufferListener: androidx.media3.common.Player.Listener? = null
+  @Volatile private var nativeVideoRequested=false
  private var nativeVideoFullscreen=false
  private var previousRequestedOrientation=android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
  private var fullscreenExitButton:android.widget.TextView?=null
@@ -148,6 +150,21 @@ class MainActivity:ComponentActivity(){
     elevation=resources.displayMetrics.density*8
    }.also { nativeVideoView=it }
    view.player=player
+   if(observedNativeVideoPlayer!==player){
+    nativeVideoBufferListener?.let { listener->observedNativeVideoPlayer?.removeListener(listener) }
+    val listener=object:androidx.media3.common.Player.Listener{
+     override fun onPlaybackStateChanged(playbackState:Int){
+      publishVideoBuffering(playbackState==androidx.media3.common.Player.STATE_BUFFERING)
+     }
+     override fun onPlayerError(error:androidx.media3.common.PlaybackException){
+      publishVideoBuffering(false)
+      runOnUiThread { webView.evaluateJavascript("window.rushVideoBufferingError&&window.rushVideoBufferingError('Playback failed. Check your connection and try again.')",null) }
+     }
+    }
+    observedNativeVideoPlayer=player
+    nativeVideoBufferListener=listener
+    player.addListener(listener)
+   }
    if(view.parent==null)rootLayout.addView(view,android.widget.FrameLayout.LayoutParams(1,1))
    setPipEligible(true)
    if(fullscreen)setNativeVideoFullscreen(true) else updateNativeVideoPosition()
@@ -171,6 +188,12 @@ class MainActivity:ComponentActivity(){
    view.bringToFront()
    if(mini)updatePipAspectRatio(w,h)
    setPipEligible(true)
+  }
+ }
+ private fun publishVideoBuffering(buffering:Boolean){
+  if(!::webView.isInitialized)return
+  runOnUiThread {
+   if(webPageLoaded)webView.evaluateJavascript("window.rushVideoBuffering&&window.rushVideoBuffering($buffering)",null)
   }
  }
  fun updateNativeVideoPosition() {
