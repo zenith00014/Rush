@@ -53,3 +53,17 @@ Run before opening a PR:
 The validator checks modular asset paths, four-page UI contracts, JavaScript/native bridge calls, profile/permission integration and Play configuration.
 
 Review third-party licences and content rights before changing the media pipeline. A successful build is not proof that a provider permits extraction, storage, download or background playback. See docs/PLAY_STORE_READINESS.md and docs/PRIVACY_POLICY_DRAFT.md.
+
+## Runtime performance
+
+- Use Kotlin and AndroidX Media3 for Android/platform and media responsibilities; use the bundled Android WebView (Chromium/V8) for local DOM/CSS UI.
+- Do not add a second UI runtime or framework unless a profiling result shows it solves a real bottleneck on supported devices.
+- Keep first-party JS/CSS local, loaded through WebViewAssetLoader; do not introduce CDN fonts or launch-time frameworks.
+- Keep feed cache-first; never blank visible content during refresh. Skip DOM updates if the visible item signature has not changed.
+- Load media art lazily with reserved dimensions. Do not make image enrichment a first-paint dependency.
+- Preserve native adaptive track selection and use measured Media3 buffer policies. Do not force highest bitrate or claim zero-buffer playback.
+- Keep video decoding on the native Media3 surface. Keep loading, retry and error states tied to actual Media3 state.
+- Keep UI motion short and transform/opacity-based. Avoid infinite shimmer; respect reduced motion.
+- Hardware acceleration is enabled. Handle WebView renderer process loss by recreating the WebView and restoring the current route.
+- Benchmark time-to-first-frame, rebuffer time/count, dropped frames, startup, memory and scroll jank on real low/mid-range Android hardware before claiming smoothness.
+- Follow Anti-Slop settings: Energy 2/5, Rhythm 3/5, Motion 1/5. Keep the established visual direction; motion and visual weight should support content and controls, not overwhelm them.
