@@ -282,9 +282,14 @@ function subscriptionSourceSearch(index){
  const title=$('#subscriptionTitle');if(title)title.textContent=source.name;
  const root=$('#subscriptionFeed');if(root)root.innerHTML='<p class="meta pad">Loading '+esc(source.name)+'…</p>';
  if(!window.RushNative)return;
- if(subscriptionFilter==='News'||source.kind==='news')RushNative.searchNews(source.name);
- else if(subscriptionFilter==='Videos'||subscriptionFilter==='Movies')RushNative.searchVideos(source.name);
- else if(subscriptionFilter==='Music'||source.kind==='artist')RushNative.searchMusic(source.name);
+ if(source.kind==='news'){
+  if(subscriptionFilter==='All'||subscriptionFilter==='News')RushNative.searchNews(source.name);
+  else{selectedChannelUploads=[];renderSelectedChannelFeed()}
+ }else if(subscriptionFilter==='News')RushNative.searchNews(source.name);
+ else if(subscriptionFilter==='Videos'||subscriptionFilter==='Movies'){
+  if(source.kind==='artist')RushNative.searchVideos(source.name);
+  else RushNative.loadChannelUploads(source.id,source.name);
+ }else if(subscriptionFilter==='Music'||source.kind==='artist')RushNative.searchMusic(source.name);
  else RushNative.loadChannelUploads(source.id,source.name);
 }
 renderLibraryPage = function(){
