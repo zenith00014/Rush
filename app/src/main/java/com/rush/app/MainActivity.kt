@@ -307,6 +307,12 @@ class MainActivity:ComponentActivity(){
    if(webPageLoaded)webView.evaluateJavascript("if(window.RushNative)RushNative.loadCurrentPlayback()",null)
   }
  }
+ override fun onStop(){
+  // Unbind the Activity controller so a dismissed video session can stop cleanly.
+  // Keep the controller attached in PiP so native video controls remain available.
+  if(!pipModeState.value&&::rushWebBridge.isInitialized)rushWebBridge.release()
+  super.onStop()
+ }
  override fun onNewIntent(intent:android.content.Intent){
   super.onNewIntent(intent)
   setIntent(intent)
