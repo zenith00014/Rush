@@ -282,29 +282,7 @@ class MainActivity:ComponentActivity(){
   super.onUserLeaveHint()
   if(android.os.Build.VERSION.SDK_INT<31&&pipEligible.value)enterPlayerPip()
  }
- @SuppressLint("SetJavaScriptEnabled")
- override fun onCreate(savedInstanceState:Bundle?){
-  super.onCreate(savedInstanceState)
-  WindowCompat.setDecorFitsSystemWindows(window,false)
-  if(android.os.Build.VERSION.SDK_INT>=29)window.isNavigationBarContrastEnforced=false
-  WindowInsetsControllerCompat(window,window.decorView).apply {
-   isAppearanceLightStatusBars=false
-   isAppearanceLightNavigationBars=false
-  }
-  rootLayout=android.widget.FrameLayout(this).apply {
-   setBackgroundColor(android.graphics.Color.rgb(11,16,20))
-   setOnApplyWindowInsetsListener { view, windowInsets ->
-    val safeInsets=WindowInsetsCompat.toWindowInsetsCompat(windowInsets,view)
-     .getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout())
-    view.setPadding(safeInsets.left,safeInsets.top,safeInsets.right,safeInsets.bottom)
-    windowInsets
-   }
-  }
-  webViewAssetLoader=WebViewAssetLoader.Builder()
-   .setDomain("rush.local")
-   .addPathHandler("/assets/",WebViewAssetLoader.AssetsPathHandler(this))
-   .build()
-  webView=android.webkit.WebView(this).apply{
+ private fun createRushWebView():android.webkit.WebView {
    setBackgroundColor(android.graphics.Color.rgb(14,14,14))
    isVerticalScrollBarEnabled=false
    isHorizontalScrollBarEnabled=false
@@ -320,6 +298,12 @@ class MainActivity:ComponentActivity(){
    settings.javaScriptCanOpenWindowsAutomatically=false
    settings.setSupportMultipleWindows(false)
    settings.safeBrowsingEnabled=true
+   settings.setSupportZoom(false)
+   settings.builtInZoomControls=false
+   settings.displayZoomControls=false
+   if(android.os.Build.VERSION.SDK_INT>=26){
+    setRendererPriorityPolicy(android.webkit.WebView.RENDERER_PRIORITY_IMPORTANT,true)
+   }
    webViewClient=object:android.webkit.WebViewClient(){
     override fun shouldInterceptRequest(
      view:android.webkit.WebView,
@@ -331,6 +315,38 @@ class MainActivity:ComponentActivity(){
     ):Boolean {
      val uri=request.url
      return !(uri.scheme.equals("https",true)&&uri.host.equals("rush.local",true))
+    }
+    override fun onRenderProcessGone(
+     view:android.webkit.WebView,
+     detail:android.webkit.RenderProcessGoneDetail
+    ):Boolean {
+     if(view!==webView){
+      (view.parent as? android.view.ViewGroup)?.removeView(view)
+      view.destroy()
+      return true
+     }
+     val route=view.url?.substringAfter('#')?.takeIf {
+      it.matches(Regex("[A-Za-z0-9_-]{1,40}"))
+     } ?: "explore"
+     webPageLoaded=false
+     nativeVideoRequested=false
+     runCatching { rushWebBridge.release() }
+     nativeVideoView?.let { playerView->
+      playerView.player=null
+      (playerView.parent as? android.view.ViewGroup)?.removeView(playerView)
+     }
+     nativeVideoView=null
+     view.stopLoading()
+     view.removeJavascriptInterface("RushNative")
+     (view.parent as? android.view.ViewGroup)?.removeView(view)
+     view.destroy()
+     webView=createRushWebView()
+     rootLayout.addView(webView,android.widget.FrameLayout.LayoutParams(
+      android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
+      android.widget.FrameLayout.LayoutParams.MATCH_PARENT))
+     webView.setOnScrollChangeListener { _,_,_,_,_-> updateNativeVideoPosition() }
+     webView.loadUrl("https://rush.local/assets/rush.html#$route")
+     return true
     }
     override fun onReceivedSslError(
      view:android.webkit.WebView,
@@ -354,6 +370,30 @@ class MainActivity:ComponentActivity(){
    rushWebBridge=RushWebBridge(this@MainActivity,this)
    addJavascriptInterface(rushWebBridge,"RushNative")
   }
+ }
+ @SuppressLint("SetJavaScriptEnabled")
+ override fun onCreate(savedInstanceState:Bundle?){
+  super.onCreate(savedInstanceState)
+  WindowCompat.setDecorFitsSystemWindows(window,false)
+  if(android.os.Build.VERSION.SDK_INT>=29)window.isNavigationBarContrastEnforced=false
+  WindowInsetsControllerCompat(window,window.decorView).apply {
+   isAppearanceLightStatusBars=false
+   isAppearanceLightNavigationBars=false
+  }
+  rootLayout=android.widget.FrameLayout(this).apply {
+   setBackgroundColor(android.graphics.Color.rgb(11,16,20))
+   setOnApplyWindowInsetsListener { view, windowInsets ->
+    val safeInsets=WindowInsetsCompat.toWindowInsetsCompat(windowInsets,view)
+     .getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout())
+    view.setPadding(safeInsets.left,safeInsets.top,safeInsets.right,safeInsets.bottom)
+    windowInsets
+   }
+  }
+  webViewAssetLoader=WebViewAssetLoader.Builder()
+   .setDomain("rush.local")
+   .addPathHandler("/assets/",WebViewAssetLoader.AssetsPathHandler(this))
+   .build()
+  webView=createRushWebView()
   rootLayout.addView(webView,android.widget.FrameLayout.LayoutParams(
    android.widget.FrameLayout.LayoutParams.MATCH_PARENT,android.widget.FrameLayout.LayoutParams.MATCH_PARENT))
   webView.setOnScrollChangeListener { _,_,_,_,_-> updateNativeVideoPosition() }
