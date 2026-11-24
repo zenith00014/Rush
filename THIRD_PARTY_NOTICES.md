@@ -46,6 +46,15 @@ Rush uses the community-maintained Android FFmpegKit-compatible audio package to
 
 The package is an independent community-maintained continuation, not affiliated with the original FFmpegKit author. See the upstream project for its build, component and licensing details.
 
+The FFmpegKit package also depends on SmartException for readable exception summaries:
+
+- Maven artifact: `com.arthenica:smart-exception-java:0.2.1`
+- Project: https://github.com/tanersener/smart-exception
+- License: BSD-3-Clause
+- Maven metadata and licence: https://central.sonatype.com/artifact/com.arthenica/smart-exception-java/0.2.1
+
+Rush declares this Android-compatible helper directly so it is packaged in release APKs as well as debug builds. Keep its BSD-3-Clause terms with the distributed notices.
+
 
 ## LibreTube SABR playback source
 
