@@ -149,10 +149,10 @@ function renderExploreContent(feed){
  root.innerHTML=html;
 }
 renderHome = function(){
- const filters=['All','Videos','Music','News','Movies'];
- return pageTop('Explore','your media world')+
- '<div class="explore-tabs" role="tablist" aria-label="Explore categories">'+filters.map(x=>'<button class="explore-tab" role="tab" data-home-filter="'+x+'" aria-selected="'+(homeFilter===x)+'" aria-pressed="'+(homeFilter===x)+'">'+x+'</button>').join('')+'</div>'+
- '<p class="meta pad home-feed-status" id="homeFeedStatus" aria-live="polite">Preparing your picks…</p><div id="exploreShelves"></div>';
+ const filters=["All","Videos","Music","News","Movies"];
+ return '<div class="explore-tabs" role="tablist" aria-label="Explore categories">'+
+  filters.map(x=>'<button class="explore-tab" role="tab" data-home-filter="'+x+'" aria-selected="'+(homeFilter===x)+'" aria-pressed="'+(homeFilter===x)+'">'+x+'</button>').join("")+
+  '</div><p class="meta pad home-feed-status" id="homeFeedStatus" aria-live="polite">Preparing your picks…</p><div id="exploreShelves"></div>';
 };
 renderFeedResults = function(data){
  if(page!=='explore'&&page!=='home')return;
@@ -167,12 +167,11 @@ renderFeedResults = function(data){
 renderSearchPage = function(){
  const history=searchHistory();
  const trending=(selectedTopics().length?selectedTopics():TOPICS).slice(0,10);
- return '<header class="search-hero"><h1>Search</h1><p>Find videos, music, stories, creators and films.</p></header>'+
- '<label class="search-box">'+ic('search')+'<input id="q" type="search" placeholder="What do you want to find?" aria-label="Search Rush" autocomplete="off"><button class="ib" type="button" data-search-clear aria-label="Clear search" >×</button></label>'+
- '<div id="searchIdle"><div class="search-idle-heading">Topics to explore</div><div class="trend-row">'+trending.map(x=>'<button class="trend-chip" data-topic-search="'+esc(x)+'">'+esc(x)+'</button>').join('')+'</div>'+
- '<div class="search-idle-heading">Your subscriptions</div><div class="source-rail">'+(prefs.sources.length?prefs.sources.slice(0,12).map(x=>'<button class="source-avatar" data-search-source="'+esc(x.kind)+'" data-source-name="'+esc(x.name)+'"><span class="avatar">'+(safeUrl(x.thumbnail)?'<img src="'+esc(safeUrl(x.thumbnail))+'" alt="" loading="lazy" decoding="async">':esc(creatorInitial(x.name)))+'</span><b>'+esc(x.name)+'</b></button>').join(''):'<span class="meta">Follow channels and publishers to see them here.</span>')+'</div>'+
- '<div class="search-idle-heading">Browse categories</div><div class="trend-row">'+['Videos','Music','News','Movies','Technology','Science','Sports','Culture'].map(x=>'<button class="trend-chip" data-topic-search="'+esc(x)+'">'+esc(x)+'</button>').join('')+'</div>'+
- '<div class="search-idle-heading">Recent searches</div><div class="search-history" id="searchHistory">'+(history.length?history.map(x=>'<button class="search-history-item" data-search-history="'+esc(x)+'">◷ <span>'+esc(x)+'</span></button>').join(''):'<span class="meta">Your recent searches will appear here.</span>')+'</div></div>'+
+ return '<label class="search-box">'+ic("search")+'<input id="q" type="search" placeholder="Search Rush" aria-label="Search Rush" autocomplete="off"><button class="ib" type="button" data-search-clear aria-label="Clear search">×</button></label>'+
+ '<div id="searchIdle"><div class="search-idle-heading">Trending topics</div><div class="trend-row">'+trending.map(x=>'<button class="trend-chip" data-topic-search="'+esc(x)+'">'+esc(x)+'</button>').join("")+'</div>'+
+ '<div class="search-idle-heading">Your subscriptions</div><div class="source-rail">'+(prefs.sources.length?prefs.sources.slice(0,12).map(x=>'<button class="source-avatar" data-search-source="'+esc(x.kind)+'" data-source-name="'+esc(x.name)+'"><span class="avatar">'+(safeUrl(x.thumbnail)?'<img src="'+esc(safeUrl(x.thumbnail))+'" alt="" loading="lazy" decoding="async">':esc(creatorInitial(x.name)))+'</span><b>'+esc(x.name)+'</b></button>').join(""):'<span class="meta">Follow channels and publishers to see them here.</span>')+'</div>'+
+ '<div class="search-idle-heading">Browse categories</div><div class="trend-row">'+["Videos","Music","Movies","News","Technology","Science","Sports","Culture"].map(x=>'<button class="trend-chip" data-topic-search="'+esc(x)+'">'+x+'</button>').join("")+'</div>'+
+ '<div class="search-idle-heading">Recent searches</div><div class="search-history" id="searchHistory">'+(history.length?history.map(x=>'<button class="search-history-item" data-search-history="'+esc(x)+'">◷ <span>'+esc(x)+'</span></button>').join(""):'<span class="meta">Your recent searches will appear here.</span>')+'</div></div>'+
  '<div class="chips search-filters"><button class="chip" data-search-filter="all" aria-pressed="true">All</button><button class="chip" data-search-filter="videos" aria-pressed="false">Videos</button><button class="chip" data-search-filter="music" aria-pressed="false">Music</button><button class="chip" data-search-filter="news" aria-pressed="false">News</button><button class="chip" data-search-filter="channels" aria-pressed="false">Channels</button><button class="chip" data-search-filter="playlists" aria-pressed="false">Playlists</button></div>'+
  '<p class="meta pad" id="unifiedStatus">Search across Rush.</p><div id="unifiedResults"></div><div id="publicPlaylistContent"></div>';
 };
