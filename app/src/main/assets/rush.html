@@ -629,6 +629,8 @@ function homeMusicTile(x){
 }
 function renderFeedResults(data){
  if(page!=='home')return;
+ const expectedMode=homeTab==='fy'?'forYou':'following';
+ if(data&&data.mode&&data.mode!==expectedMode)return;
  const feed=data||{videos:[],music:[],news:[]};
  homeFeedCache=feed;
  const root=$('#homeFeedResults'),status=$('#homeFeedStatus');if(!root)return;
