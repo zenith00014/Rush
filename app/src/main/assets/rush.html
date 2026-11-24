@@ -725,13 +725,15 @@ function formatTrackTime(milliseconds){
 function renderPlayerState(){
  if(page!=='player')return;
  const isMusic=!!mediaState.hasItem&&!!mediaState.isMusic;
+ const isVideo=!!mediaState.hasItem&&!!mediaState.isVideo;
+ const hasMedia=isMusic||isVideo;
  const title=$('#playerTitle'),artist=$('#playerArtist'),status=$('#playerStatus'),img=$('#playerArtwork'),fallback=$('#playerArtFallback');
- if(title)title.textContent=isMusic?(mediaState.title||'Unknown track'):'Choose a track';
- if(artist)artist.textContent=isMusic?(mediaState.artist||'Unknown artist'):'Search or browse music, then select a track.';
- if(status)status.textContent=isMusic?(mediaState.isPlaying?'PLAYING':'PAUSED'):'Nothing is playing yet.';
+ if(title)title.textContent=hasMedia?(mediaState.title||'Unknown track'):'Choose a track';
+ if(artist)artist.textContent=hasMedia?(mediaState.artist||'Unknown artist'):'Search or browse music, then select a track.';
+ if(status)status.textContent=hasMedia?(mediaState.isPlaying?(isMusic?'PLAYING':'VIDEO MODE · PLAYING'):'PAUSED'):'Nothing is playing yet.';
  if(img&&fallback){
   const artwork=safeUrl(mediaState.artwork);
-  if(isMusic&&artwork){img.onerror=()=>{img.hidden=true;fallback.hidden=false};img.src=artwork;img.hidden=false;fallback.hidden=true}
+  if(hasMedia&&artwork){img.onerror=()=>{img.hidden=true;fallback.hidden=false};img.src=artwork;img.hidden=false;fallback.hidden=true}
   else{img.removeAttribute('src');img.hidden=true;fallback.hidden=false}
  }
  const toggle=$('#playerToggle');if(toggle){toggle.innerHTML=ic(isMusic&&mediaState.isPlaying?'pause':'play');toggle.disabled=!isMusic}
@@ -741,9 +743,8 @@ function renderPlayerState(){
  const save=$('#playerSave');if(save)save.disabled=!isMusic;
  const modeToggle=$('#playerModeToggle');
  if(modeToggle){
-  const isVideo=!!mediaState.hasItem&&!!mediaState.isVideo;
-  modeToggle.hidden=!isMusic&&!isVideo;
-  modeToggle.disabled=!isMusic&&!isVideo;
+  modeToggle.hidden=!hasMedia;
+  modeToggle.disabled=!hasMedia;
   if(isMusic){
    modeToggle.removeAttribute('data-player-listen-audio');
    modeToggle.setAttribute('data-player-watch-video','');
@@ -752,6 +753,9 @@ function renderPlayerState(){
    modeToggle.removeAttribute('data-player-watch-video');
    modeToggle.setAttribute('data-player-listen-audio','');
    modeToggle.textContent='LISTEN TO AUDIO';
+  }else{
+   modeToggle.removeAttribute('data-player-watch-video');
+   modeToggle.removeAttribute('data-player-listen-audio');
   }
  }
  renderPlayerProgress(mediaState.position,mediaState.duration);
