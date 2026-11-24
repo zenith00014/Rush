@@ -70,18 +70,8 @@ class RushPlaybackService : MediaSessionService() {
         val mediaSourceFactory = RushMediaSourceFactory(cachedDataSourceFactory)
         val loadControl = DefaultLoadControl.Builder()
             // Start sooner, but keep a useful reservoir for unstable mobile networks.
-            .setBufferDurationsMsForStreaming(
-                minBufferMs = 15_000,
-                maxBufferMs = 60_000,
-                bufferForPlaybackMs = 1_500,
-                bufferForPlaybackAfterRebufferMs = 3_000
-            )
-            .setBufferDurationsMsForLocalPlayback(
-                minBufferMs = 3_000,
-                maxBufferMs = 20_000,
-                bufferForPlaybackMs = 500,
-                bufferForPlaybackAfterRebufferMs = 1_000
-            )
+            .setBufferDurationsMsForStreaming(15_000, 60_000, 1_500, 3_000)
+            .setBufferDurationsMsForLocalPlayback(3_000, 20_000, 500, 1_000)
             .setBackBuffer(5_000, true)
             .setPrioritizeTimeOverSizeThresholds(true)
             .build()
