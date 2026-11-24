@@ -506,6 +506,9 @@ h2::after{height:2px}
 .profile-setting span{color:var(--mu);font:500 11px var(--m)}
 @media(min-width:761px){.profile-settings{padding-left:0;padding-right:0;max-width:660px}}
 @media(max-width:380px){.nav a{font-size:9px;letter-spacing:0;gap:4px}}
+
+/* Final shape pass: retain squared-off artwork and profile marks. */
+.music-now-art,.player-art,.profile-mark,.source-initial,.library-art{border-radius:0!important}
 </style></head>
 <body>
 <div class="app">
@@ -955,7 +958,7 @@ function updateCurrentPlayback(data){
   if(artist)artist.textContent=isMusic?(mediaState.artist||'Unknown artist'):'Choose a track to start listening.';
   if(status)status.textContent=isMusic?(mediaState.isPlaying?'PLAYING':'PAUSED'):'Your player will appear here when a track starts.';
   if(img&&box){const artwork=safeUrl(mediaState.artwork);img.onerror=()=>{img.removeAttribute('src');box.classList.remove('has-art')};if(isMusic&&artwork){img.src=artwork;box.classList.add('has-art')}else{img.removeAttribute('src');box.classList.remove('has-art')}}
-  const toggle=$('[data-music-toggle]');if(toggle)toggle.innerHTML=ic(isMusic&&mediaState.isPlaying?'pause':'play')+(isMusic&&mediaState.isPlaying?' PAUSE':' PLAY');
+  const toggle=$('[data-music-toggle]');if(toggle){const playing=isMusic&&mediaState.isPlaying;toggle.innerHTML=ic(playing?'pause':'play');toggle.setAttribute('aria-label',playing?'Pause music':'Play music')}
  }
  renderPlayerState();
 }
