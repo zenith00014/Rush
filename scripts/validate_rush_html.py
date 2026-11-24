@@ -252,6 +252,12 @@ def main():
         fail("First-run profile setup must provide a guest path")
     if 'androidx.webkit:webkit:1.18.0' not in gradle:
         fail("WebViewAssetLoader dependency is missing")
+    if "androidx.compose" in activity or "androidx.compose" in gradle or "kotlin.plugin.compose" in gradle:
+        fail("The unused Compose prototype and its dependencies must stay removed")
+    if "pipEligible.value" in activity or "pipModeState" in activity:
+        fail("Picture-in-Picture state must not depend on Compose runtime")
+    if "androidx.activity:activity-ktx:1.10.0" not in gradle:
+        fail("Native Activity KTX dependency is missing")
     if 'com.arthenica:smart-exception-java:0.2.1' not in gradle:
         fail("FFmpegKit SmartException Android runtime dependency is missing")
     if "robolectricSdkRuntime" not in gradle or "robolectric.offline" not in gradle:
