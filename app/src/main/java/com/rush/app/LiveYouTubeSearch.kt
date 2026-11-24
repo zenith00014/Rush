@@ -33,7 +33,8 @@ data class YouTubeSearchResult(
     val collectionId: String = "",
     val description: String = "",
     val videoCount: String = "",
-    val thumbnailUrl: String = ""
+    val thumbnailUrl: String = "",
+    val creatorThumbnail: String = ""
 )
 
 object LiveYouTubeSearch {
@@ -75,7 +76,14 @@ object LiveYouTubeSearch {
         val primary = runCatching { executeSearch(body, music, channels, playlists) }.getOrNull()
         val merged = LinkedHashMap<String, YouTubeSearchResult>()
         extractorPage?.items.orEmpty().forEach { merged.putIfAbsent(resultKey(it), it) }
-        primary?.items.orEmpty().forEach { merged.putIfAbsent(resultKey(it), it) }
+        primary?.items.orEmpty().forEach { item ->
+            val key = resultKey(item)
+            val existing = merged[key]
+            if (existing == null) merged[key] = item
+            else if (existing.creatorThumbnail.isBlank() && item.creatorThumbnail.isNotBlank()) {
+                merged[key] = existing.copy(creatorThumbnail = item.creatorThumbnail)
+            }
+        }
         val primaryContinuation = primary?.continuation ?: extractorPage?.continuation
         if (music || merged.size >= 8) {
             if (merged.isEmpty()) throw IOException("YouTube returned no search results.")
@@ -330,7 +338,15 @@ object LiveYouTubeSearch {
         if (id.isBlank() || title.isBlank()) return
         val owner = text(item.optJSONObject("ownerText")).ifBlank { text(item.optJSONObject("shortBylineText")) }.ifBlank { "YouTube creator" }
         val duration = text(item.optJSONObject("lengthText"))
-        out.putIfAbsent(id, YouTubeSearchResult(id, title, owner, duration, music, thumbnailUrl = thumbnailUrl(item)))
+        val channelAvatar = item.optJSONObject("channelThumbnailSupportedRenderers")
+            ?.optJSONObject("channelThumbnailWithLinkRenderer")
+            ?.optJSONObject("thumbnail")
+            ?.let(::thumbnailUrl).orEmpty()
+        out.putIfAbsent(id, YouTubeSearchResult(
+            id, title, owner, duration, music,
+            thumbnailUrl = thumbnailUrl(item),
+            creatorThumbnail = channelAvatar
+        ))
     }
 
     private fun addChannel(item: JSONObject, out: MutableMap<String, YouTubeSearchResult>) {
