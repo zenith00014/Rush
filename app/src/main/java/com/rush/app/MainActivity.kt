@@ -79,6 +79,7 @@ class MainActivity:ComponentActivity(){
  private var previousRequestedOrientation=android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
  private var fullscreenExitButton:android.widget.TextView?=null
  private var webPageLoaded=false
+ private var mainFrameLoadFailed=false
  private var startupOverlay:android.view.View?=null
  private var pendingOpenDownloads=false
  private val notificationPermissionLauncher=registerForActivityResult(
@@ -355,10 +356,37 @@ class MainActivity:ComponentActivity(){
      handler:android.webkit.SslErrorHandler,
      error:android.net.http.SslError
     ){handler.cancel()}
+    override fun onPageStarted(view:android.webkit.WebView,url:String?,favicon:android.graphics.Bitmap?){
+     super.onPageStarted(view,url,favicon)
+     mainFrameLoadFailed=false
+     showStartupOverlay("Loading Rush…")
+    }
+    override fun onReceivedError(
+     view:android.webkit.WebView,
+     request:android.webkit.WebResourceRequest,
+     error:android.webkit.WebResourceError
+    ){
+     super.onReceivedError(view,request,error)
+     if(request.isForMainFrame){
+      mainFrameLoadFailed=true
+      showPageLoadFailure()
+     }
+    }
+    override fun onReceivedHttpError(
+     view:android.webkit.WebView,
+     request:android.webkit.WebResourceRequest,
+     response:android.webkit.WebResourceResponse
+    ){
+     super.onReceivedHttpError(view,request,response)
+     if(request.isForMainFrame&&response.statusCode>=400){
+      mainFrameLoadFailed=true
+      showPageLoadFailure()
+     }
+    }
     override fun onPageFinished(view:android.webkit.WebView,url:String?){
      super.onPageFinished(view,url)
-     webPageLoaded=true
-     hideStartupOverlay()
+     webPageLoaded=!mainFrameLoadFailed
+     if(mainFrameLoadFailed)showPageLoadFailure() else hideStartupOverlay()
      if(RushPlaybackService.activeInstance?.hasCurrentMediaItem()==true){
       view.evaluateJavascript("if(window.RushNative)RushNative.loadCurrentPlayback()",null)
      }
@@ -395,6 +423,31 @@ class MainActivity:ComponentActivity(){
   panel.addView(android.widget.TextView(this).apply{
    text=message;textSize=12f;setTextColor(android.graphics.Color.rgb(168,178,185));gravity=android.view.Gravity.CENTER
   },android.widget.LinearLayout.LayoutParams(-2,-2).apply{topMargin=(14*resources.displayMetrics.density).toInt()})
+  startupOverlay=panel
+  rootLayout.addView(panel,android.widget.FrameLayout.LayoutParams(-1,-1))
+  panel.bringToFront()
+ }
+ private fun showPageLoadFailure(){
+  if(!::rootLayout.isInitialized)return
+  startupOverlay?.let { rootLayout.removeView(it) }
+  val panel=android.widget.LinearLayout(this).apply{
+   orientation=android.widget.LinearLayout.VERTICAL
+   gravity=android.view.Gravity.CENTER
+   setPadding(34,34,34,34)
+   setBackgroundColor(android.graphics.Color.rgb(11,16,20))
+  }
+  panel.addView(android.widget.TextView(this).apply{
+   text="Couldn’t load Rush"
+   textSize=22f;setTextColor(android.graphics.Color.WHITE);gravity=android.view.Gravity.CENTER
+  })
+  panel.addView(android.widget.TextView(this).apply{
+   text="Check your connection and try again."
+   textSize=13f;setTextColor(android.graphics.Color.LTGRAY);gravity=android.view.Gravity.CENTER
+  },android.widget.LinearLayout.LayoutParams(-1,-2).apply{topMargin=12})
+  panel.addView(android.widget.Button(this).apply{
+   text="RETRY"
+   setOnClickListener { mainFrameLoadFailed=false;webView.reload() }
+  },android.widget.LinearLayout.LayoutParams(-2,-2).apply{topMargin=18})
   startupOverlay=panel
   rootLayout.addView(panel,android.widget.FrameLayout.LayoutParams(-1,-1))
   panel.bringToFront()
