@@ -225,21 +225,17 @@ function renderSubscribedFeed(data){
  const root=$('#subscriptionFeed');if(!root)return;
  const videos=data.videos||[],music=data.music||[],news=data.news||[];
  let rows=[];
- if(subscriptionFilter==='All'||subscriptionFilter==='Today'||subscriptionFilter==='Videos'){
+ if(subscriptionFilter==='All'||subscriptionFilter==='Videos'){
   rows.push(...videos.map(item=>({item,kind:'video'})));
  }
- if(subscriptionFilter==='All'||subscriptionFilter==='Today'||subscriptionFilter==='Music'){
+ if(subscriptionFilter==='All'||subscriptionFilter==='Music'){
   rows.push(...music.map(item=>({item,kind:'music'})));
  }
- if(subscriptionFilter==='All'||subscriptionFilter==='Today'||subscriptionFilter==='News'){
+ if(subscriptionFilter==='All'||subscriptionFilter==='News'){
   rows.push(...news.map(item=>({item,kind:'news'})));
  }
  if(subscriptionFilter==='Movies'){
   rows.push(...videos.filter(item=>durationSeconds(item.duration)>=900).map(item=>({item,kind:'video'})));
- }
- if(subscriptionFilter==='Today'){
-  const today=new Date();today.setHours(0,0,0,0);
-  rows=rows.filter(row=>!row.item.date||Date.parse(row.item.date)>=today.getTime());
  }
  root.innerHTML=rows.length?rows.map(row=>subscriptionPost(row.item,row.kind)).join(''):'<div class="section-empty">No recent updates in this filter. Select All or search for more creators.</div>';
  const status=$('#subscriptionStatus');if(status)status.textContent=rows.length+' UPDATES';
@@ -253,15 +249,17 @@ function durationSeconds(value){
 }
 function subscriptionSourceSearch(index){
  const source=prefs.sources[index];if(!source)return;
- selectedSubscriptionId=source.id;selectedSubscriptionName=source.name;
+ selectedSubscriptionId=source.id;selectedSubscription=''+source.name;selectedSubscriptionName=source.name;
  document.querySelectorAll('[data-subscription-source]').forEach((button,i)=>button.classList.toggle('active',i===index));
- const title=$('#subscriptionTitle');if(title)title.textContent=source.name;
  document.querySelectorAll('#subscriptionSources [data-subscription-all],#subscriptionSources [data-subscription-source]').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.subscriptionSource!==undefined&&Number(x.dataset.subscriptionSource)===index)));
  const title=$('#subscriptionTitle');if(title)title.textContent=source.name;
  const root=$('#subscriptionFeed');if(root)root.innerHTML='<p class="meta pad">Loading '+esc(source.name)+'…</p>';
  if(!window.RushNative)return;
- if(source.kind==='artist')RushNative.searchMusic(source.name);
- else if(source.kind==='news')RushNative.searchNews(source.name);
+ if(source.kind==='artist'){
+  if(subscriptionFilter==='Videos'||subscriptionFilter==='Movies')RushNative.searchVideos(source.name);
+  else RushNative.searchMusic(source.name);
+ }else if(source.kind==='news')RushNative.searchNews(source.name);
+ else if(subscriptionFilter==='Music')RushNative.searchMusic(source.name);
  else RushNative.loadChannelUploads(source.id,source.name);
 }
 renderLibraryPage = function(){
