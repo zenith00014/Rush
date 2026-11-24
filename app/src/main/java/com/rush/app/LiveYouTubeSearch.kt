@@ -9,6 +9,10 @@ import java.io.IOException
 import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutionException
+import android.util.LruCache
+import android.os.SystemClock
 import java.util.concurrent.TimeUnit
 import org.schabi.newpipe.extractor.InfoItem
 import org.schabi.newpipe.extractor.Page
@@ -39,8 +43,14 @@ data class YouTubeSearchResult(
 
 object LiveYouTubeSearch {
     private val client = RushNetwork.newBuilder()
-        .callTimeout(25, TimeUnit.SECONDS)
+        .connectTimeout(5, TimeUnit.SECONDS)
+        .readTimeout(8, TimeUnit.SECONDS)
+        .callTimeout(14, TimeUnit.SECONDS)
         .build()
+    private data class CachedSearchPage(val page: YouTubeSearchPage, val cachedAt: Long)
+    private val searchResultCache = object : LruCache<String, CachedSearchPage>(32) {}
+    private val inFlightSearches = ConcurrentHashMap<String, CompletableFuture<YouTubeSearchPage>>()
+    private val searchCacheTtlMs = 3 * 60 * 1000L
     private val jsonType = "application/json; charset=utf-8".toMediaType()
     private data class SearchCursor(val extractor: SearchExtractor, val page: Page)
     private val searchCursors = ConcurrentHashMap<String, List<SearchCursor>>()
@@ -51,6 +61,55 @@ object LiveYouTubeSearch {
 
     @Throws(IOException::class)
     fun searchPage(query: String, music: Boolean = false, channels: Boolean = false, playlists: Boolean = false): YouTubeSearchPage {
+        val cleanQuery = query.trim()
+        require(cleanQuery.isNotBlank()) { "Enter something to search for." }
+        val key = listOf(cleanQuery.lowercase(Locale.ROOT), music, channels, playlists).joinToString("|")
+        val now = SystemClock.elapsedRealtime()
+        synchronized(searchResultCache) {
+            val cached = searchResultCache.get(key)
+            if (cached != null && now - cached.cachedAt <= searchCacheTtlMs) {
+                return cached.page
+            }
+            if (cached != null) searchResultCache.remove(key)
+        }
+
+        val pending = CompletableFuture<YouTubeSearchPage>()
+        val existing = inFlightSearches.putIfAbsent(key, pending)
+        if (existing != null) {
+            try {
+                return existing.get()
+            } catch (error: ExecutionException) {
+                val cause = error.cause
+                if (cause is IOException) throw cause
+                if (cause is RuntimeException) throw cause
+                throw IOException("YouTube search failed.", cause)
+            } catch (error: InterruptedException) {
+                Thread.currentThread().interrupt()
+                throw IOException("YouTube search was interrupted.", error)
+            }
+        }
+
+        try {
+            val page = searchPageUncached(cleanQuery, music, channels, playlists)
+            synchronized(searchResultCache) {
+                searchResultCache.put(key, CachedSearchPage(page, SystemClock.elapsedRealtime()))
+            }
+            pending.complete(page)
+            return page
+        } catch (error: Throwable) {
+            pending.completeExceptionally(error)
+            throw error
+        } finally {
+            inFlightSearches.remove(key, pending)
+        }
+    }
+
+    private fun searchPageUncached(
+        query: String,
+        music: Boolean,
+        channels: Boolean,
+        playlists: Boolean
+    ): YouTubeSearchPage {
         require(query.isNotBlank()) { "Enter something to search for." }
         val extractorPage = if (music) {
             runCatching { searchWithNewPipe(query, listOf("music_songs", "music_albums"), true) }.getOrNull()
