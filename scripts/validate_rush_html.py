@@ -177,6 +177,8 @@ def main():
         "media buffering uses separate streaming and local profiles": "setBufferDurationsMsForStreaming(15_000, 60_000, 1_500, 3_000)" in service and "setBufferDurationsMsForLocalPlayback(3_000, 20_000, 500, 1_000)" in service,
         "first-load shimmer is not an infinite feed animation": "animation:skeleton-shimmer 1.3s ease-out 1" in styles,
         "reduced-motion disables decorative animation": "prefers-reduced-motion:reduce" in styles,
+        "lyrics ticker updates only the active row": "lastActiveLyricIndex" in js and "while(low<=high)" in js and "querySelectorAll('.lyric-line')" not in js,
+        "downloads polling avoids rapid repeated refresh": "},5000);" in js,
     }
     for name, passed in contracts.items():
         if not passed:
