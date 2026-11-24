@@ -116,7 +116,7 @@ dependencies {
     implementation("androidx.media3:media3-session:1.9.2")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.squareup.okhttp3:okhttp-dnsoverhttps:4.12.0")
-    implementation("androidx.work:work-runtime-ktx:2.10.0")
+    implementation("androidx.work:work-runtime-ktx:2.12.0")
     implementation("dev.ffmpegkit-maintained:ffmpeg-kit-audio:8.1.7")
     implementation("com.arthenica:smart-exception-java:0.2.1")
     implementation("com.github.libre-tube:NewPipeExtractor:894ae973d29b7c26502c72834bad636a72e345ca")
