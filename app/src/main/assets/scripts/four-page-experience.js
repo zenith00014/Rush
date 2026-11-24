@@ -5,9 +5,14 @@ let selectedSubscription='all';
 let videoSpeed=1,videoQuality=0,videoCaptions=true;
 let currentVideo={id:'',title:'',creator:'',thumbnail:''};
 let searchFocusOpen=false;
+let subscriptionFilter='All';
+let selectedSubscriptionId='all';
+let selectedSubscriptionName='All subscriptions';
+let exploreCategoryResults={videos:[],music:[],news:[]};
+let exploreCategoryQuery='';
 let lastExploreMarkupKey='';
 let explorePriorityImageAssigned=false;
-const LOCAL_LISTS={liked:'rush_liked_items_v1',watchlist:'rush_watchlist_v1'};
+const LOCAL_LISTS={liked:'rush_liked_items_v1',watchlist:'rush_watchlist_v1',news:'rush_saved_news_v1'};
 function safeLocalRead(key){try{return JSON.parse(localStorage.getItem(key)||'[]')}catch(e){return []}}
 function safeLocalWrite(key,value){try{localStorage.setItem(key,JSON.stringify(value))}catch(e){}}
 function localItems(kind){return safeLocalRead(LOCAL_LISTS[kind]||'')}
@@ -47,7 +52,29 @@ function musicTile(x,index=0,priorityImage=false){
 function newsShelfCard(x,index=0,priorityImage=false){
  const thumb=safeUrl(x.thumbnail);
  const priority=priorityImage?' loading="eager" fetchpriority="high"':' loading="lazy"';
- return '<button class="news-shelf-card" data-news-url="'+esc(safeUrl(x.url))+'"><img src="'+esc(thumb)+'" alt="" width="108" height="78" decoding="async"'+priority+' referrerpolicy="no-referrer" onerror="this.hidden=true"><span class="news-shelf-copy"><small>'+esc(x.source||'News')+'</small><b>'+esc(x.title)+'</b><span>'+esc(x.date||'Latest report')+'</span></span></button>';
+ const saved=localItems('news').some(item=>item.url===x.url);
+ return '<article class="news-shelf-card"><button class="news-shelf-open" data-news-url="'+esc(safeUrl(x.url))+'"><img src="'+esc(thumb)+'" alt="" width="108" height="78" decoding="async"'+priority+' referrerpolicy="no-referrer" onerror="this.hidden=true"><span class="news-shelf-copy"><small>'+esc(x.source||'News')+'</small><b>'+esc(x.title)+'</b><span>'+esc(x.date||'Latest report')+'</span></span></button><button class="news-save-button" data-save-news aria-label="'+(saved?'Remove saved story':'Save story')+'" data-url="'+esc(safeUrl(x.url))+'" data-title="'+esc(x.title)+'" data-source="'+esc(x.source||'News')+'" data-thumbnail="'+esc(thumb)+'">'+(saved?'★':'☆')+'</button></article>';
+}
+function mediaFeedbackMenu(x){
+ const id=esc(x.id||''),creator=esc(x.artist||x.creator||'');
+ return '<details class="media-feedback"><summary aria-label="More options">⋮</summary><div class="media-feedback-menu"><button data-recommendation-feedback="notInterested" data-id="'+id+'" data-creator="'+creator+'">Not interested</button><button data-recommendation-feedback="recommendChannel" data-id="'+id+'" data-creator="'+creator+'">Don’t recommend channel</button></div></details>';
+}
+function wideVideoCard(x){
+ if(!x)return '';
+ const creator=x.artist||x.creator||'YouTube',thumb=safeUrl(x.thumbnail);
+ return '<article class="wide-video-card"><button data-video-id="'+esc(x.id)+'" data-title="'+esc(x.title)+'" data-creator="'+esc(creator)+'" data-thumbnail="'+esc(thumb)+'"><span class="wide-video-art">'+(thumb?'<img src="'+esc(thumb)+'" alt="" loading="lazy" decoding="async">':'')+'<span class="media-play">'+ic('play')+'</span></span><span class="wide-video-copy">'+creatorAvatar(creator)+'<span><b>'+esc(x.title)+'</b><small>'+esc(creator)+(x.duration?' · '+esc(x.duration):'')+'</small></span></span></button>'+mediaFeedbackMenu(x)+'</article>';
+}
+function libraryRecordTile(item,shape){
+ if(!item)return '';
+ const music=!!item.music,thumb=safeUrl(item.thumbnail),id=item.id||'';
+ const klass=shape==='movie'?'movie':music?'music':'video';
+ const ratio=klass==='movie'?'media-art movie':klass==='music'?'media-art music':'media-art video';
+ const creator=item.creator||item.artist||'YouTube';
+ return '<article class="media-tile '+(klass==='movie'?'movie':klass==='music'?'music':'')+'"><button data-video-id="'+esc(id)+'" data-title="'+esc(item.title||'')+'" data-creator="'+esc(creator)+'" data-thumbnail="'+esc(thumb)+'"><span class="'+ratio+'">'+(thumb?'<img src="'+esc(thumb)+'" alt="" loading="lazy" decoding="async">':'')+'<span class="media-play">'+ic('play')+'</span></span></button><span class="media-copy"><span><b>'+esc(item.title||'Untitled media')+'</b><span>'+esc(creator)+'</span></span></span></article>';
+}
+function librarySection(title,items,renderer,view){
+ if(!items||!items.length)return '';
+ return '<section class="library-shelf"><div class="shelf-heading"><h2>'+esc(title)+'</h2><button class="shelf-view-all" data-library-view="'+esc(view)+'">VIEW ALL ›</button></div><div class="shelf-row">'+items.map(renderer).join('')+'</div></section>';
 }
 function shelf(title,items,renderer,label){
  if(!items||!items.length)return '';
@@ -90,69 +117,71 @@ function compactNewsRow(x,index=0,priorityImage=false){
  '<span class="news-shelf-copy"><small>'+esc(x.source||"News")+'</small><b>'+esc(x.title)+'</b><span>'+esc(x.date||"Latest report")+'</span></span></button>';
 }
 function renderExploreContent(feed){
- const root=$("#exploreShelves");if(!root)return;
+ const root=$('#exploreShelves');if(!root)return;
  const videos=feed.videos||[],music=feed.music||[],news=feed.news||[];
- const historyItems=(libraryData.history||[]).slice(0,12).map(libraryEntry).filter(Boolean);
- const historyVideos=historyItems.filter(x=>!x.music),historyMusic=historyItems.filter(x=>x.music);
- const historyIds=new Set(historyItems.map(x=>x.id));
- const recommendedVideos=videos.filter(x=>!historyIds.has(x.id));
- const followedVideos=followingFeedCache.videos||[],followedMusic=followingFeedCache.music||[],followedNews=followingFeedCache.news||[];
- const markupKey=JSON.stringify({
-  filter:homeFilter,videos:videos.map(x=>[x.id,x.title,x.thumbnail]),music:music.map(x=>[x.id,x.title,x.thumbnail]),
-  news:news.map(x=>[x.url,x.title,x.thumbnail]),movies:movieResults.map(x=>[x.id,x.title,x.thumbnail]),
-  followingVideos:followedVideos.map(x=>[x.id,x.title,x.thumbnail]),followingMusic:followedMusic.map(x=>[x.id,x.title,x.thumbnail]),
-  followingNews:followedNews.map(x=>[x.url,x.title,x.thumbnail]),history:(libraryData.history||[]).slice(0,12),topics:selectedTopics()
- });
- if(markupKey===lastExploreMarkupKey&&root.childElementCount)return;
- lastExploreMarkupKey=markupKey;explorePriorityImageAssigned=false;
- let html="";
- if(homeFilter==="Movies"){
-  const items=movieResults.length?movieResults:videos;
-  html=items.length?shelf("Movies & long-form",items,movieTile,"POSTER VIEW"):'<div class="section-empty">Search for a film title to find long-form videos available from the connected provider.</div>';
-  root.innerHTML=html;return;
+ const historyItems=(libraryData.history||[]).slice(0,10).map(id=>libraryData.items&&libraryData.items[id]).filter(Boolean);
+ const historyVideos=historyItems.filter(item=>!item.music);
+ const historyMusic=historyItems.filter(item=>item.music);
+ const watchLater=localItems('watchlist');
+ const recentVideos=followingFeedCache.videos||[];
+ const recentMusic=followingFeedCache.music||[];
+ const recentNews=followingFeedCache.news||[];
+ const categoryVideos=exploreCategoryResults.videos||[];
+ const categoryMusic=exploreCategoryResults.music||[];
+ const categoryNews=exploreCategoryResults.news||[];
+ let html='';
+ if(homeFilter==='Movies'){
+  const items=movieResults.length?movieResults:categoryVideos;
+  root.innerHTML=items.length?shelf('Featured movies',items,movieTile,'MOVIE DISCOVERY'):'<div class="section-empty">Movie search uses discoverable long-form results at the moment. A licensed movie catalogue is not connected.</div>';
+  return;
  }
- if(homeFilter==="Videos"){
-  const hero=recommendedVideos[0]||videos[0];
-  if(hero)html+=videoHero(hero,"Recommended videos");
-  const rest=recommendedVideos.length?recommendedVideos.slice(hero===recommendedVideos[0]?1:0):videos.slice(1);
-  html+=shelf("More videos",rest,videoTile);
-  html+=shelf("From your subscriptions",followedVideos,videoTile,"FOLLOWING");
- }else if(homeFilter==="Music"){
-  html+=shelf("Mixes & albums",music,musicTile,"YOUR LISTENING MIX");
-  html+=shelf("Recently played",historyMusic,musicTile,"HISTORY");
-  html+=shelf("From followed artists",followedMusic,musicTile,"FOLLOWING");
- }else if(homeFilter==="News"){
-  if(news.length)html+='<section class="explore-shelf news-list-shelf"><div class="shelf-heading"><h2>Top headlines</h2><small>'+news.length+' STORIES</small></div><div class="news-list">'+news.map((x,i)=>compactNewsRow(x,i,i===0)).join("")+'</div></section>';
-  if(followedNews.length)html+='<section class="explore-shelf news-list-shelf"><div class="shelf-heading"><h2>From followed publishers</h2><small>FOLLOWING</small></div><div class="news-list">'+followedNews.map(x=>compactNewsRow(x)).join("")+'</div></section>';
- }else{
+ if(homeFilter==='Videos'){
+  html+=shelf('Continue watching',historyVideos,videoTile,'HISTORY');
+  if(videos.length)html+=shelf('Recommended videos',videos,videoTile);
+  html+=shelf('From your subscriptions',recentVideos,videoTile,'LATEST UPLOADS');
+ }else if(homeFilter==='Music'||homeFilter==='Mixes'||homeFilter==='Lo-Fi & Beats'){
+  const selection=homeFilter==='Music'?music:(categoryMusic.length?categoryMusic:music);
+  html+=shelf('Recently played',historyMusic,musicTile,'LISTEN AGAIN');
+  html+='<section class="explore-shelf"><div class="shelf-heading"><h2>'+(homeFilter==='Music'?'Mixes & albums':esc(homeFilter))+'</h2><small>'+selection.length+' TRACKS</small></div><div class="music-grid">'+selection.map(musicTile).join('')+'</div></section>';
+ }else if(homeFilter==='News'||homeFilter==='Tech & World'){
+  const selection=homeFilter==='News'?news:(categoryNews.length?categoryNews:news);
+  html+='<section class="explore-shelf news-column"><div class="shelf-heading"><h2>Top headlines</h2><small>RECENT REPORTING</small></div>'+(selection.length?selection.map(newsShelfCard).join(''):'<div class="section-empty">No headlines yet. Search for a publisher or topic.</div>')+'</section>';
+ }else if(homeFilter==='Watch Later'){
+  html+=shelf('Watch later',watchLater,(x)=>libraryRecordTile(x,'movie'),'SAVED ON THIS DEVICE');
+ }else if(homeFilter==='Recently Uploaded'){
+  html+=shelf('Latest from your subscriptions',recentVideos,videoTile,'NEW UPLOADS');
+  html+=shelf('Recently published music',recentMusic,musicTile,'FOLLOWING');
+  html+='<section class="explore-shelf news-column"><div class="shelf-heading"><h2>Publisher updates</h2></div>'+recentNews.map(newsShelfCard).join('')+'</section>';
+ }else if(homeFilter==='All'){
   if(historyVideos.length){
-   html+=videoHero(historyVideos[0],"Continue watching");
-   if(historyVideos.length>1)html+=shelf("Pick up where you left off",historyVideos.slice(1),videoTile,"WATCH HISTORY");
+   html+='<section class="explore-shelf continue-shelf"><div class="shelf-heading"><h2>Continue watching</h2><button class="shelf-view-all" data-library-view="history">HISTORY ›</button></div>'+wideVideoCard(historyVideos[0])+'</section>';
+   if(historyVideos.length>1)html+=shelf('Recently watched',historyVideos.slice(1),videoTile,'PICK UP WHERE YOU LEFT OFF');
   }
-  if(recommendedVideos.length){
-   if(!historyVideos.length)html+=videoHero(recommendedVideos[0],"Recommended for you");
-   html+=shelf("Suggested for you",recommendedVideos.slice(historyVideos.length?0:1),videoTile,"BASED ON YOUR INTERESTS");
+  html+=shelf('Suggested for you',videos,videoTile,'BASED ON YOUR WATCHING');
+  if(music.length)html+='<section class="explore-shelf"><div class="shelf-heading"><h2>Mixes & albums</h2><small>YOUR MUSIC</small></div><div class="shelf-row">'+music.map(musicTile).join('')+'</div></section>';
+  if(movieResults.length)html+=shelf('Featured movies',movieResults,movieTile,'MOVIE DISCOVERY');
+  if(news.length)html+='<section class="explore-shelf news-column"><div class="shelf-heading"><h2>Top headlines</h2><small>NEWS</small></div>'+news.slice(0,5).map(newsShelfCard).join('')+'</section>';
+  if(music.length||videos.length){
+   const trendingMusic=music.slice(0,2);
+   html+='<section class="explore-shelf"><div class="shelf-heading"><h2>Trending now</h2><small>POPULAR PICKS</small></div><div class="trending-split">'+trendingMusic.map(musicTile).join('')+'</div>'+(videos[0]?'<div class="trending-feature">'+wideVideoCard(videos[0])+'</div>':'')+'</section>';
   }
-  if(historyMusic.length)html+=shelf("Recently played",historyMusic,musicTile,"LISTEN AGAIN");
-  if(music.length)html+=shelf("Mixes & albums",music,musicTile);
-  if(movieResults.length)html+=shelf("Featured cinema",movieResults.slice(0,10),movieTile,"MOVIE DISCOVERY");
-  if(news.length)html+='<section class="explore-shelf news-list-shelf"><div class="shelf-heading"><h2>Top headlines</h2><small>NEWS</small></div><div class="news-list">'+news.slice(0,5).map((x,i)=>compactNewsRow(x,i,i===0)).join("")+'</div></section>';
-  if(followedVideos.length)html+=shelf("From your subscriptions",followedVideos,videoTile,"FOLLOWING");
-  if(followedMusic.length)html+=shelf("Latest from followed artists",followedMusic,musicTile,"FOLLOWING");
-  if(followedNews.length)html+='<section class="explore-shelf news-list-shelf"><div class="shelf-heading"><h2>Publisher updates</h2><small>FOLLOWING</small></div><div class="news-list">'+followedNews.slice(0,4).map(x=>compactNewsRow(x)).join("")+'</div></section>';
-  if(music.length>1||recommendedVideos.length>1){
-   html+='<section class="explore-shelf"><div class="shelf-heading"><h2>More to explore</h2><small>YOUR MIX</small></div><div class="explore-mosaic">'+music.slice(0,2).map((x,i)=>musicTile(x,i,i===0)).join("")+(recommendedVideos[1]?videoTile(recommendedVideos[1]):"")+'</div></section>';
-  }
+  html+=shelf('From your subscriptions',recentVideos,videoTile,'LATEST UPLOADS');
+  html+=shelf('Latest from followed artists',recentMusic,musicTile,'FOLLOWING');
+  if(recentNews.length)html+='<section class="explore-shelf news-column"><div class="shelf-heading"><h2>Publisher updates</h2><small>FOLLOWING</small></div>'+recentNews.slice(0,4).map(newsShelfCard).join('')+'</section>';
   html+=topicShelf();
+ }else{
+  const title=homeFilter;
+  if(categoryVideos.length)html+=shelf(title,categoryVideos,videoTile,'VIDEO RESULTS');
+  if(categoryMusic.length)html+=shelf('Music for '+title,musicTile?'':[],musicTile);
+  if(categoryNews.length)html+='<section class="explore-shelf news-column"><div class="shelf-heading"><h2>Stories about '+esc(title)+'</h2></div>'+categoryNews.map(newsShelfCard).join('')+'</section>';
+  if(!html)html='<div class="section-empty">Finding '+esc(title)+' for your feed…</div>';
  }
- if(!html)html='<div class="section-empty">No '+esc(homeFilter.toLowerCase())+' are available yet. Follow a few sources or explore topics in Search.</div>';
- root.innerHTML=html;
+ root.innerHTML=html||'<div class="section-empty">Nothing here yet. Search or choose another category.</div>';
 }
 renderHome = function(){
- const filters=["All","Videos","Music","News","Movies"];
- return '<div class="explore-tabs" role="tablist" aria-label="Explore categories">'+
-  filters.map(x=>'<button class="explore-tab" role="tab" data-home-filter="'+x+'" aria-selected="'+(homeFilter===x)+'" aria-pressed="'+(homeFilter===x)+'">'+x+'</button>').join("")+
-  '</div><p class="meta pad home-feed-status" id="homeFeedStatus" aria-live="polite">Preparing your picks…</p><div id="exploreShelves"></div>';
+ const filters=['All','Videos','Music','News','Movies','Mixes','Live','Podcasts','Gaming','Trending','Sci-Fi & Cinema','Lo-Fi & Beats','Tech & World','Watch Later','Recently Uploaded'];
+ return '<div class="explore-tabs" role="tablist" aria-label="Explore categories">'+filters.map(x=>'<button class="explore-tab" role="tab" data-home-filter="'+esc(x)+'" aria-selected="'+(homeFilter===x)+'" aria-pressed="'+(homeFilter===x)+'">'+esc(x)+'</button>').join('')+'</div>'+
+ '<p class="meta pad home-feed-status" id="homeFeedStatus" aria-live="polite">Your recommendations and subscriptions.</p><div id="exploreShelves"></div>';
 };
 renderFeedResults = function(data){
  if(page!=='explore'&&page!=='home')return;
@@ -167,89 +196,113 @@ renderFeedResults = function(data){
 renderSearchPage = function(){
  const history=searchHistory();
  const trending=(selectedTopics().length?selectedTopics():TOPICS).slice(0,10);
- return '<label class="search-box">'+ic("search")+'<input id="q" type="search" placeholder="Search Rush" aria-label="Search Rush" autocomplete="off"><button class="ib" type="button" data-search-clear aria-label="Clear search">×</button></label>'+
- '<div id="searchIdle"><div class="search-idle-heading">Trending topics</div><div class="trend-row">'+trending.map(x=>'<button class="trend-chip" data-topic-search="'+esc(x)+'">'+esc(x)+'</button>').join("")+'</div>'+
- '<div class="search-idle-heading">Your subscriptions</div><div class="source-rail">'+(prefs.sources.length?prefs.sources.slice(0,12).map(x=>'<button class="source-avatar" data-search-source="'+esc(x.kind)+'" data-source-name="'+esc(x.name)+'"><span class="avatar">'+(safeUrl(x.thumbnail)?'<img src="'+esc(safeUrl(x.thumbnail))+'" alt="" loading="lazy" decoding="async">':esc(creatorInitial(x.name)))+'</span><b>'+esc(x.name)+'</b></button>').join(""):'<span class="meta">Follow channels and publishers to see them here.</span>')+'</div>'+
- '<div class="search-idle-heading">Browse categories</div><div class="trend-row">'+["Videos","Music","Movies","News","Technology","Science","Sports","Culture"].map(x=>'<button class="trend-chip" data-topic-search="'+esc(x)+'">'+x+'</button>').join("")+'</div>'+
- '<div class="search-idle-heading">Recent searches</div><div class="search-history" id="searchHistory">'+(history.length?history.map(x=>'<button class="search-history-item" data-search-history="'+esc(x)+'">◷ <span>'+esc(x)+'</span></button>').join(""):'<span class="meta">Your recent searches will appear here.</span>')+'</div></div>'+
+ return '<section class="search-entry"><label class="search-box">'+ic('search')+'<input id="q" type="search" placeholder="Search videos, music, news and creators" aria-label="Search Rush" autocomplete="off"><button class="ib" type="button" data-search-clear aria-label="Clear search">×</button></label></section>'+
+ '<div id="searchIdle"><div class="search-idle-heading">Explore</div><div class="trend-row">'+trending.map(x=>'<button class="trend-chip" data-topic-search="'+esc(x)+'">'+esc(x)+'</button>').join('')+'</div>'+
+ '<div class="search-idle-heading">Channels & artists</div><div class="source-rail">'+(prefs.sources.length?prefs.sources.slice(0,16).map(x=>'<button class="source-avatar" data-search-source="'+esc(x.kind)+'" data-source-name="'+esc(x.name)+'"><span class="avatar">'+(safeUrl(x.thumbnail)?'<img src="'+esc(safeUrl(x.thumbnail))+'" alt="" loading="lazy" decoding="async">':esc(creatorInitial(x.name)))+'</span><b>'+esc(x.name)+'</b></button>').join(''):'<span class="meta">Your followed creators will appear here.</span>')+'</div>'+
+ '<div class="search-idle-heading">Browse categories</div><div class="trend-row">'+['Videos','Music','Movies','News','Live','Podcasts','Gaming','Technology'].map(x=>'<button class="trend-chip" data-topic-search="'+esc(x)+'">'+esc(x)+'</button>').join('')+'</div>'+
+ '<div class="search-idle-heading">Recent searches</div><div class="search-history" id="searchHistory">'+(history.length?history.map(x=>'<button class="search-history-item" data-search-history="'+esc(x)+'">◷ <span>'+esc(x)+'</span></button>').join('')+'<button class="trend-chip" data-search-history-clear>Clear history</button>':'<span class="meta">Your recent searches will appear here.</span>')+'</div></div>'+
  '<div class="chips search-filters"><button class="chip" data-search-filter="all" aria-pressed="true">All</button><button class="chip" data-search-filter="videos" aria-pressed="false">Videos</button><button class="chip" data-search-filter="music" aria-pressed="false">Music</button><button class="chip" data-search-filter="news" aria-pressed="false">News</button><button class="chip" data-search-filter="channels" aria-pressed="false">Channels</button><button class="chip" data-search-filter="playlists" aria-pressed="false">Playlists</button></div>'+
- '<p class="meta pad" id="unifiedStatus">Search across Rush.</p><div id="unifiedResults"></div><div id="publicPlaylistContent"></div>';
+ '<p class="meta pad" id="unifiedStatus">Search all of Rush.</p><div id="unifiedResults"></div><div id="publicPlaylistContent"></div>';
 };
 renderSubscribedPage = function(){
- const sources=prefs.sources||[];
- return '<div class="source-rail subscriptions" id="subscriptionSources">'+
- '<button class="source-avatar all-source" data-subscription-all aria-pressed="'+(selectedSubscription==="all")+'"><span class="avatar">ALL</span><b>All</b></button>'+
- (sources.length?sources.map((x,i)=>'<button class="source-avatar" data-subscription-source="'+i+'" aria-pressed="'+(selectedSubscription===x.name)+'"><span class="avatar">'+(safeUrl(x.thumbnail)?'<img src="'+esc(safeUrl(x.thumbnail))+'" alt="" loading="lazy" decoding="async">':esc(creatorInitial(x.name)))+'</span><b>'+esc(x.name)+'</b></button>').join(""):'<button class="source-avatar" data-open-search><span class="avatar">+</span><b>Find creators</b></button>')+
- '</div><div class="subscription-feed"><div class="subscription-toolbar"><b id="subscriptionTitle">'+(selectedSubscription==="all"?"All subscriptions":esc(selectedSubscription))+'</b><span><small id="subscriptionStatus">LATEST UPDATES</small></span></div><div id="subscriptionFeed" class="subscription-results"><p class="meta pad">Loading your subscriptions…</p></div></div>';
+ const filters=['All','Today','Videos','Music','Movies','News'];
+ return '<div class="source-rail subscriptions" id="subscriptionSources"><button class="source-avatar '+(selectedSubscriptionId==='all'?'active':'')+'" data-subscription-all><span class="avatar all-avatar">ALL</span><b>All</b></button>'+
+ (prefs.sources.length?prefs.sources.map((x,i)=>'<button class="source-avatar '+(selectedSubscriptionId===x.id?'active':'')+'" data-subscription-source="'+i+'"><span class="avatar">'+(safeUrl(x.thumbnail)?'<img src="'+esc(safeUrl(x.thumbnail))+'" alt="" loading="lazy" decoding="async">':esc(creatorInitial(x.name)))+'</span><b>'+esc(x.name)+'</b></button>').join(''):'<button class="source-avatar" data-open-search><span class="avatar all-avatar">+</span><b>Find</b></button>')+'</div>'+
+ '<div class="subscription-tabs">'+filters.map(x=>'<button class="explore-tab '+(subscriptionFilter===x?'selected':'')+'" data-subscription-filter="'+x+'" aria-pressed="'+(subscriptionFilter===x)+'">'+x+'</button>').join('')+'</div>'+
+ '<div class="subscription-feed"><div class="subscription-toolbar"><b id="subscriptionTitle">'+esc(selectedSubscriptionName)+'</b><small id="subscriptionStatus">LATEST UPDATES</small></div><div id="subscriptionFeed" class="subscription-results"><p class="meta pad">Loading your subscriptions…</p></div></div>';
 };
+function subscriptionPost(item,kind){
+ const creator=item.artist||item.creator||item.sourceName||item.source||selectedSubscriptionName;
+ const thumb=safeUrl(item.thumbnail);
+ let body='';
+ if(kind==='video')body=videoTile(item);
+ else if(kind==='music')body=musicTile(item);
+ else body=newsShelfCard(item);
+ return '<article class="subscription-post"><div class="subscription-post-source">'+creatorAvatar(creator)+'<span><b>'+esc(creator)+'</b><small>'+esc(item.date||item.duration||'Latest update')+'</small></span></div>'+body+'</article>';
+}
 function renderSubscribedFeed(data){
- const root=$("#subscriptionFeed");if(!root)return;
- const queues=[
-  (data.videos||[]).map(x=>({kind:"video",item:x})),
-  (data.music||[]).map(x=>({kind:"music",item:x})),
-  (data.news||[]).map(x=>({kind:"news",item:x}))
- ];
- const ordered=[];
- while(queues.some(queue=>queue.length))queues.forEach(queue=>{if(queue.length)ordered.push(queue.shift())});
- const items=ordered.map(({kind,item})=>kind==="video"?videoRow(item):kind==="music"?musicRow(item):newsCard(item)).join("");
- root.innerHTML=items||'<div class="section-empty">No recent posts from your subscriptions yet. Follow a channel, artist or publisher to build this feed.</div>';
- const status=$("#subscriptionStatus");if(status)status.textContent=ordered.length+" UPDATES";
- const title=$("#subscriptionTitle");if(title)title.textContent=selectedSubscription==="all"?"All subscriptions":selectedSubscription;
+ const root=$('#subscriptionFeed');if(!root)return;
+ const videos=data.videos||[],music=data.music||[],news=data.news||[];
+ let rows=[];
+ if(subscriptionFilter==='All'||subscriptionFilter==='Today'||subscriptionFilter==='Videos'){
+  rows.push(...videos.map(item=>({item,kind:'video'})));
+ }
+ if(subscriptionFilter==='All'||subscriptionFilter==='Today'||subscriptionFilter==='Music'){
+  rows.push(...music.map(item=>({item,kind:'music'})));
+ }
+ if(subscriptionFilter==='All'||subscriptionFilter==='Today'||subscriptionFilter==='News'){
+  rows.push(...news.map(item=>({item,kind:'news'})));
+ }
+ if(subscriptionFilter==='Movies'){
+  rows.push(...videos.filter(item=>durationSeconds(item.duration)>=900).map(item=>({item,kind:'video'})));
+ }
+ if(subscriptionFilter==='Today'){
+  const today=new Date();today.setHours(0,0,0,0);
+  rows=rows.filter(row=>!row.item.date||Date.parse(row.item.date)>=today.getTime());
+ }
+ root.innerHTML=rows.length?rows.map(row=>subscriptionPost(row.item,row.kind)).join(''):'<div class="section-empty">No recent updates in this filter. Select All or search for more creators.</div>';
+ const status=$('#subscriptionStatus');if(status)status.textContent=rows.length+' UPDATES';
+}
+function durationSeconds(value){
+ const parts=String(value||'').split(':').map(Number);
+ if(parts.some(Number.isNaN))return 0;
+ if(parts.length===3)return parts[0]*3600+parts[1]*60+parts[2];
+ if(parts.length===2)return parts[0]*60+parts[1];
+ return parts[0]||0;
 }
 function subscriptionSourceSearch(index){
  const source=prefs.sources[index];if(!source)return;
- selectedSubscription=source.name;
- document.querySelectorAll('#subscriptionSources [data-subscription-all],#subscriptionSources [data-subscription-source]').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.subscriptionSource!==undefined&&Number(x.dataset.subscriptionSource)===index)));
+ selectedSubscriptionId=source.id;selectedSubscriptionName=source.name;
+ document.querySelectorAll('[data-subscription-source]').forEach((button,i)=>button.classList.toggle('active',i===index));
  const title=$('#subscriptionTitle');if(title)title.textContent=source.name;
  const root=$('#subscriptionFeed');if(root)root.innerHTML='<p class="meta pad">Loading '+esc(source.name)+'…</p>';
  if(!window.RushNative)return;
  if(source.kind==='artist')RushNative.searchMusic(source.name);
  else if(source.kind==='news')RushNative.searchNews(source.name);
- else RushNative.searchVideos(source.name);
+ else RushNative.loadChannelUploads(source.id,source.name);
 }
-function renderLibraryOverviewMarkup(){
- const history=(libraryData.history||[]).slice(0,8).map(libraryEntry).filter(Boolean);
- const saved=(libraryData.saved||[]).slice(0,8).map(libraryEntry).filter(Boolean);
- const watchlist=localItems("watchlist").slice(0,8);
- const playlists=libraryData.playlists||[];
- let html="";
- if(history.length)html+=shelf("History",history,(x,i,p)=>x.music?musicTile(Object.assign({artist:x.creator},x),i,p):videoTile(x,i,p),"RECENTLY PLAYED");
- if(saved.length)html+=shelf("Saved items",saved,(x,i,p)=>x.music?musicTile(Object.assign({artist:x.creator},x),i,p):videoTile(x,i,p),"YOUR LIBRARY");
- if(watchlist.length)html+=shelf("Watchlist",watchlist,movieTile,"SAVED FOR LATER");
- if(playlists.length)html+='<section class="explore-shelf"><div class="shelf-heading"><h2>Playlists</h2><small>'+playlists.length+' COLLECTIONS</small></div><div class="playlist-shelf">'+playlists.map(p=>'<button class="playlist-shelf-tile" data-library-view="playlists"><span class="playlist-shelf-art">≡</span><b>'+esc(p.name||"Playlist")+'</b><small>'+((p.items||[]).length)+' ITEMS</small></button>').join("")+'</div></section>';
- return html||'<div class="section-empty">Your history, saved media and playlists will appear here as you use Rush.</div>';
-}
-function renderLibraryOverview(){const root=$("#libraryOverview");if(root)root.innerHTML=renderLibraryOverviewMarkup()}
 renderLibraryPage = function(){
- const views=[["saved","Saved items","♡","Videos and music you kept"],["history","History","◷","What you watched and played"],["watchlist","Watchlist","▣","Films and videos to watch later"],["liked","Liked","♥","Your liked media"],["playlists","Playlists","≡","Your collections"],["downloads","Downloads","⇩","Available offline"],["queue","Queue","♫","Up next"]];
- return '<div class="library-profile"><button class="library-profile-main" data-open-profile><span class="avatar">'+esc((rushProfile.displayName||"R").trim().slice(0,1).toUpperCase())+'</span><span class="profile-copy"><b>'+esc(rushProfile.displayName||"Your Rush profile")+'</b><span>'+(rushProfile.handle?"@"+esc(rushProfile.handle):"Saved locally on this device")+'</span></span><i>EDIT ›</i></button><button class="ib" data-open-settings aria-label="Settings">⚙</button></div>'+
- '<div id="libraryOverview">'+renderLibraryOverviewMarkup()+'</div>'+
- '<div class="library-menu">'+views.map(([key,name,icon,desc])=>'<button data-library-view="'+key+'"><span class="hardware-icon">'+icon+'</span><span class="library-menu-copy"><b>'+name+'</b><small>'+desc+'</small></span><span>›</span></button>').join("")+
- '<button data-open-settings><span class="hardware-icon">⚙</span><span class="library-menu-copy"><b>Settings</b><small>Permissions, playback and privacy</small></span><span>›</span></button></div>'+
- '<p class="meta pad" id="libraryStatus">Your saved media and listening history.</p><div class="chips library-tabs">'+views.map(([key,name])=>'<button class="chip" data-library-view="'+key+'" aria-pressed="'+(libraryView===key)+'">'+name+'</button>').join("")+'</div><div id="libraryContent"></div>';
+ const history=(libraryData.history||[]).slice(0,12).map(id=>libraryData.items&&libraryData.items[id]).filter(Boolean);
+ const playlists=libraryData.playlists||[];
+ const watchlist=localItems('watchlist');
+ const savedNews=localItems('news');
+ const listRows=[['history','History','◷'],['playlists','Playlists','▤'],['saved','Your videos','▶'],['downloads','Downloads','⇩'],['liked','Liked content','♥'],['watchlist','Watch later','▣'],['news','Saved news','▧']];
+ return '<div class="library-profile"><button class="library-profile-main" data-open-profile><span class="avatar">'+esc((rushProfile.displayName||'R').trim().slice(0,1).toUpperCase())+'</span><span class="profile-copy"><b>'+esc(rushProfile.displayName||'Your profile')+'</b><span>'+(rushProfile.handle?'@'+esc(rushProfile.handle):'Local profile')+'</span></span></button><button class="ib" data-open-settings aria-label="Settings">⚙</button></div>'+
+ librarySection('History',history.slice(0,8),item=>libraryRecordTile(item),'history')+
+ (playlists.length?'<section class="library-shelf"><div class="shelf-heading"><h2>Playlists</h2><button class="shelf-view-all" data-library-view="playlists">VIEW ALL ›</button></div><div class="shelf-row">'+playlists.slice(0,10).map(p=>'<button class="library-playlist-tile" data-play-playlist data-playlist-id="'+esc(p.id)+'"><span class="playlist-cover">'+(p.items&&p.items[0]&&libraryData.items[p.items[0]]&&safeUrl(libraryData.items[p.items[0]].thumbnail)?'<img src="'+esc(safeUrl(libraryData.items[p.items[0]].thumbnail))+'" alt="" loading="lazy">':'♫')+'</span><b>'+esc(p.name)+'</b><small>'+(p.items||[]).length+' tracks</small></button>').join('')+'</div></section>':'')+
+ librarySection('Watchlist',watchlist.slice(0,10),item=>libraryRecordTile(item,'movie'),'watchlist')+
+ (savedNews.length?'<section class="explore-shelf news-column"><div class="shelf-heading"><h2>Saved news</h2><button class="shelf-view-all" data-library-view="news">VIEW ALL ›</button></div>'+savedNews.slice(0,5).map(item=>newsShelfCard(item)).join('')+'</section>':'')+
+ '<section class="library-list">'+listRows.map(([key,label,icon])=>'<button data-library-view="'+key+'"><span class="library-row-icon">'+icon+'</span><b>'+label+'</b><span>›</span></button>').join('')+'</section><div class="library-view-all" id="libraryContent"></div>';
 };
-const renderOriginalLibraryContent=renderLibraryContent;
+const renderOriginalLibraryContent=renderLibraryContent;const renderOriginalLibraryContent=renderLibraryContent;
 renderLibraryContent = function(){
+ const root=$('#libraryContent');if(!root)return;
  if(libraryView==='liked'||libraryView==='watchlist'){
-  const items=localItems(libraryView),root=$('#libraryContent');if(!root)return;
+  const items=localItems(libraryView);
   document.querySelectorAll('[data-library-view]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.libraryView===libraryView)));
-  root.innerHTML=items.length?items.map(x=>'<div class="local-list-row"><img src="'+esc(safeUrl(x.thumbnail))+'" alt="" onerror="this.hidden=true"><span class="copy"><b>'+esc(x.title)+'</b><span>'+esc(x.creator||'')+'</span></span><button class="chip" data-video-id="'+esc(x.id)+'" data-title="'+esc(x.title)+'" data-creator="'+esc(x.creator||'')+'" data-thumbnail="'+esc(x.thumbnail||'')+'">PLAY</button></div>').join(''):'<div class="empty-state"><b>'+(libraryView==='liked'?'No liked items yet':'Your watchlist is empty')+'</b><p>Use the actions on a video to save it here.</p></div>';
+  root.innerHTML=items.length?items.map(item=>'<div class="local-list-row"><img src="'+esc(safeUrl(item.thumbnail))+'" alt="" onerror="this.hidden=true"><span class="copy"><b>'+esc(item.title)+'</b><span>'+esc(item.creator||'')+'</span></span><button class="chip" data-video-id="'+esc(item.id)+'" data-title="'+esc(item.title)+'" data-creator="'+esc(item.creator||'')+'" data-thumbnail="'+esc(item.thumbnail||'')+'">PLAY</button></div>').join(''):'<div class="empty-state"><b>'+(libraryView==='liked'?'No liked items yet':'Your watchlist is empty')+'</b><p>Use the actions on a video to save it here.</p></div>';
+  return;
+ }
+ if(libraryView==='news'){
+  const items=localItems('news');
+  document.querySelectorAll('[data-library-view]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.libraryView===libraryView)));
+  root.innerHTML=items.length?'<div class="news-column">'+items.map(newsShelfCard).join('')+'</div>':'<div class="empty-state"><b>No saved stories yet</b><p>Save a news card to keep it here.</p></div>';
   return;
  }
  renderOriginalLibraryContent();
 };
 renderWatchPage = function(){
  const x=currentVideo;
- const liked=isLocalItem('liked',x.id),saved=isLocalItem('watchlist',x.id);
- return '<div class="watch-toolbar"><span>NOW PLAYING</span><button class="chip" data-video-fullscreen>FULL SCREEN ↗</button></div>'+
- '<div class="watch-player"><div class="video-player-host" id="videoPlayerHost"></div><div class="watch-buffer-overlay" id="videoBuffering" hidden><span class="buffer-indicator"><i class="buffer-spinner"></i><b>BUFFERING</b></span></div></div>'+
+ const liked=isLocalItem('liked',x.id),saved=isLocalItem('watchlist',x.id),disliked=safeLocalRead('rush_disliked_items_v1').some(item=>item.id===x.id);
+ return '<div class="watch-player"><div class="video-player-host" id="videoPlayerHost"></div><div class="watch-buffer-overlay" id="videoBuffering" hidden><span class="buffer-indicator"><i class="buffer-spinner"></i><b>BUFFERING</b></span></div></div>'+
  '<section class="watch-details"><h2 id="watchTitle">'+esc(x.title||'Video loading…')+'</h2>'+
- '<div class="watch-channel">'+creatorAvatar(x.creator)+'<span class="watch-channel-copy"><b>'+esc(x.creator||'Creator')+'</b><span>Video creator</span></span><button class="chip" data-follow-kind="channel" data-source-id="'+esc(x.creator||'')+'" data-source-name="'+esc(x.creator||'')+'">Subscribe</button></div>'+
- '<div class="watch-actions"><button class="watch-action '+(liked?'on':'')+'" data-local-like>♥ '+(liked?'Liked':'Like')+'</button><button class="watch-action '+(saved?'on':'')+'" data-local-watchlist>＋ '+(saved?'In watchlist':'Watch later')+'</button><button class="watch-action" data-video-comments>Comments ↗</button><button class="watch-action" data-option-menu="speed">1× Speed</button><button class="watch-action" data-option-menu="quality">Quality</button><button class="watch-action" data-option-menu="captions">CC</button></div>'+
- '<div class="video-options" id="videoOptions" hidden></div><p class="meta" id="videoPlaybackStatus" aria-live="polite">Video controls and playback options are available here.</p></section>'+
+ '<div class="watch-channel">'+creatorAvatar(x.creator)+'<span class="watch-channel-copy"><b>'+esc(x.creator||'Creator')+'</b><span>Channel</span></span><button class="chip" data-follow-kind="channel" data-source-id="'+esc(x.sourceId||'')+'" data-source-name="'+esc(x.creator||'')+'" data-source-thumbnail="'+esc(x.creatorThumbnail||'')+'">Subscribe</button></div>'+
+ '<div class="watch-actions"><button class="watch-action '+(liked?'on':'')+'" data-local-like>♥ '+(liked?'Liked':'Like')+'</button><button class="watch-action '+(disliked?'on':'')+'" data-local-dislike>− Dislike</button><button class="watch-action '+(saved?'on':'')+'" data-local-watchlist>＋ '+(saved?'Saved':'Watch later')+'</button><button class="watch-action" data-option-menu="speed">1×</button><button class="watch-action" data-option-menu="quality">Quality</button><button class="watch-action" data-option-menu="captions">CC</button></div>'+
+ '<div class="video-options" id="videoOptions" hidden></div><div class="watch-actions secondary"><button class="watch-action" data-recommendation-feedback="notInterested" data-id="'+esc(x.id)+'" data-creator="'+esc(x.creator)+'">Not interested</button><button class="watch-action" data-recommendation-feedback="recommendChannel" data-id="'+esc(x.id)+'" data-creator="'+esc(x.creator)+'">Don’t recommend channel</button><button class="watch-action" data-video-fullscreen>Full screen ↗</button></div>'+
+ '<p class="meta" id="videoPlaybackStatus" aria-live="polite">Video controls and playback options are available here.</p></section>'+
  '<div class="watch-suggestions"><div class="shelf-heading"><h2>Up next</h2><small>MORE TO WATCH</small></div><div id="watchSuggestions">'+(homeFeedCache.videos||[]).filter(v=>v.id!==x.id).map(videoRow).join('')+'</div></div>';
 };
-renderPlayerPage = function(){
+renderPlayerPage = function(){renderPlayerPage = function(){
  const x=mediaState;
  return '<section class="player-screen"><div class="player-head"><button class="chip" data-player-back>← Back to Explore</button><span class="stk">RUSH DECK</span></div>'+
  '<div class="music-deck"><div class="deck-label"><span>COMPACT DISC PLAYER</span><span>MODE · AUDIO</span></div>'+
