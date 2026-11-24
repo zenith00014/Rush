@@ -532,6 +532,10 @@ h2::after{height:1px;background:rgba(255,255,255,.18)}
 }
 @media(prefers-reduced-motion:reduce){.deck-disc{animation:none!important}.nav .pill{transition:none!important}}
 
+
+.video-options{display:flex;gap:7px;flex-wrap:wrap;padding:8px 0 10px}
+.video-option{min-height:35px;padding:0 10px;border:1px solid var(--border);border-radius:8px;background:#26343c;color:var(--ink);font-size:11px}
+.video-option[aria-pressed=true]{background:var(--lime);color:#11171a;border-color:var(--lime)}
 </style></head>
 <body>
 <div class="app">
@@ -1300,8 +1304,8 @@ renderWatchPage = function(){
  '<div class="watch-player"><div class="video-player-host" id="videoPlayerHost"></div></div>'+
  '<section class="watch-details"><h2 id="watchTitle">'+esc(x.title||'Video loading…')+'</h2>'+
  '<div class="watch-channel">'+creatorAvatar(x.creator)+'<span class="watch-channel-copy"><b>'+esc(x.creator||'Creator')+'</b><span>Video creator</span></span><button class="chip" data-follow-kind="channel" data-source-id="'+esc(x.creator||'')+'" data-source-name="'+esc(x.creator||'')+'">Subscribe</button></div>'+
- '<div class="watch-actions"><button class="watch-action '+(liked?'on':'')+'" data-local-like>♥ Like</button><button class="watch-action '+(saved?'on':'')+'" data-local-watchlist>＋ Watch later</button><button class="watch-action" data-video-speed>1× Speed</button><button class="watch-action" data-video-quality>Quality</button><button class="watch-action" data-video-captions>CC</button></div>'+
- '<p class="meta" id="videoPlaybackStatus" aria-live="polite">Video controls and playback options are available here.</p></section>'+
+ '<div class="watch-actions"><button class="watch-action '+(liked?'on':'')+'" data-local-like>♥ '+(liked?'Liked':'Like')+'</button><button class="watch-action '+(saved?'on':'')+'" data-local-watchlist>＋ '+(saved?'In watchlist':'Watch later')+'</button><button class="watch-action" data-option-menu="speed">1× Speed</button><button class="watch-action" data-option-menu="quality">Quality</button><button class="watch-action" data-option-menu="captions">CC</button></div>'+
+ '<div class="video-options" id="videoOptions" hidden></div><p class="meta" id="videoPlaybackStatus" aria-live="polite">Video controls and playback options are available here.</p></section>'+
  '<div class="watch-suggestions"><div class="shelf-heading"><h2>Up next</h2><small>MORE TO WATCH</small></div><div id="watchSuggestions">'+(homeFeedCache.videos||[]).filter(v=>v.id!==x.id).map(videoRow).join('')+'</div></div>';
 };
 renderPlayerPage = function(){
@@ -1348,8 +1352,7 @@ go = function(){
  if(page==='player'&&window.RushNative){RushNative.loadCurrentPlayback();RushNative.loadCurrentMusicLyrics()}
  if(page==='watch'&&window.RushNative)RushNative.loadCurrentPlayback();
  const dock=$('#videoMiniDock');if(dock){const show=page!=='watch'&&mediaState.isVideo&&mediaState.hasItem;dock.hidden=!show;if(show){const title=$('#videoMiniTitle');if(title)title.textContent=mediaState.title||'Now playing'}}
- if(window.RushNative&&page!=='watch'&&page!=='explore'&&page!=='subscribed'&&mediaState.isVideo)RushNative.updateVideoPosition(0,0,0,0,true);
- else window.setTimeout(()=>window.rushUpdateVideoPosition&&window.rushUpdateVideoPosition(),120);
+ window.setTimeout(()=>window.rushUpdateVideoPosition&&window.rushUpdateVideoPosition(),120);
  if(window.RushNative)RushNative.loadCurrentPlayback();
 };
 function renderSearchHistory(){
