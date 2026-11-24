@@ -172,6 +172,8 @@ def main():
         "four-page shell stays inside app viewport": "height:100dvh" in styles or "height:100dvh" in (ASSET_ROOT / "styles/rush-base.css").read_text(encoding="utf-8"),
         "Explore skips DOM rebuilds when item signatures are unchanged": "lastExploreMarkupKey" in js and "markupKey===lastExploreMarkupKey" in js,
         "feed failure preserves cache and provides retry": "data-feed-retry" in js and "cachedCount" in js,
+        "provider failures do not overwrite feed cache with empty results": "fetchFailureCount" in bridge and "fetchAttemptCount" in bridge and "rushHomeFeedError" in bridge,
+        "Subscribed has a feed retry action": 'page==="subscribed"?' in js and "data-feed-retry" in js,
         "WebView renderer loss restores the previous route": "onRenderProcessGone" in activity and "rush.local/assets/rush.html#$route" in activity,
         "WebView rendering is hardware accelerated": 'android:hardwareAccelerated="true"' in manifest and "RENDERER_PRIORITY_IMPORTANT" in activity,
         "media buffering uses separate streaming and local profiles": "setBufferDurationsMsForStreaming(15_000, 60_000, 1_500, 3_000)" in service and "setBufferDurationsMsForLocalPlayback(3_000, 20_000, 500, 1_000)" in service,
