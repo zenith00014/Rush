@@ -13,8 +13,10 @@ Do not introduce another UI runtime, a large JavaScript framework, Rust UI code 
 - Load the four small UI modules in dependency order. Keep `rush.html` as a shell, not a script/CSS dump.
 - Read the local profile and feed preferences synchronously from app-private storage before making optional network calls.
 - Render the last cached feed before refreshing it. A refresh must not blank or re-create visible cards when the item signature has not changed.
-- Keep remote source fan-out bounded. Enrich publisher images after first content is visible.
-- Set media artwork to lazy-load and decode asynchronously. Keep dimensions/aspect ratios reserved to avoid layout shifts.
+- Keep remote source fan-out bounded with one shared five-request budget across both For You and Following, rather than a separate budget per feed. Enrich publisher images after first content is visible.
+- Load the first visible Explore artwork with high priority; keep the remaining media artwork lazy. Do not request the optional movie shelf until the user opens Movies.
+- Coalesce identical in-flight Home feed requests by profile and mode, and coalesce repeat YouTube searches with a short in-memory cache.
+- Set media artwork to lazy-load and decode asynchronously, reserving dimensions/aspect ratios to avoid layout shifts. Eager-load at most the first image on the visible Explore surface.
 - Avoid parsing the same markup and rebuilding the same DOM on every refresh. Explore compares a compact item signature and leaves unchanged DOM intact.
 
 ## Playback
