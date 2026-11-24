@@ -128,13 +128,30 @@ class MainActivity:ComponentActivity(){
    if(fullscreen)setNativeVideoFullscreen(true) else updateNativeVideoPosition()
   }
  }
+ fun positionNativeVideo(left:Double,top:Double,width:Double,height:Double,mini:Boolean) {
+  if(!nativeVideoRequested||nativeVideoFullscreen)return
+  if(width<20||height<20)return
+  runOnUiThread {
+   val view=nativeVideoView?:return@runOnUiThread
+   if(nativeVideoFullscreen||!nativeVideoRequested)return@runOnUiThread
+   val scale=webView.scale.coerceAtLeast(0.5f)
+   val w=(width*scale).toInt().coerceAtLeast(1)
+   val h=(height*scale).toInt().coerceAtLeast(1)
+   val params=android.widget.FrameLayout.LayoutParams(w,h,android.view.Gravity.TOP or android.view.Gravity.START)
+   params.leftMargin=webView.left+(left*scale).toInt()
+   params.topMargin=webView.top+(top*scale).toInt()
+   view.layoutParams=params
+   view.visibility=android.view.View.VISIBLE
+   view.bringToFront()
+   if(mini)updatePipAspectRatio(w,h)
+   setPipEligible(true)
+  }
+ }
  fun updateNativeVideoPosition() {
   if(!nativeVideoRequested||nativeVideoFullscreen)return
   runOnUiThread {
-   if(!nativeVideoFullscreen){
-    nativeVideoView?.visibility=android.view.View.GONE
-    setPipEligible(false)
-   }
+   if(!nativeVideoRequested||nativeVideoFullscreen)return@runOnUiThread
+   if(::webView.isInitialized)webView.evaluateJavascript("window.rushUpdateVideoPosition&&window.rushUpdateVideoPosition()",null)
   }
  }
 
