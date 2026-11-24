@@ -255,6 +255,8 @@ function subscriptionSourceSearch(index){
  selectedSubscriptionId=source.id;selectedSubscriptionName=source.name;
  document.querySelectorAll('[data-subscription-source]').forEach((button,i)=>button.classList.toggle('active',i===index));
  const title=$('#subscriptionTitle');if(title)title.textContent=source.name;
+ document.querySelectorAll('#subscriptionSources [data-subscription-all],#subscriptionSources [data-subscription-source]').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.subscriptionSource!==undefined&&Number(x.dataset.subscriptionSource)===index)));
+ const title=$('#subscriptionTitle');if(title)title.textContent=source.name;
  const root=$('#subscriptionFeed');if(root)root.innerHTML='<p class="meta pad">Loading '+esc(source.name)+'…</p>';
  if(!window.RushNative)return;
  if(source.kind==='artist')RushNative.searchMusic(source.name);
