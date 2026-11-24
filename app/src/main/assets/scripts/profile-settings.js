@@ -133,9 +133,13 @@ function saveOnboarding(){
 }
 document.addEventListener("click",event=>{
  const button=event.target.closest("button");if(!button)return;
- const profileAction=button.hasAttribute("data-profile-complete")||button.hasAttribute("data-onboarding-topic")||button.hasAttribute("data-open-notifications")||button.hasAttribute("data-close-sheet")||button.hasAttribute("data-sheet-subscriptions")||button.hasAttribute("data-notification-settings")||button.hasAttribute("data-app-settings")||button.hasAttribute("data-pip-settings")||button.hasAttribute("data-open-settings")||button.hasAttribute("data-edit-profile")||button.hasAttribute("data-open-profile")||button.hasAttribute("data-open-interests")||button.hasAttribute("data-open-privacy")||button.hasAttribute("data-profile-save")||button.hasAttribute("data-cancel-profile");
+ const profileAction=button.hasAttribute("data-profile-complete")||button.hasAttribute("data-onboarding-topic")||button.hasAttribute("data-open-notifications")||button.hasAttribute("data-close-sheet")||button.hasAttribute("data-sheet-subscriptions")||button.hasAttribute("data-notification-settings")||button.hasAttribute("data-app-settings")||button.hasAttribute("data-pip-settings")||button.hasAttribute("data-open-settings")||button.hasAttribute("data-edit-profile")||button.hasAttribute("data-open-profile")||button.hasAttribute("data-open-interests")||button.hasAttribute("data-open-privacy")||button.hasAttribute("data-profile-save")||button.hasAttribute("data-cancel-profile")||button.hasAttribute("data-video-retry");
  if(!profileAction)return;
  event.preventDefault();event.stopImmediatePropagation();
+ if(button.hasAttribute("data-video-retry")){
+  if(window.RushNative&&currentVideo.id)RushNative.playVideo(currentVideo.id,currentVideo.title,currentVideo.creator,currentVideo.thumbnail);
+  return;
+ }
  if(button.hasAttribute("data-profile-complete")){saveOnboarding();return}
  if(button.hasAttribute("data-onboarding-topic")){
   const topic=button.dataset.onboardingTopic;if(onboardingTopics.has(topic))onboardingTopics.delete(topic);else onboardingTopics.add(topic);
@@ -146,7 +150,7 @@ document.addEventListener("click",event=>{
  if(button.hasAttribute("data-sheet-subscriptions")){closeNotifications();location.hash="#subscribed";return}
  if(button.hasAttribute("data-notification-settings")){
   refreshPermissionStatus();
-  if(permissionSnapshot.notificationsBlockedInSystemSettings)window.RushNative.openApplicationSettings();
+  if(permissionSnapshot.notificationsEnabled||permissionSnapshot.notificationsBlockedInSystemSettings)window.RushNative.openApplicationSettings();
   else window.RushNative.requestNotificationPermission();
   return;
  }
@@ -205,6 +209,15 @@ window.rushHomeFeedError=function(error){
 window.rushVideoBuffering=function(buffering){
  const overlay=$("#videoBuffering");if(overlay)overlay.hidden=!buffering;
  const status=$("#videoPlaybackStatus");if(status&&buffering)status.textContent="Buffering video…";
+};
+window.rushVideoBufferingError=function(message){
+ const overlay=$("#videoBuffering");
+ if(overlay){overlay.hidden=false;overlay.innerHTML='<span class="buffer-indicator"><i class="buffer-error-mark">!</i><b>PLAYBACK INTERRUPTED</b><button class="btn" data-video-retry>TRY AGAIN</button></span>';}
+ const status=$("#videoPlaybackStatus");if(status)status.textContent=message||"Playback failed. Check your connection and try again.";
+};
+window.rushMusicBuffering=function(buffering){
+ const indicator=$("#musicBuffering");if(indicator)indicator.hidden=!buffering;
+ const status=$("#playerStatus");if(status&&buffering)status.textContent="BUFFERING AUDIO…";
 };
 window.setInterval(()=>{
  if(document.visibilityState==="visible"&&["explore","subscribed"].includes(page))window.rushAppForeground();
