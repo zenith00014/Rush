@@ -38,7 +38,10 @@ data class YouTubeSearchResult(
     val description: String = "",
     val videoCount: String = "",
     val thumbnailUrl: String = "",
-    val creatorThumbnail: String = ""
+    val creatorThumbnail: String = "",
+    val publishedAtEpochSeconds: Long = 0L,
+    val publishedTime: String = "",
+    val viewCount: Long = -1L
 )
 
 object LiveYouTubeSearch {
@@ -222,7 +225,10 @@ object LiveYouTubeSearch {
                     creator = item.uploaderName.orEmpty().ifBlank { "YouTube creator" },
                     duration = formatDuration(item.duration),
                     isMusic = false,
-                    thumbnailUrl = thumbnail
+                    thumbnailUrl = thumbnail,
+                    publishedAtEpochSeconds = runCatching { item.uploadDate?.instant?.epochSecond ?: 0L }.getOrDefault(0L),
+                    publishedTime = runCatching { item.textualUploadDate.orEmpty() }.getOrDefault(""),
+                    viewCount = runCatching { item.viewCount }.getOrDefault(-1L)
                 )
             }
             is ChannelInfoItem -> {
