@@ -122,6 +122,20 @@ function compactNewsRow(x,index=0,priorityImage=false){
 function renderExploreContent(feed){
  const root=$('#exploreShelves');if(!root)return;
  const videos=feed.videos||[],music=feed.music||[],news=feed.news||[];
+ const markupKey=JSON.stringify({
+  filter:homeFilter,videos:videos.map(x=>[x.id,x.title,x.thumbnail]),music:music.map(x=>[x.id,x.title,x.thumbnail]),
+  news:news.map(x=>[x.url,x.title,x.thumbnail]),movies:movieResults.map(x=>[x.id,x.title,x.thumbnail]),
+  history:(libraryData.history||[]).slice(0,10),watchLater:localItems('watchlist').map(x=>x.id),
+  followingVideos:(followingFeedCache.videos||[]).map(x=>[x.id,x.title,x.thumbnail]),
+  followingMusic:(followingFeedCache.music||[]).map(x=>[x.id,x.title,x.thumbnail]),
+  followingNews:(followingFeedCache.news||[]).map(x=>[x.url,x.title,x.thumbnail]),
+  categoryVideos:(exploreCategoryResults.videos||[]).map(x=>[x.id,x.title,x.thumbnail]),
+  categoryMusic:(exploreCategoryResults.music||[]).map(x=>[x.id,x.title,x.thumbnail]),
+  categoryNews:(exploreCategoryResults.news||[]).map(x=>[x.url,x.title,x.thumbnail]),
+  topics:selectedTopics()
+ });
+ if(markupKey===lastExploreMarkupKey&&root.childElementCount)return;
+ lastExploreMarkupKey=markupKey;explorePriorityImageAssigned=false;
  const historyItems=(libraryData.history||[]).slice(0,10).map(id=>{const item=libraryData.items&&libraryData.items[id];return item?Object.assign({id},item):null}).filter(Boolean);
  const historyVideos=historyItems.filter(item=>!item.music);
  const historyMusic=historyItems.filter(item=>item.music);
