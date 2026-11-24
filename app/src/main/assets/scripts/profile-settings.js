@@ -192,8 +192,8 @@ window.rushHandleBack=function(){
  if(page==="watch"){location.hash="#explore";return true}
  if(page==="player"){location.hash="#explore";return true}
  if(page==="explore"){return false}
- if(page!=="setup"){location.hash="#explore";return true}
- return false;
+ if(page==="setup"){return true}
+ location.hash="#explore";return true;
 };
 window.rushAppForeground=function(force){
  const now=Date.now();
@@ -214,12 +214,13 @@ window.rushHomeFeedLoading=function(state){
 window.rushHomeFeedError=function(error){
  const message=error.message||"Feed refresh failed.";
  if(page==="subscribed"){
+  if(error.mode&&error.mode!=="following")return;
   const root=$("#subscriptionFeed");
   const hasVisibleItems=!!root?.querySelector(".result-wrap,.row,.news-card");
   if(root&&!hasVisibleItems)root.innerHTML='<div class="feed-recovery"><b>Could not refresh Subscribed</b><p>'+esc(message)+'</p><button class="btn" data-feed-retry>TRY AGAIN</button></div>';
   return;
  }
- if(page!=="explore")return;
+ if(page!=="explore"||(error.mode&&error.mode==="following"))return;
  const status=$("#homeFeedStatus");if(status)status.textContent=message+" Showing your last saved picks where available.";
  const root=$("#exploreShelves");
  const cachedCount=(homeFeedCache.videos||[]).length+(homeFeedCache.music||[]).length+(homeFeedCache.news||[]).length;
@@ -227,16 +228,17 @@ window.rushHomeFeedError=function(error){
 };
 window.rushVideoPreparation=function(){
  const overlay=$("#videoBuffering");if(!overlay)return;
+ overlay.classList.remove("error-state");
  overlay.hidden=false;
  overlay.innerHTML='<span class="buffer-indicator"><i class="buffer-spinner"></i><b>CONNECTING TO VIDEO</b></span>';
 };
 window.rushVideoBuffering=function(buffering){
- const overlay=$("#videoBuffering");if(overlay)overlay.hidden=!buffering;
+ const overlay=$("#videoBuffering");if(overlay){overlay.classList.remove("error-state");overlay.hidden=!buffering;}
  const status=$("#videoPlaybackStatus");if(status&&buffering)status.textContent="Buffering video…";
 };
 window.rushVideoBufferingError=function(message){
  const overlay=$("#videoBuffering");
- if(overlay){overlay.hidden=false;overlay.innerHTML='<span class="buffer-indicator"><i class="buffer-error-mark">!</i><b>PLAYBACK INTERRUPTED</b><button class="btn" data-video-retry>TRY AGAIN</button></span>';}
+ if(overlay){overlay.classList.add("error-state");overlay.hidden=false;overlay.innerHTML='<span class="buffer-indicator"><i class="buffer-error-mark">!</i><b>PLAYBACK INTERRUPTED</b><button class="btn" data-video-retry>TRY AGAIN</button></span>';}
  const status=$("#videoPlaybackStatus");if(status)status.textContent=message||"Playback failed. Check your connection and try again.";
 };
 window.rushMusicBuffering=function(state){
