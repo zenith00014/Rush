@@ -590,13 +590,13 @@ function saveTopics(){
 }
 function sourceExists(kind,id){return prefs.sources.some(s=>s.kind===kind&&s.id===id)}
 function sourceFor(kind,id){return prefs.sources.find(s=>s.kind===kind&&s.id===id)}
-function sourceButton(kind,id,name,label){
+function sourceButton(kind,id,name,label,thumbnail=''){
  const found=sourceExists(kind,id);
- return '<button class="chip source-follow" data-follow-kind="'+esc(kind)+'" data-source-id="'+esc(id)+'" data-source-name="'+esc(name)+'">'+(found?'FOLLOWING':(label||'FOLLOW'))+'</button>';
+ return '<button class="chip source-follow" data-follow-kind="'+esc(kind)+'" data-source-id="'+esc(id)+'" data-source-name="'+esc(name)+'" data-source-thumbnail="'+esc(safeUrl(thumbnail))+'">'+(found?'FOLLOWING':(label||'FOLLOW'))+'</button>';
 }
 function channelCard(x){
  const thumb=safeUrl(x.thumbnail);
- return '<article class="source-card"><img src="'+esc(thumb)+'" alt="" loading="lazy" decoding="async" onerror="this.hidden=true"><div class="source-info"><b>'+esc(x.name)+'</b><span>'+esc(x.subscribers||'YouTube channel')+'</span><p>'+esc(x.description||'')+'</p><div class="source-actions">'+sourceButton('channel',x.id,x.name,'FOLLOW')+'</div></div></article>';
+ return '<article class="source-card"><img src="'+esc(thumb)+'" alt="" loading="lazy" decoding="async" onerror="this.hidden=true"><div class="source-info"><b>'+esc(x.name)+'</b><span>'+esc(x.subscribers||'YouTube channel')+'</span><p>'+esc(x.description||'')+'</p><div class="source-actions">'+sourceButton('channel',x.id,x.name,'FOLLOW',x.thumbnail)+'</div></div></article>';
 }
 
 function mediaActions(x,isMusic){
@@ -956,9 +956,9 @@ function renderPlayerState(){
 function renderPreferencePage(){
  applyPrefs(prefs);renderSources();updateTopicOptions();
 }
-function handleFollow(kind,id,name,productive){
+function handleFollow(kind,id,name,productive,thumbnail=''){
  if(!window.RushNative)return;
- RushNative.followSource(kind,id,name,!!productive);
+ RushNative.followSource(kind,id,name,!!productive,thumbnail||'');
 }
 function refreshCurrentPage(){
  if(page==='home')loadHomeFeed();
@@ -1019,7 +1019,7 @@ document.addEventListener('click',e=>{
  if(b.dataset.musicTerm){const input=$('#musicQuery');if(input)input.value=b.dataset.musicTerm;if(window.RushNative)RushNative.searchMusic(b.dataset.musicTerm);return}
  if(b.hasAttribute('data-news-search')){const q=$('#newsQuery')?.value.trim();if(q&&window.RushNative)RushNative.searchNews(q);return}
  if(b.dataset.newsCategory){document.querySelectorAll('[data-news-category]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));if(b.dataset.newsCategory==='Personalized')RushNative.loadPersonalizedNews();else if(window.RushNative)RushNative.loadNews(b.dataset.newsCategory);return}
- if(b.dataset.followKind){if(sourceExists(b.dataset.followKind,b.dataset.sourceId))RushNative.unfollowSource(b.dataset.followKind,b.dataset.sourceId);else handleFollow(b.dataset.followKind,b.dataset.sourceId,b.dataset.sourceName,false);return}
+ if(b.dataset.followKind){if(sourceExists(b.dataset.followKind,b.dataset.sourceId))RushNative.unfollowSource(b.dataset.followKind,b.dataset.sourceId);else handleFollow(b.dataset.followKind,b.dataset.sourceId,b.dataset.sourceName,false,b.dataset.sourceThumbnail||'');return}
  if(b.dataset.unfollowKind){if(window.RushNative)RushNative.unfollowSource(b.dataset.unfollowKind,b.dataset.sourceId);return}
  if(b.dataset.videoId){const d=b.dataset;const status=$('#videoPlaybackStatus');if(status){status.hidden=false;status.textContent='Preparing video…'}if(window.RushNative)RushNative.playVideo(d.videoId,d.title,d.creator,d.thumbnail);return}
   if(b.hasAttribute('data-video-resume')){if(window.RushNative)RushNative.showCurrentVideo();return}
@@ -1039,7 +1039,8 @@ document.addEventListener('click',e=>{
    if(d.hasItem&&d.isVideo&&d.mediaId&&window.RushNative)RushNative.playMusic(d.mediaId,d.title||'',d.artist||'',d.artwork||'');
    return;
   }
-  if(b.hasAttribute('data-player-toggle')){if(window.RushNative)RushNative.togglePlayback();return}
+  if(b.hasAttribute('data-player-back')){homeFilter='Music';location.hash='#explore';return}
+ if(b.hasAttribute('data-player-toggle')){if(window.RushNative)RushNative.togglePlayback();return}
   if(b.hasAttribute('data-player-prev')){if(window.RushNative)RushNative.skipPrevious();return}
   if(b.hasAttribute('data-player-next')){if(window.RushNative)RushNative.skipNext();return}
   if(b.hasAttribute('data-player-save')){if(window.RushNative&&mediaState.hasItem&&mediaState.isMusic)RushNative.saveLibraryItem(mediaState.sourceId||mediaState.mediaId,mediaState.title||'',mediaState.artist||'',true,mediaState.artwork||'');return}
@@ -1162,6 +1163,7 @@ window.addEventListener('resize',()=>{navPosition();indicator()});
 
 /* Four-page navigation and screen composition override the earlier prototype UI. */
 let movieResults=[];
+let followingFeedCache={videos:[],music:[],news:[]};
 let selectedSubscription='all';
 let videoSpeed=1,videoQuality=0,videoCaptions=true;
 let currentVideo={id:'',title:'',creator:'',thumbnail:''};
@@ -1222,6 +1224,9 @@ function renderExploreContent(feed){
  if(homeFilter==='All'||homeFilter==='Videos')html+=shelf(homeFilter==='Videos'?'Videos':'Recommended for you',v,videoTile);
  if(homeFilter==='All'||homeFilter==='Music')html+=shelf(homeFilter==='Music'?'Music':'Music for your day',m,musicTile);
  if(homeFilter==='All'||homeFilter==='News')html+=shelf(homeFilter==='News'?'News':'Top headlines',n,newsShelfCard);
+ if(homeFilter==='All')html+=shelf('From your subscriptions',followingFeedCache.videos||[],videoTile,'FOLLOWING');
+ if(homeFilter==='All')html+=shelf('Latest from followed musicians',followingFeedCache.music||[],musicTile,'FOLLOWING');
+ if(homeFilter==='All')html+=shelf('Publisher updates',followingFeedCache.news||[],newsShelfCard,'FOLLOWING');
  if(homeFilter==='All')html+=topicShelf();
  if(!html)html='<div class="section-empty">No '+esc(homeFilter.toLowerCase())+' are available yet. Try Search to discover more.</div>';
  root.innerHTML=html;
@@ -1248,7 +1253,7 @@ renderSearchPage = function(){
  return '<header class="search-hero"><h1>Search</h1><p>Find videos, music, stories, creators and films.</p></header>'+
  '<label class="search-box">'+ic('search')+'<input id="q" type="search" placeholder="What do you want to find?" aria-label="Search Rush" autocomplete="off"><button class="ib" type="button" data-search-clear aria-label="Clear search" style="width:34px;height:34px">×</button></label>'+
  '<div id="searchIdle"><div class="search-idle-heading">Trending topics</div><div class="trend-row">'+trending.map(x=>'<button class="trend-chip" data-topic-search="'+esc(x)+'">'+esc(x)+'</button>').join('')+'</div>'+
- '<div class="search-idle-heading">Your subscriptions</div><div class="source-rail">'+(prefs.sources.length?prefs.sources.slice(0,12).map(x=>'<button class="source-avatar" data-search-source="'+esc(x.kind)+'" data-source-name="'+esc(x.name)+'"><span class="avatar">'+esc(creatorInitial(x.name))+'</span><b>'+esc(x.name)+'</b></button>').join(''):'<span class="meta">Follow channels and publishers to see them here.</span>')+'</div>'+
+ '<div class="search-idle-heading">Your subscriptions</div><div class="source-rail">'+(prefs.sources.length?prefs.sources.slice(0,12).map(x=>'<button class="source-avatar" data-search-source="'+esc(x.kind)+'" data-source-name="'+esc(x.name)+'"><span class="avatar">'+(safeUrl(x.thumbnail)?'<img src="'+esc(safeUrl(x.thumbnail))+'" alt="" loading="lazy" decoding="async">':esc(creatorInitial(x.name)))+'</span><b>'+esc(x.name)+'</b></button>').join(''):'<span class="meta">Follow channels and publishers to see them here.</span>')+'</div>'+
  '<div class="search-idle-heading">Browse categories</div><div class="trend-row">'+['Videos','Music','News','Movies','Technology','Science','Sports','Culture'].map(x=>'<button class="trend-chip" data-topic-search="'+esc(x)+'">'+esc(x)+'</button>').join('')+'</div>'+
  '<div class="search-idle-heading">Recent searches</div><div class="search-history" id="searchHistory">'+(history.length?history.map(x=>'<button class="search-history-item" data-search-history="'+esc(x)+'">◷ <span>'+esc(x)+'</span></button>').join(''):'<span class="meta">Your recent searches will appear here.</span>')+'</div></div>'+
  '<div class="chips search-filters"><button class="chip" data-search-filter="all" aria-pressed="true">All</button><button class="chip" data-search-filter="videos" aria-pressed="false">Videos</button><button class="chip" data-search-filter="music" aria-pressed="false">Music</button><button class="chip" data-search-filter="news" aria-pressed="false">News</button><button class="chip" data-search-filter="channels" aria-pressed="false">Channels</button><button class="chip" data-search-filter="playlists" aria-pressed="false">Playlists</button></div>'+
@@ -1331,6 +1336,8 @@ go = function(){
  page=(location.hash||'#explore').slice(1);
  if(page==='home')page='explore';
  if(!R[page])page='explore';
+ if(page==='subscribed')selectedSubscription='all';
+ loadFeedPreferences();
  $('#v').innerHTML=R[page]();
  const activePage=page==='watch'?'explore':page==='player'?'explore':page;
  document.querySelectorAll('#nav a').forEach(a=>a.dataset.k===activePage?a.setAttribute('aria-current','page'):a.removeAttribute('aria-current'));
@@ -1339,15 +1346,12 @@ go = function(){
  if(page==='topics')updateTopicOptions();
  if(page==='library')loadLibrary();
  if(page==='explore'){
-  loadFeedPreferences();
   loadHomeFeed();
-  if(window.RushNative)RushNative.loadHomeFeed('following');
+  if(window.RushNative){RushNative.loadHomeFeed('following');RushNative.loadLibrary()}
  }else if(page==='subscribed'){
-  loadFeedPreferences();
   if(window.RushNative)RushNative.loadHomeFeed('following');
  }
  if(page==='search'){
-  loadFeedPreferences();
   window.setTimeout(()=>{const input=$('#q');if(input){input.focus();searchFocusOpen=true;renderSearchHistory() }},90);
  }
  if(page==='player'&&window.RushNative){RushNative.loadCurrentPlayback();RushNative.loadCurrentMusicLyrics()}
@@ -1371,7 +1375,7 @@ function runUnifiedSearch(){
 }
 window.rushHomeFeedResults = function(data){
  if(page==='subscribed'&&data&&data.mode==='following'){renderSubscribedFeed(data);return}
- if(page==='explore'&&data&&data.mode==='following')return;
+ if(page==='explore'&&data&&data.mode==='following'){followingFeedCache=data;renderExploreContent(homeFeedCache);return;}
  renderFeedResults(data);
 };
 const previousVideoResults=window.rushVideoSearchResults;
