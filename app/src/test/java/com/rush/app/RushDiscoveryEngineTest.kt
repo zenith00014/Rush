@@ -1,6 +1,7 @@
 package com.rush.app
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -29,6 +30,11 @@ class RushDiscoveryEngineTest {
         assertTrue(liked > neutral)
         assertTrue(neutral > disliked)
         assertEquals(0, hidden)
+        val rankedIds = RushDiscoveryEngine.rankFeed(
+            listOf(candidate("liked"), candidate("neutral"), candidate("disliked"), candidate("hidden")),
+            profile
+        ).map { it.candidate.id }
+        assertFalse("hidden" in rankedIds)
     }
 
     @Test fun topicAndFollowSignalsRankRelevantVideoOverLowSignalAlternative() {
