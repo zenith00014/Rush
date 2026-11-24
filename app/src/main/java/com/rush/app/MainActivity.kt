@@ -213,7 +213,7 @@ class MainActivity:ComponentActivity(){
       runCatching { player.prepare();player.play() }
      }
     }
-    .setNegativeButton("Close"){_,_->hideNativeVideo()}
+    .setNegativeButton("Close"){_,_->rushWebBridge.closeVideo()}
     .create()
     .also { dialog->
      dialog.setOnDismissListener { if(videoErrorDialog===dialog)videoErrorDialog=null }
