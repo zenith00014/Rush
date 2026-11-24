@@ -63,3 +63,10 @@ Before any release candidate:
 6. Compare measurements before changing buffer thresholds or introducing new dependencies.
 
 Never label Rush "zero-buffer" or "glitch-free" based only on a successful compilation or CI run.
+
+## Touch targets and accessibility
+
+- Android host guidance takes precedence over Apple-specific control placement: aim for 48dp activation targets on touch controls.
+- Keep keyboard/focus indication visible and do not use color alone for selected, buffering or error states.
+- Respect system font scaling and reduced-motion preference; verify large-font reflow and TalkBack focus order on physical devices.
+- First-run profile remains local and Guest mode is available; notification permission is optional.
