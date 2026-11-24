@@ -86,7 +86,7 @@ def main():
     if parser.script_sources != expected_scripts:
         fail(f"WebView script order mismatch: {parser.script_sources}")
 
-    expected_styles = ["styles/rush-base.css", "styles/four-page.css"]
+    expected_styles = ["styles/rush-base.css", "styles/four-page.css", "styles/youtube-inspired.css"]
     if parser.stylesheet_sources != expected_styles:
         fail(f"WebView stylesheet order mismatch: {parser.stylesheet_sources}")
 
