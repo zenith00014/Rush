@@ -549,7 +549,7 @@ class MainActivity:ComponentActivity(){
  }
  override fun onPictureInPictureModeChanged(isInPictureInPictureMode:Boolean,newConfig:android.content.res.Configuration){
   super.onPictureInPictureModeChanged(isInPictureInPictureMode,newConfig)
-  pipModeState.value=isInPictureInPictureMode
+  pipModeActive=isInPictureInPictureMode
  }
  @androidx.media3.common.util.UnstableApi
  override fun onDestroy(){
