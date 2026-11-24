@@ -283,3 +283,12 @@ h2::after{height:1px;background:rgba(255,255,255,.18)}
 @keyframes screen-enter{from{opacity:.72;transform:translateY(7px)}to{opacity:1;transform:none}}
 [hidden]{display:none!important}
 @media(prefers-reduced-motion:reduce){.skeleton-tile i,.skeleton-news i,.buffer-spinner{animation:none!important}.screen-enter{animation:none!important}}
+
+.library-profile-main{display:flex;align-items:center;gap:12px;min-width:0;flex:1;padding:0;text-align:left}
+.library-profile-main .profile-copy{min-width:0;flex:1}
+.library-profile-main .profile-copy b,.library-profile-main .profile-copy span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.library-profile-main>i{font-style:normal;color:var(--lime);font:9px var(--m);white-space:nowrap}
+.creator-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.music-buffer-label{display:flex;align-items:center;gap:7px;margin-top:10px;color:var(--cyan);font:9px var(--m);letter-spacing:.08em}
+.music-buffer-label .buffer-spinner{width:14px;height:14px;border-width:2px}
+.buffer-error-mark{display:grid;place-items:center;width:38px;height:38px;border:2px solid #ff9b76;border-radius:50%;color:#ff9b76;font-style:normal;font-size:22px}
