@@ -321,7 +321,7 @@ document.addEventListener('click',e=>{
  }
  if(b.hasAttribute('data-open-library')){location.hash='#library';return}
  if(b.hasAttribute('data-open-search')){location.hash='#search';return}
- if(b.hasAttribute('data-open-settings')){location.hash='#topics';return}
+ if(b.hasAttribute('data-open-settings')){location.hash='#settings';return}
  if(b.hasAttribute('data-video-id')){
   currentVideo={id:b.dataset.videoId||'',title:b.dataset.title||'Video',creator:b.dataset.creator||'',thumbnail:b.dataset.thumbnail||''};
   mediaState.hasItem=true;mediaState.isVideo=true;mediaState.isMusic=false;
