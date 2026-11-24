@@ -133,11 +133,15 @@ function saveOnboarding(){
 }
 document.addEventListener("click",event=>{
  const button=event.target.closest("button");if(!button)return;
- const profileAction=button.hasAttribute("data-profile-complete")||button.hasAttribute("data-onboarding-topic")||button.hasAttribute("data-open-notifications")||button.hasAttribute("data-close-sheet")||button.hasAttribute("data-sheet-subscriptions")||button.hasAttribute("data-notification-settings")||button.hasAttribute("data-app-settings")||button.hasAttribute("data-pip-settings")||button.hasAttribute("data-open-settings")||button.hasAttribute("data-edit-profile")||button.hasAttribute("data-open-profile")||button.hasAttribute("data-open-interests")||button.hasAttribute("data-open-privacy")||button.hasAttribute("data-profile-save")||button.hasAttribute("data-cancel-profile")||button.hasAttribute("data-video-retry");
+ const profileAction=button.hasAttribute("data-profile-complete")||button.hasAttribute("data-onboarding-topic")||button.hasAttribute("data-open-notifications")||button.hasAttribute("data-close-sheet")||button.hasAttribute("data-sheet-subscriptions")||button.hasAttribute("data-notification-settings")||button.hasAttribute("data-app-settings")||button.hasAttribute("data-pip-settings")||button.hasAttribute("data-open-settings")||button.hasAttribute("data-edit-profile")||button.hasAttribute("data-open-profile")||button.hasAttribute("data-open-interests")||button.hasAttribute("data-open-privacy")||button.hasAttribute("data-profile-save")||button.hasAttribute("data-cancel-profile")||button.hasAttribute("data-video-retry")||button.hasAttribute("data-feed-retry");
  if(!profileAction)return;
  event.preventDefault();event.stopImmediatePropagation();
  if(button.hasAttribute("data-video-retry")){
   if(window.RushNative&&currentVideo.id)RushNative.playVideo(currentVideo.id,currentVideo.title,currentVideo.creator,currentVideo.thumbnail);
+  return;
+ }
+ if(button.hasAttribute("data-feed-retry")){
+  if(window.RushNative){RushNative.loadHomeFeed("forYou");RushNative.loadHomeFeed("following")}
   return;
  }
  if(button.hasAttribute("data-profile-complete")){saveOnboarding();return}
@@ -205,7 +209,15 @@ window.rushHomeFeedLoading=function(state){
  }
 };
 window.rushHomeFeedError=function(error){
- const status=$("#homeFeedStatus");if(status)status.textContent=error.message||"Feed refresh failed. Showing your last saved picks.";
+ const message=error.message||"Feed refresh failed.";
+ const status=$("#homeFeedStatus");if(status)status.textContent=message+" Showing your last saved picks where available.";
+ const root=$("#exploreShelves");
+ if(root&&!root.children.length)root.innerHTML='<div class="feed-recovery"><b>Could not reach your feed</b><p>'+esc(message)+'</p><button class="btn" data-feed-retry>TRY AGAIN</button></div>';
+};
+window.rushVideoPreparation=function(){
+ const overlay=$("#videoBuffering");if(!overlay)return;
+ overlay.hidden=false;
+ overlay.innerHTML='<span class="buffer-indicator"><i class="buffer-spinner"></i><b>CONNECTING TO VIDEO</b></span>';
 };
 window.rushVideoBuffering=function(buffering){
  const overlay=$("#videoBuffering");if(overlay)overlay.hidden=!buffering;
@@ -218,7 +230,9 @@ window.rushVideoBufferingError=function(message){
 };
 window.rushMusicBuffering=function(state){
  const buffering=typeof state==="boolean"?state:!!(state&&state.buffering);
- const indicator=$("#musicBuffering");if(indicator)indicator.hidden=!buffering;
+ const bufferState=window.rushMusicBufferState||(window.rushMusicBufferState={preparing:false,buffering:false});
+ bufferState.buffering=buffering;
+ const indicator=$("#musicBuffering");if(indicator)indicator.hidden=!(bufferState.preparing||bufferState.buffering);
  const status=$("#playerStatus");if(status&&buffering)status.textContent="BUFFERING AUDIO…";
 };
 window.setInterval(()=>{
