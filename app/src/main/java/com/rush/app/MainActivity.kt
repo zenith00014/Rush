@@ -125,7 +125,7 @@ class MainActivity:ComponentActivity(){
  }
  fun openPictureInPictureSettings(){
   runCatching {
-   startActivity(android.content.Intent(android.provider.Settings.ACTION_PICTURE_IN_PICTURE_SETTINGS,
+   startActivity(android.content.Intent("android.settings.PICTURE_IN_PICTURE_SETTINGS",
     android.net.Uri.fromParts("package",packageName,null)))
   }.recoverCatching {
    startActivity(android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
