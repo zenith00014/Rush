@@ -159,7 +159,7 @@ renderWatchPage = function(){
  const x=currentVideo;
  const liked=isLocalItem('liked',x.id),saved=isLocalItem('watchlist',x.id);
  return '<div class="watch-toolbar"><span>NOW PLAYING</span><button class="chip" data-video-fullscreen>FULL SCREEN ↗</button></div>'+
- '<div class="watch-player"><div class="video-player-host" id="videoPlayerHost"></div></div>'+
+ '<div class="watch-player"><div class="video-player-host" id="videoPlayerHost"></div><div class="watch-buffer-overlay" id="videoBuffering" hidden><span class="buffer-indicator"><i class="buffer-spinner"></i><b>BUFFERING</b></span></div></div>'+
  '<section class="watch-details"><h2 id="watchTitle">'+esc(x.title||'Video loading…')+'</h2>'+
  '<div class="watch-channel">'+creatorAvatar(x.creator)+'<span class="watch-channel-copy"><b>'+esc(x.creator||'Creator')+'</b><span>Video creator</span></span><button class="chip" data-follow-kind="channel" data-source-id="'+esc(x.creator||'')+'" data-source-name="'+esc(x.creator||'')+'">Subscribe</button></div>'+
  '<div class="watch-actions"><button class="watch-action '+(liked?'on':'')+'" data-local-like>♥ '+(liked?'Liked':'Like')+'</button><button class="watch-action '+(saved?'on':'')+'" data-local-watchlist>＋ '+(saved?'In watchlist':'Watch later')+'</button><button class="watch-action" data-video-comments>Comments ↗</button><button class="watch-action" data-option-menu="speed">1× Speed</button><button class="watch-action" data-option-menu="quality">Quality</button><button class="watch-action" data-option-menu="captions">CC</button></div>'+
