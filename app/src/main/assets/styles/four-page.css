@@ -304,7 +304,6 @@ h2::after{height:1px;background:rgba(255,255,255,.18)}
 .shelf-row,.topic-shelf,.source-rail{overscroll-behavior-x:contain;touch-action:pan-x pan-y}
 .media-art img,.news-shelf-card img{background:linear-gradient(135deg,#243139,#1a2228)}
 button{touch-action:manipulation}
-.media-art,.news-shelf-card,.library-quick,.topic-tile{backface-visibility:hidden}
 @media(prefers-reduced-motion:no-preference){
  .explore-tab,.watch-action,.deck-control,.library-quick{transition:transform .14s ease,filter .14s ease,background .14s ease}
  .explore-tab:active,.watch-action:active,.deck-control:active,.library-quick:active{transform:translateY(2px) scale(.985)}
