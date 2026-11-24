@@ -233,7 +233,7 @@ class RushWebBridge(
                         }
 
                         val newsResults = newsJobs.awaitAll()
-                        if (cachedPayload == null) {
+                        val earlyImageJob = if (cachedPayload == null) {
                             val earlyHits = LinkedHashMap<String, RushDiscoveryEngine.FeedHit>()
                             val earlyPayloads = LinkedHashMap<String, JSONObject>()
                             newsResults.forEach { (_, items) ->
@@ -264,9 +264,14 @@ class RushWebBridge(
                                     .put("news", JSONArray(earlyNews))
                                     .put("message", "Loading video and music picks…")
                                     .toString())
-                            }
-                        }
-                        Triple(videoJobs.awaitAll(), musicJobs.awaitAll(), newsResults)
+                                async(Dispatchers.IO) { enrichNewsThumbnails(earlyNews, prefs, 8) }
+                            } else null
+                        } else null
+
+                        val videoResults = videoJobs.awaitAll()
+                        val musicResults = musicJobs.awaitAll()
+                        earlyImageJob?.await()
+                        Triple(videoResults, musicResults, newsResults)
                     }
                 }
 
