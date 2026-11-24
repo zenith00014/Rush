@@ -51,6 +51,9 @@ The current movie shelf uses long-form YouTube search results as discovery candi
 
 ## Third-party licence review
 
+The FFmpeg SmartException dependency added for the Android release build is `com.arthenica:smart-exception-java:0.2.1`, with its `smart-exception-common` transitive dependency; Maven Central declares both under the 3-Clause BSD licence. Record both in the bundled notices and final licence inventory. [Maven Central metadata](https://central.sonatype.com/artifact/com.arthenica/smart-exception-java) [Common dependency metadata](https://central.sonatype.com/artifact/com.arthenica/smart-exception-common).
+
+
 The repository identifies the LibreTube/NewPipeExtractor-derived player as GPL-3.0-or-later, its FFmpegKit-compatible audio package as LGPL-3.0, and the SmartException Java/Android helper as BSD-3-Clause. Keep the applicable source and notices available and confirm distribution obligations for the exact versions shipped. This is separate from YouTube content rights.
 
 ## Official references
