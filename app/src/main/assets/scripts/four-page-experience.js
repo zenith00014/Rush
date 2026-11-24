@@ -8,6 +8,8 @@ let searchFocusOpen=false;
 let subscriptionFilter='All';
 let selectedSubscriptionId='all';
 let selectedSubscriptionName='All subscriptions';
+let selectedSubscriptionKind='all';
+let selectedChannelUploads=[];
 let exploreCategoryResults={videos:[],music:[],news:[]};
 let exploreCategoryQuery='';
 let lastExploreMarkupKey='';
@@ -37,12 +39,12 @@ function creatorAvatar(name,providedThumbnail=""){
 function videoTile(x,index=0,priorityImage=false){
  const thumb=safeUrl(x.thumbnail),creator=x.artist||x.creator||'YouTube';
  const priority=priorityImage?' loading="eager" fetchpriority="high"':' loading="lazy"';
- return '<article class="media-tile"><button class="home-media-open" data-video-id="'+esc(x.id)+'" data-title="'+esc(x.title)+'" data-creator="'+esc(creator)+'" data-thumbnail="'+esc(thumb)+'" data-creator-thumbnail="'+esc(x.creatorThumbnail||'')+'" aria-label="Watch '+esc(x.title)+'"><span class="media-art video">'+(thumb?'<img src="'+esc(thumb)+'" alt="" width="190" height="107" decoding="async"'+priority+' onerror="this.hidden=true">':'')+'<span class="media-kind">VIDEO</span><span class="media-play">'+ic('play')+'</span></span></button><span class="media-copy">'+creatorAvatar(creator,x.creatorThumbnail)+'<span><b>'+esc(x.title)+'</b><span>'+esc(creator)+(x.duration?' · '+esc(x.duration):'')+'</span></span></span></article>';
+ return '<article class="media-tile"><button class="home-media-open" data-video-id="'+esc(x.id)+'" data-title="'+esc(x.title)+'" data-creator="'+esc(creator)+'" data-thumbnail="'+esc(thumb)+'" data-creator-thumbnail="'+esc(x.creatorThumbnail||'')+'" data-source-id="'+esc(x.channelId||x.sourceId||'')+'" aria-label="Watch '+esc(x.title)+'"><span class="media-art video">'+(thumb?'<img src="'+esc(thumb)+'" alt="" width="190" height="107" decoding="async"'+priority+' onerror="this.hidden=true">':'')+'<span class="media-kind">VIDEO</span><span class="media-play">'+ic('play')+'</span></span></button><span class="media-copy">'+creatorAvatar(creator,x.creatorThumbnail)+'<span><b>'+esc(x.title)+'</b><span>'+esc(creator)+(x.duration?' · '+esc(x.duration):'')+'</span></span></span>'+mediaFeedbackMenu(x)+'</article>';
 }
 function movieTile(x,index=0,priorityImage=false){
  const thumb=safeUrl(x.thumbnail),creator=x.artist||x.creator||'YouTube';
  const priority=priorityImage?' loading="eager" fetchpriority="high"':' loading="lazy"';
- return '<article class="media-tile movie"><button class="home-media-open" data-video-id="'+esc(x.id)+'" data-title="'+esc(x.title)+'" data-creator="'+esc(creator)+'" data-thumbnail="'+esc(thumb)+'" data-creator-thumbnail="'+esc(x.creatorThumbnail||'')+'" aria-label="Play '+esc(x.title)+'"><span class="media-art movie">'+(thumb?'<img src="'+esc(thumb)+'" alt="" width="132" height="198" decoding="async"'+priority+' onerror="this.hidden=true">':'')+'<span class="media-kind">FILM</span><span class="media-play">'+ic('play')+'</span></span></button><span class="media-copy"><span><b>'+esc(x.title)+'</b><span>'+esc(creator)+'</span></span></span></article>';
+ return '<article class="media-tile movie"><button class="home-media-open" data-video-id="'+esc(x.id)+'" data-title="'+esc(x.title)+'" data-creator="'+esc(creator)+'" data-thumbnail="'+esc(thumb)+'" data-creator-thumbnail="'+esc(x.creatorThumbnail||'')+'" data-source-id="'+esc(x.channelId||x.sourceId||'')+'" aria-label="Play '+esc(x.title)+'"><span class="media-art movie">'+(thumb?'<img src="'+esc(thumb)+'" alt="" width="132" height="198" decoding="async"'+priority+' onerror="this.hidden=true">':'')+'<span class="media-kind">FILM</span><span class="media-play">'+ic('play')+'</span></span></button><span class="media-copy"><span><b>'+esc(x.title)+'</b><span>'+esc(creator)+'</span></span></span>'+mediaFeedbackMenu(x)+'</article>';
 }
 function musicTile(x,index=0,priorityImage=false){
  const thumb=safeUrl(x.thumbnail),artist=x.artist||'Unknown artist';
@@ -62,7 +64,7 @@ function mediaFeedbackMenu(x){
 function wideVideoCard(x){
  if(!x)return '';
  const creator=x.artist||x.creator||'YouTube',thumb=safeUrl(x.thumbnail);
- return '<article class="wide-video-card"><button data-video-id="'+esc(x.id)+'" data-title="'+esc(x.title)+'" data-creator="'+esc(creator)+'" data-thumbnail="'+esc(thumb)+'"><span class="wide-video-art">'+(thumb?'<img src="'+esc(thumb)+'" alt="" loading="lazy" decoding="async">':'')+'<span class="media-play">'+ic('play')+'</span></span><span class="wide-video-copy">'+creatorAvatar(creator,x.creatorThumbnail)+'<span><b>'+esc(x.title)+'</b><small>'+esc(creator)+(x.duration?' · '+esc(x.duration):'')+'</small></span></span></button>'+mediaFeedbackMenu(x)+'</article>';
+ return '<article class="wide-video-card"><button data-video-id="'+esc(x.id)+'" data-title="'+esc(x.title)+'" data-creator="'+esc(creator)+'" data-thumbnail="'+esc(thumb)+'" data-creator-thumbnail="'+esc(x.creatorThumbnail||'')+'" data-source-id="'+esc(x.channelId||x.sourceId||'')+'"><span class="wide-video-art">'+(thumb?'<img src="'+esc(thumb)+'" alt="" loading="lazy" decoding="async">':'')+'<span class="media-play">'+ic('play')+'</span></span><span class="wide-video-copy">'+creatorAvatar(creator,x.creatorThumbnail)+'<span><b>'+esc(x.title)+'</b><small>'+esc(creator)+(x.duration?' · '+esc(x.duration):'')+'</small></span></span></button>'+mediaFeedbackMenu(x)+'</article>';
 }
 function libraryRecordTile(item,shape){
  if(!item)return '';
@@ -70,8 +72,12 @@ function libraryRecordTile(item,shape){
  const klass=shape==='movie'?'movie':music?'music':'video';
  const ratio=klass==='movie'?'media-art movie':klass==='music'?'media-art music':'media-art video';
  const creator=item.creator||item.artist||'YouTube';
- const play=music?'<button data-track="'+esc(item.sourceId||id)+'" data-title="'+esc(item.title||'')+'" data-artist="'+esc(creator)+'" data-thumbnail="'+esc(thumb)+'">':'<button data-video-id="'+esc(id)+'" data-title="'+esc(item.title||'')+'" data-creator="'+esc(creator)+'" data-thumbnail="'+esc(thumb)+'">';
- return '<article class="media-tile '+(klass==='movie'?'movie':klass==='music'?'music':'')+'">'+play+'<span class="'+ratio+'">'+(thumb?'<img src="'+esc(thumb)+'" alt="" loading="lazy" decoding="async">':'')+'<span class="media-play">'+ic('play')+'</span></span></button><span class="media-copy"><span><b>'+esc(item.title||'Untitled media')+'</b><span>'+esc(creator)+'</span></span></span></article>';
+ const action=music?'data-track="'+esc(id)+'" data-artist="'+esc(creator)+'"':'data-video-id="'+esc(id)+'" data-creator="'+esc(creator)+'"';
+ return '<article class="media-tile '+(klass==='movie'?'movie':klass==='music'?'music':'')+'"><button '+action+' data-title="'+esc(item.title||'')+'" data-thumbnail="'+esc(thumb)+'" aria-label="Play '+esc(item.title||'')+'"><span class="'+ratio+'">'+(thumb?'<img src="'+esc(thumb)+'" alt="" loading="lazy" decoding="async">':'')+'<span class="media-play">'+ic('play')+'</span></span></button><span class="media-copy"><span><b>'+esc(item.title||'Untitled media')+'</b><span>'+esc(creator)+'</span></span></span></article>';
+}
+function librarySection(title,items,renderer,view){
+ if(!items||!items.length)return '';
+ return '<section class="library-shelf"><div class="shelf-heading"><h2>'+esc(title)+'</h2><button class="shelf-view-all" data-library-view="'+esc(view)+'">VIEW ALL ›</button></div><div class="shelf-row">'+items.map(renderer).join('')+'</div></section>';
 }
 function librarySection(title,items,renderer,view){
  if(!items||!items.length)return '';
@@ -247,22 +253,38 @@ function durationSeconds(value){
  if(parts.length===2)return parts[0]*60+parts[1];
  return parts[0]||0;
 }
+function renderSelectedChannelFeed(){
+ const root=$('#subscriptionFeed');if(!root)return;
+ let kind=selectedSubscriptionKind==='artist'?'music':selectedSubscriptionKind==='news'?'news':'video';
+ let items=selectedChannelUploads||[];
+ if(subscriptionFilter==='Music')kind='music';
+ else if(subscriptionFilter==='News')kind='news';
+ else if(subscriptionFilter==='Movies'){kind='video';items=items.filter(item=>durationSeconds(item.duration)>=900)}
+ else if(subscriptionFilter==='Today'){
+  const start=new Date();start.setHours(0,0,0,0);
+  items=items.filter(item=>item.date&&Date.parse(item.date)>=start.getTime());
+ }
+ const rows=items.map(item=>subscriptionPost(item,kind));
+ root.innerHTML=rows.length?rows.join(''):'<div class="section-empty">No recent '+esc(subscriptionFilter.toLowerCase())+' updates from '+esc(selectedSubscriptionName)+'.</div>';
+ const status=$('#subscriptionStatus');if(status)status.textContent=rows.length+' UPDATES';
+}
 function subscriptionSourceSearch(index){
  const source=prefs.sources[index];if(!source)return;
- selectedSubscriptionId=source.id;selectedSubscription=''+source.name;selectedSubscriptionName=source.name;
+ selectedSubscription=source.name;selectedSubscriptionId=source.id;selectedSubscriptionName=source.name;selectedSubscriptionKind=source.kind;
+ selectedChannelUploads=[];
  document.querySelectorAll('[data-subscription-source]').forEach((button,i)=>button.classList.toggle('active',i===index));
- document.querySelectorAll('#subscriptionSources [data-subscription-all],#subscriptionSources [data-subscription-source]').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.subscriptionSource!==undefined&&Number(x.dataset.subscriptionSource)===index)));
+ document.querySelectorAll('#subscriptionSources [data-subscription-all],#subscriptionSources [data-subscription-source]').forEach(x=>{
+  const active=!x.hasAttribute('data-subscription-all')&&Number(x.dataset.subscriptionSource)===index;
+  x.setAttribute('aria-pressed',String(active));
+ });
  const title=$('#subscriptionTitle');if(title)title.textContent=source.name;
  const root=$('#subscriptionFeed');if(root)root.innerHTML='<p class="meta pad">Loading '+esc(source.name)+'…</p>';
  if(!window.RushNative)return;
- if(source.kind==='artist'){
-  if(subscriptionFilter==='Videos'||subscriptionFilter==='Movies')RushNative.searchVideos(source.name);
-  else RushNative.searchMusic(source.name);
- }else if(source.kind==='news')RushNative.searchNews(source.name);
- else if(subscriptionFilter==='Music')RushNative.searchMusic(source.name);
+ if(subscriptionFilter==='News'||source.kind==='news')RushNative.searchNews(source.name);
+ else if(subscriptionFilter==='Music'||source.kind==='artist')RushNative.searchMusic(source.name);
  else RushNative.loadChannelUploads(source.id,source.name);
 }
-renderLibraryPage = function(){
+renderLibraryPage = function(){renderLibraryPage = function(){
  const history=(libraryData.history||[]).slice(0,12).map(id=>{const item=libraryData.items&&libraryData.items[id];return item?Object.assign({id},item):null}).filter(Boolean);
  const playlists=libraryData.playlists||[];
  const watchlist=localItems('watchlist');
@@ -297,7 +319,7 @@ renderWatchPage = function(){
  const liked=isLocalItem('liked',x.id),saved=isLocalItem('watchlist',x.id),disliked=safeLocalRead('rush_disliked_items_v1').some(item=>item.id===x.id);
  return '<div class="watch-player"><div class="video-player-host" id="videoPlayerHost"></div><div class="watch-buffer-overlay" id="videoBuffering" hidden><span class="buffer-indicator"><i class="buffer-spinner"></i><b>BUFFERING</b></span></div></div>'+
  '<section class="watch-details"><h2 id="watchTitle">'+esc(x.title||'Video loading…')+'</h2>'+
- '<div class="watch-channel">'+creatorAvatar(x.creator)+'<span class="watch-channel-copy"><b>'+esc(x.creator||'Creator')+'</b><span>Channel</span></span><button class="chip" data-follow-kind="channel" data-source-id="'+esc(x.sourceId||'')+'" data-source-name="'+esc(x.creator||'')+'" data-source-thumbnail="'+esc(x.creatorThumbnail||'')+'">Subscribe</button></div>'+
+ '<div class="watch-channel">'+creatorAvatar(x.creator,x.creatorThumbnail)+'<span class="watch-channel-copy"><b>'+esc(x.creator||'Creator')+'</b><span>Channel</span></span><button class="chip" data-follow-kind="channel" data-source-id="'+esc(x.sourceId||'')+'" data-source-name="'+esc(x.creator||'')+'" data-source-thumbnail="'+esc(x.creatorThumbnail||'')+'">Subscribe</button></div>'+
  '<div class="watch-actions"><button class="watch-action '+(liked?'on':'')+'" data-local-like>♥ '+(liked?'Liked':'Like')+'</button><button class="watch-action '+(disliked?'on':'')+'" data-local-dislike>− Dislike</button><button class="watch-action '+(saved?'on':'')+'" data-local-watchlist>＋ '+(saved?'Saved':'Watch later')+'</button><button class="watch-action" data-option-menu="speed">1×</button><button class="watch-action" data-option-menu="quality">Quality</button><button class="watch-action" data-option-menu="captions">CC</button></div>'+
  '<div class="video-options" id="videoOptions" hidden></div><div class="watch-actions secondary"><button class="watch-action" data-recommendation-feedback="notInterested" data-id="'+esc(x.id)+'" data-creator="'+esc(x.creator)+'">Not interested</button><button class="watch-action" data-recommendation-feedback="recommendChannel" data-id="'+esc(x.id)+'" data-creator="'+esc(x.creator)+'">Don’t recommend channel</button><button class="watch-action" data-video-fullscreen>Full screen ↗</button></div>'+
  '<p class="meta" id="videoPlaybackStatus" aria-live="polite">Video controls and playback options are available here.</p></section>'+
@@ -345,7 +367,7 @@ go = function(){
   window.setTimeout(()=>{const input=$('#q');if(input){input.focus();searchFocusOpen=true;renderSearchHistory() }},90);
  }
  if(page==='player'&&window.RushNative){RushNative.loadCurrentPlayback();RushNative.loadCurrentMusicLyrics()}
- if(page==='watch'&&window.RushNative){RushNative.loadCurrentPlayback();if(currentVideo.id)RushNative.searchVideos(currentVideo.title||currentVideo.creator)}
+ if(page==='watch'&&window.RushNative){RushNative.loadCurrentPlayback();if(currentVideo.id)RushNative.loadUpNext(currentVideo.id,currentVideo.title,currentVideo.creator)}
  const dock=$('#videoMiniDock');if(dock){const show=page!=='watch'&&mediaState.isVideo&&mediaState.hasItem;dock.hidden=!show;if(show){const title=$('#videoMiniTitle');if(title)title.textContent=mediaState.title||'Now playing'}}
  window.setTimeout(()=>window.rushUpdateVideoPosition&&window.rushUpdateVideoPosition(),120);
  if(window.RushNative)RushNative.loadCurrentPlayback();
@@ -357,7 +379,7 @@ function renderSearchHistory(){
 }
 function runUnifiedSearch(){
  const input=$('#q'),q=input?.value.trim();if(!q)return;
- rememberSearch(q);unifiedQuery=q;Object.keys(unifiedData).forEach(k=>unifiedData[k]=[]);
+ rememberSearch(q);if(window.RushNative)RushNative.recordSearchQuery(q);unifiedQuery=q;Object.keys(unifiedData).forEach(k=>unifiedData[k]=[]);
  const idle=$('#searchIdle');if(idle)idle.hidden=true;
  const status=$('#unifiedStatus');if(status)status.textContent='Searching videos, music, news, channels and playlists…';
  const root=$('#unifiedResults');if(root)root.innerHTML='';
@@ -383,8 +405,8 @@ window.rushVideoSearchResults=function(items){
  if(page==='explore'&&exploreCategoryQuery===homeFilter&&!['All','Videos','Music','News','Movies','Mixes','Watch Later','Recently Uploaded'].includes(homeFilter)){
   exploreCategoryResults.videos=items||[];renderExploreContent(homeFeedCache);return;
  }
- if(page==='subscribed'&&selectedSubscription!=='all'){
-  const root=$('#subscriptionFeed');if(root)root.innerHTML=(items||[]).map(item=>subscriptionPost(item,'video')).join('')||'<p class="meta pad">No videos found for this creator.</p>';return;
+ if(page==='subscribed'&&selectedSubscriptionId!=='all'){
+  selectedChannelUploads=items||[];renderSelectedChannelFeed();return;
  }
  if(page==='watch'){
   const root=$('#watchSuggestions');if(root)root.innerHTML=(items||[]).filter(x=>x.id!==currentVideo.id).slice(0,12).map(videoRow).join('');return;
@@ -400,21 +422,18 @@ window.rushVideoSearchError=function(error){
 const previousMusicResults=window.rushMusicSearchResults;
 window.rushMusicSearchResults=function(items){
  if(page==='explore'&&exploreCategoryQuery===homeFilter){exploreCategoryResults.music=items||[];renderExploreContent(homeFeedCache);return}
- if(page==='subscribed'&&selectedSubscription!=='all'){const root=$('#subscriptionFeed');if(root)root.innerHTML=(items||[]).map(item=>subscriptionPost(item,'music')).join('');return}
+ if(page==='subscribed'&&selectedSubscriptionId!=='all'){selectedChannelUploads=items||[];renderSelectedChannelFeed();return}
  if(previousMusicResults)previousMusicResults(items);
 };
 const previousNewsResults=window.rushNewsResults;
 window.rushNewsResults=function(items){
  if(page==='explore'&&exploreCategoryQuery===homeFilter){exploreCategoryResults.news=items||[];renderExploreContent(homeFeedCache);return}
- if(page==='subscribed'&&selectedSubscription!=='all'){const root=$('#subscriptionFeed');if(root)root.innerHTML=(items||[]).map(item=>subscriptionPost(item,'news')).join('');return}
+ if(page==='subscribed'&&selectedSubscriptionId!=='all'){selectedChannelUploads=items||[];renderSelectedChannelFeed();return}
  if(previousNewsResults)previousNewsResults(items);
 };
 window.rushChannelUploadsResults=function(data){
  if(page!=='subscribed'||selectedSubscriptionId==='all'||data.channelId!==selectedSubscriptionId)return;
- const root=$('#subscriptionFeed');if(!root)return;
- const items=data.items||[];
- root.innerHTML=items.length?items.map(item=>subscriptionPost(item,'video')).join(''):'<div class="section-empty">This channel has no recent uploads.</div>';
- const status=$('#subscriptionStatus');if(status)status.textContent=items.length+' VIDEOS';
+ selectedChannelUploads=data.items||[];renderSelectedChannelFeed();
 };
 window.rushChannelUploadsError=function(error){
  if(page!=='subscribed'||selectedSubscriptionId==='all'||error.channelId!==selectedSubscriptionId)return;
@@ -431,7 +450,16 @@ window.rushFeedPreferences=function(data){
  if(previousFeedPreferences)previousFeedPreferences(data);
 };
 const previousLibraryData=window.rushLibraryData;
-window.rushLibraryData=function(data){libraryData=data||libraryData;if(page==='explore')renderExploreContent(homeFeedCache);else if(page==='library'){const root=$('#v');if(root)root.innerHTML=renderLibraryPage();renderLibraryContent()}};
+window.rushLibraryData=function(data){
+ libraryData=data||libraryData;
+ if(page==='explore')renderExploreContent(homeFeedCache);
+ else if(page==='library'){
+  const sc=$('#sc'),offset=sc?sc.scrollTop:0,root=$('#v');
+  if(root)root.innerHTML=renderLibraryPage();
+  renderLibraryContent();
+  if(sc)sc.scrollTop=offset;
+ }
+};
 const updateMiniOriginal=updateMini;
 updateMini=function(){updateMiniOriginal();const show=!!mediaState.hasItem&&!!mediaState.isMusic;const mini=$('#mini');if(mini){mini.classList.toggle('on',show);mini.inert=!show;mini.setAttribute('aria-hidden',String(!show))}$('.app').classList.toggle('has-mini',show)};
 const previousCurrentPlayback=window.rushCurrentPlayback;
@@ -589,13 +617,13 @@ document.addEventListener('click',e=>{
   const index=list.findIndex(x=>x.id===currentVideo.id);
   if(index>=0)list.splice(index,1);else list.unshift({id:currentVideo.id,title:currentVideo.title,creator:currentVideo.creator,thumbnail:currentVideo.thumbnail});
   safeLocalWrite('rush_disliked_items_v1',list.slice(0,100));
-  if(window.RushNative)RushNative.setRecommendationFeedback(currentVideo.id,currentVideo.creator,index>=0?'like':'dislike');
+  if(window.RushNative)RushNative.setRecommendationFeedback(currentVideo.id,currentVideo.creator,index>=0?'undislike':'dislike');
   b.classList.toggle('on',index<0);b.textContent=index>=0?'− Dislike':'− Disliked';return;
  }
  if(b.hasAttribute('data-local-like')||b.hasAttribute('data-local-watchlist')){
   const kind=b.hasAttribute('data-local-like')?'liked':'watchlist';
   toggleLocalItem(kind,{id:currentVideo.id,title:currentVideo.title,creator:currentVideo.creator,thumbnail:currentVideo.thumbnail});
-  if(window.RushNative)RushNative.setRecommendationFeedback(currentVideo.id,currentVideo.creator,isLocalItem(kind,currentVideo.id)?'like':'notInterested');
+  if(window.RushNative&&kind==='liked')RushNative.setRecommendationFeedback(currentVideo.id,currentVideo.creator,isLocalItem(kind,currentVideo.id)?'like':'unlike');
   b.classList.toggle('on',isLocalItem(kind,currentVideo.id));
   b.textContent=kind==='liked'?(isLocalItem(kind,currentVideo.id)?'♥ Liked':'♥ Like'):(isLocalItem(kind,currentVideo.id)?'✓ In watchlist':'＋ Watch later');
   return;
