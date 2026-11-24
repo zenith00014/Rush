@@ -785,7 +785,7 @@ document.addEventListener('click',e=>{
  if(b.hasAttribute('data-delete-download')){if(window.RushNative)RushNative.deleteDownload(b.dataset.downloadId);return}
  if(b.hasAttribute('data-current-download')||b.hasAttribute('data-current-mp3')||b.hasAttribute('data-current-save')){const d=mediaState;if(!d.hasItem||!d.mediaId)return;if(window.RushNative){if(b.hasAttribute('data-current-save'))RushNative.saveLibraryItem(d.sourceId||d.mediaId,d.title||'',d.artist||'',!!d.isMusic,d.artwork||'');else if(!d.isOffline)RushNative.downloadMedia(d.sourceId||d.mediaId,d.title||'',d.artist||'',!!d.isMusic,b.hasAttribute('data-current-mp3'))}return}
  if(b.hasAttribute('data-open-search')){location.hash='#search';return}
- if(b.dataset.homeFilter){homeFilter=b.dataset.homeFilter;renderFeedResults(homeFeedCache);return}
+ if(b.dataset.homeFilter){homeFilter=b.dataset.homeFilter;document.querySelectorAll('[data-home-filter]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.homeFilter===homeFilter)));renderFeedResults(homeFeedCache);return}
  if(b.dataset.tab){homeTab=b.dataset.tab;$('#v').innerHTML=R.home();indicator();loadHomeFeed();return}
  if(b.hasAttribute('data-save-topics')){saveTopics();return}
  if(b.dataset.topic){const on=b.getAttribute('aria-pressed')!=='true';b.setAttribute('aria-pressed',String(on));updateTopicOptions();return}
