@@ -22,6 +22,7 @@ import org.json.JSONObject
 
 private const val HOME_FEED_CACHE_TTL_MS = 3 * 60 * 1000L
 private const val NEWS_THUMBNAIL_CACHE_KEY = "rush_news_thumbnail_cache_v1"
+private val HOME_FEED_NETWORK_SLOTS = Semaphore(5)
 
 private val NEWS_RSS_CLIENT by lazy {
     RushNetwork.newBuilder()
@@ -52,6 +53,11 @@ class RushWebBridge(
     @JavascriptInterface
     fun getFeedPreferences(): String =
         FeedPreferences.asJson(activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)).toString()
+
+    @JavascriptInterface
+    fun closeActivity() {
+        activity.runOnUiThread { activity.finish() }
+    }
 
     @JavascriptInterface
     fun getUserProfile(): String = RushProfileStore.read(activity).toString()
@@ -250,7 +256,7 @@ class RushWebBridge(
             try {
                 val fetched = withContext(Dispatchers.IO) {
                     coroutineScope {
-                        val networkSlots = Semaphore(5)
+                        val networkSlots = HOME_FEED_NETWORK_SLOTS
                         // Start news requests first so the first useful cards can appear
                         // while YouTube results are still being gathered.
                         val newsJobs = newsQueries.map { query ->
