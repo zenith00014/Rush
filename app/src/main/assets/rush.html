@@ -536,6 +536,10 @@ h2::after{height:1px;background:rgba(255,255,255,.18)}
 .video-options{display:flex;gap:7px;flex-wrap:wrap;padding:8px 0 10px}
 .video-option{min-height:35px;padding:0 10px;border:1px solid var(--border);border-radius:8px;background:#26343c;color:var(--ink);font-size:11px}
 .video-option[aria-pressed=true]{background:var(--lime);color:#11171a;border-color:var(--lime)}
+
+.app.player-open .nav{display:grid!important}
+.app.player-open #sc{padding-bottom:calc(var(--nav) + var(--sa) + 22px)!important}
+.player-utilities{flex-wrap:wrap}
 </style></head>
 <body>
 <div class="app">
@@ -1026,6 +1030,7 @@ document.addEventListener('click',e=>{
  if(b.dataset.track){const d=b.dataset;const status=$('#musicStatus');if(status)status.textContent='Preparing track…';if(window.RushNative)RushNative.playMusic(d.track,d.title,d.artist,d.thumbnail);location.hash='#player';return}
  if(b.dataset.newsUrl){if(window.RushNative)RushNative.openNews(b.dataset.newsUrl);return}
  if(b.hasAttribute('data-video-fullscreen')){if(window.RushNative)RushNative.setVideoFullscreen(true);return}
+ if(b.hasAttribute('data-video-comments')){if(window.RushNative)RushNative.openNews('https://www.youtube.com/watch?v='+encodeURIComponent(currentVideo.id)+'#comments');return}
  if(b.hasAttribute('data-video-close')){if(window.RushNative)RushNative.hideVideo();return}
  if(b.hasAttribute('data-open-player')){location.hash='#player';return}
   if(b.hasAttribute('data-player-back')){location.hash='#music';return}
@@ -1316,7 +1321,7 @@ renderWatchPage = function(){
  '<div class="watch-player"><div class="video-player-host" id="videoPlayerHost"></div></div>'+
  '<section class="watch-details"><h2 id="watchTitle">'+esc(x.title||'Video loading…')+'</h2>'+
  '<div class="watch-channel">'+creatorAvatar(x.creator)+'<span class="watch-channel-copy"><b>'+esc(x.creator||'Creator')+'</b><span>Video creator</span></span><button class="chip" data-follow-kind="channel" data-source-id="'+esc(x.creator||'')+'" data-source-name="'+esc(x.creator||'')+'">Subscribe</button></div>'+
- '<div class="watch-actions"><button class="watch-action '+(liked?'on':'')+'" data-local-like>♥ '+(liked?'Liked':'Like')+'</button><button class="watch-action '+(saved?'on':'')+'" data-local-watchlist>＋ '+(saved?'In watchlist':'Watch later')+'</button><button class="watch-action" data-option-menu="speed">1× Speed</button><button class="watch-action" data-option-menu="quality">Quality</button><button class="watch-action" data-option-menu="captions">CC</button></div>'+
+ '<div class="watch-actions"><button class="watch-action '+(liked?'on':'')+'" data-local-like>♥ '+(liked?'Liked':'Like')+'</button><button class="watch-action '+(saved?'on':'')+'" data-local-watchlist>＋ '+(saved?'In watchlist':'Watch later')+'</button><button class="watch-action" data-video-comments>Comments ↗</button><button class="watch-action" data-option-menu="speed">1× Speed</button><button class="watch-action" data-option-menu="quality">Quality</button><button class="watch-action" data-option-menu="captions">CC</button></div>'+
  '<div class="video-options" id="videoOptions" hidden></div><p class="meta" id="videoPlaybackStatus" aria-live="polite">Video controls and playback options are available here.</p></section>'+
  '<div class="watch-suggestions"><div class="shelf-heading"><h2>Up next</h2><small>MORE TO WATCH</small></div><div id="watchSuggestions">'+(homeFeedCache.videos||[]).filter(v=>v.id!==x.id).map(videoRow).join('')+'</div></div>';
 };
@@ -1410,6 +1415,8 @@ window.rushNewsResults=function(items){
 };
 const previousLibraryData=window.rushLibraryData;
 window.rushLibraryData=function(data){libraryData=data||libraryData;if(page==='explore')renderExploreContent(homeFeedCache);else if(page==='library')renderLibraryContent()};
+const updateMiniOriginal=updateMini;
+updateMini=function(){updateMiniOriginal();const show=!!mediaState.hasItem&&!!mediaState.isMusic;const mini=$('#mini');if(mini){mini.classList.toggle('on',show);mini.inert=!show;mini.setAttribute('aria-hidden',String(!show))}$('.app').classList.toggle('has-mini',show)};
 const previousCurrentPlayback=window.rushCurrentPlayback;
 window.rushCurrentPlayback=function(data){
  if(previousCurrentPlayback)previousCurrentPlayback(data);
@@ -1448,7 +1455,7 @@ document.addEventListener('input',e=>{
 });
 document.addEventListener('click',e=>{
  const b=e.target.closest('button');if(!b)return;
- const handled=b.hasAttribute('data-home-filter')||b.hasAttribute('data-open-library')||b.hasAttribute('data-open-search')||b.hasAttribute('data-open-settings')||b.hasAttribute('data-video-id')||b.hasAttribute('data-track')||b.hasAttribute('data-mini-expand')||b.hasAttribute('data-video-close')||b.hasAttribute('data-video-fullscreen')||b.hasAttribute('data-local-like')||b.hasAttribute('data-local-watchlist')||b.hasAttribute('data-subscription-source')||b.hasAttribute('data-topic-search')||b.hasAttribute('data-search-history')||b.hasAttribute('data-search-clear')||b.hasAttribute('data-search-source')||b.hasAttribute('data-option-menu')||b.hasAttribute('data-video-speed-choice')||b.hasAttribute('data-video-quality-choice')||b.hasAttribute('data-video-cc-toggle')||b.hasAttribute('data-sleep-timer')||b.hasAttribute('data-sleep-choice')||b.hasAttribute('data-player-back')||b.hasAttribute('data-player-toggle')||b.hasAttribute('data-player-prev')||b.hasAttribute('data-player-next')||b.hasAttribute('data-player-save')||b.hasAttribute('data-player-queue')||b.hasAttribute('data-player-lyrics-toggle')||(b.hasAttribute('data-library-view')&&['liked','watchlist'].includes(b.dataset.libraryView));
+ const handled=b.hasAttribute('data-home-filter')||b.hasAttribute('data-open-library')||b.hasAttribute('data-open-search')||b.hasAttribute('data-open-settings')||b.hasAttribute('data-video-id')||b.hasAttribute('data-track')||b.hasAttribute('data-mini-expand')||b.hasAttribute('data-video-close')||b.hasAttribute('data-video-fullscreen')||b.hasAttribute('data-video-comments')||b.hasAttribute('data-local-like')||b.hasAttribute('data-local-watchlist')||b.hasAttribute('data-subscription-source')||b.hasAttribute('data-topic-search')||b.hasAttribute('data-search-history')||b.hasAttribute('data-search-clear')||b.hasAttribute('data-search-source')||b.hasAttribute('data-option-menu')||b.hasAttribute('data-video-speed-choice')||b.hasAttribute('data-video-quality-choice')||b.hasAttribute('data-video-cc-toggle')||b.hasAttribute('data-sleep-timer')||b.hasAttribute('data-sleep-choice')||b.hasAttribute('data-player-back')||b.hasAttribute('data-player-toggle')||b.hasAttribute('data-player-prev')||b.hasAttribute('data-player-next')||b.hasAttribute('data-player-save')||b.hasAttribute('data-player-queue')||b.hasAttribute('data-player-lyrics-toggle')||(b.hasAttribute('data-library-view')&&['liked','watchlist'].includes(b.dataset.libraryView));
  if(handled){e.preventDefault();e.stopImmediatePropagation()}
  if(b.hasAttribute('data-home-filter')){
   homeFilter=b.dataset.homeFilter||'All';
