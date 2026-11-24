@@ -209,6 +209,14 @@ class RushWebBridge(
                 val fetched = withContext(Dispatchers.IO) {
                     coroutineScope {
                         val networkSlots = Semaphore(5)
+                        // Start news requests first so the first useful cards can appear
+                        // while YouTube results are still being gathered.
+                        val newsJobs = newsQueries.map { query ->
+                            async {
+                                query to runCatching { networkSlots.withPermit { requestNews(query) } }
+                                    .getOrDefault(JSONArray())
+                            }
+                        }
                         val videoJobs = channelSources.map { source ->
                             async {
                                 source to runCatching {
@@ -223,13 +231,42 @@ class RushWebBridge(
                                 }.getOrDefault(emptyList())
                             }
                         }
-                        val newsJobs = newsQueries.map { query ->
-                            async {
-                                query to runCatching { networkSlots.withPermit { requestNews(query) } }
-                                    .getOrDefault(JSONArray())
+
+                        val newsResults = newsJobs.awaitAll()
+                        if (cachedPayload == null) {
+                            val earlyHits = LinkedHashMap<String, RushDiscoveryEngine.FeedHit>()
+                            val earlyPayloads = LinkedHashMap<String, JSONObject>()
+                            newsResults.forEach { (_, items) ->
+                                for (index in 0 until items.length()) {
+                                    val article = items.optJSONObject(index) ?: continue
+                                    val publisher = article.optString("source")
+                                    val followed = sources.any { source ->
+                                        source.kind == "news" &&
+                                            (publisher.contains(source.name, true) || source.name.contains(publisher, true))
+                                    }
+                                    val candidate = newsCandidate(article, followed)
+                                    val score = RushDiscoveryEngine.scoreFeed(candidate, profile)
+                                    val key = article.optString("url")
+                                    val previous = earlyHits[key]
+                                    if (key.isNotBlank() && (previous == null || score > previous.score)) {
+                                        earlyHits[key] = RushDiscoveryEngine.FeedHit(candidate, score)
+                                        earlyPayloads[key] = article
+                                    }
+                                }
+                            }
+                            val earlyNews = RushDiscoveryEngine.diversifyFeed(earlyHits.values.toList(), 8, 2)
+                                .mapNotNull { earlyPayloads[it.candidate.id] }
+                            if (earlyNews.isNotEmpty()) {
+                                publish("rushHomeFeedResults", JSONObject()
+                                    .put("mode", feedMode)
+                                    .put("videos", JSONArray())
+                                    .put("music", JSONArray())
+                                    .put("news", JSONArray(earlyNews))
+                                    .put("message", "Loading video and music picks…")
+                                    .toString())
                             }
                         }
-                        Triple(videoJobs.awaitAll(), musicJobs.awaitAll(), newsJobs.awaitAll())
+                        Triple(videoJobs.awaitAll(), musicJobs.awaitAll(), newsResults)
                     }
                 }
 
