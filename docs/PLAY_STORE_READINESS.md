@@ -28,6 +28,10 @@ Configure these repository secrets before a Play upload:
 
 The workflow can build an unsigned release bundle without the secrets, but an unsigned bundle cannot be uploaded to Play Console. Do not commit the keystore or passwords.
 
+## How the uploaded Apple review guides apply
+
+The Apple App Store review and Human Interface Guidelines files supplied for this project are used as secondary references for privacy, safety, clarity, accessibility and recovery patterns. They are not Android or Google Play policy. Android platform conventions and Google Play Console requirements govern this build; complete the Play-specific declarations and review checks below.
+
 ## Required policy and store-console work
 
 - [ ] Publish a public, non-geofenced HTTPS privacy-policy page. The in-app Privacy information view is a draft, not the final policy.
