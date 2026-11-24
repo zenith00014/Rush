@@ -283,6 +283,7 @@ class MainActivity:ComponentActivity(){
   if(android.os.Build.VERSION.SDK_INT<31&&pipEligible.value)enterPlayerPip()
  }
  private fun createRushWebView():android.webkit.WebView {
+  return android.webkit.WebView(this).apply{
    setBackgroundColor(android.graphics.Color.rgb(14,14,14))
    isVerticalScrollBarEnabled=false
    isHorizontalScrollBarEnabled=false
