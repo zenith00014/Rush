@@ -292,6 +292,21 @@ class MainActivity:ComponentActivity(){
    }
   })
  }
+ override fun onPause(){
+  if(::webView.isInitialized){
+   webView.onPause()
+   webView.pauseTimers()
+  }
+  super.onPause()
+ }
+ override fun onResume(){
+  super.onResume()
+  if(::webView.isInitialized){
+   webView.onResume()
+   webView.resumeTimers()
+   if(webPageLoaded)webView.evaluateJavascript("if(window.RushNative)RushNative.loadCurrentPlayback()",null)
+  }
+ }
  override fun onNewIntent(intent:android.content.Intent){
   super.onNewIntent(intent)
   setIntent(intent)
