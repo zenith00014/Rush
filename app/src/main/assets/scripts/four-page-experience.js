@@ -206,14 +206,26 @@ function subscriptionSourceSearch(index){
  else if(source.kind==='news')RushNative.searchNews(source.name);
  else RushNative.searchVideos(source.name);
 }
+function renderLibraryOverviewMarkup(){
+ const history=(libraryData.history||[]).slice(0,8).map(libraryEntry).filter(Boolean);
+ const saved=(libraryData.saved||[]).slice(0,8).map(libraryEntry).filter(Boolean);
+ const watchlist=localItems("watchlist").slice(0,8);
+ const playlists=libraryData.playlists||[];
+ let html="";
+ if(history.length)html+=shelf("History",history,(x,i,p)=>x.music?musicTile(Object.assign({artist:x.creator},x),i,p):videoTile(x,i,p),"RECENTLY PLAYED");
+ if(saved.length)html+=shelf("Saved items",saved,(x,i,p)=>x.music?musicTile(Object.assign({artist:x.creator},x),i,p):videoTile(x,i,p),"YOUR LIBRARY");
+ if(watchlist.length)html+=shelf("Watchlist",watchlist,movieTile,"SAVED FOR LATER");
+ if(playlists.length)html+='<section class="explore-shelf"><div class="shelf-heading"><h2>Playlists</h2><small>'+playlists.length+' COLLECTIONS</small></div><div class="playlist-shelf">'+playlists.map(p=>'<button class="playlist-shelf-tile" data-library-view="playlists"><span class="playlist-shelf-art">≡</span><b>'+esc(p.name||"Playlist")+'</b><small>'+((p.items||[]).length)+' ITEMS</small></button>').join("")+'</div></section>';
+ return html||'<div class="section-empty">Your history, saved media and playlists will appear here as you use Rush.</div>';
+}
+function renderLibraryOverview(){const root=$("#libraryOverview");if(root)root.innerHTML=renderLibraryOverviewMarkup()}
 renderLibraryPage = function(){
- const views=[['saved','Saved items','♡','Videos and music you kept'],['history','History','◷','What you watched and played'],['watchlist','Watchlist','▣','Films and videos to watch later'],['liked','Liked','♥','Your liked media'],['playlists','Playlists','≡','Your collections'],['downloads','Downloads','⇩','Available offline'],['queue','Queue','♫','Up next']];
- return pageTop('Library','your collection')+
- '<div class="library-profile"><button class="library-profile-main" data-open-profile><span class="avatar">'+esc((rushProfile.displayName||"R").trim().slice(0,1).toUpperCase())+'</span><span class="profile-copy"><b>'+esc(rushProfile.displayName||"Your Rush profile")+'</b><span>'+(rushProfile.handle?"@"+esc(rushProfile.handle):"Saved locally on this device")+'</span></span><i>EDIT ›</i></button><button class="ib" data-open-settings aria-label="Settings">⚙</button></div>'+
- '<div class="library-quick-grid">'+views.slice(0,4).map(([key,name,icon,desc])=>'<button class="library-quick" data-library-view="'+key+'"><span class="hardware-icon">'+icon+'</span><span><b>'+name+'</b><span>'+desc+'</span></span></button>').join('')+'</div>'+
- '<div class="library-menu">'+views.slice(4).map(([key,name,icon,desc])=>'<button data-library-view="'+key+'"><span class="hardware-icon">'+icon+'</span><b>'+name+'</b><span>›</span></button>').join('')+
- '<button data-open-settings><span class="hardware-icon">⚙</span><b>Settings & interests</b><span>›</span></button></div>'+
- '<p class="meta pad" id="libraryStatus">Your saved media and listening history.</p><div class="chips library-tabs">'+views.map(([key,name])=>'<button class="chip" data-library-view="'+key+'" aria-pressed="'+(libraryView===key)+'">'+name+'</button>').join('')+'</div><div id="libraryContent"></div>';
+ const views=[["saved","Saved items","♡","Videos and music you kept"],["history","History","◷","What you watched and played"],["watchlist","Watchlist","▣","Films and videos to watch later"],["liked","Liked","♥","Your liked media"],["playlists","Playlists","≡","Your collections"],["downloads","Downloads","⇩","Available offline"],["queue","Queue","♫","Up next"]];
+ return '<div class="library-profile"><button class="library-profile-main" data-open-profile><span class="avatar">'+esc((rushProfile.displayName||"R").trim().slice(0,1).toUpperCase())+'</span><span class="profile-copy"><b>'+esc(rushProfile.displayName||"Your Rush profile")+'</b><span>'+(rushProfile.handle?"@"+esc(rushProfile.handle):"Saved locally on this device")+'</span></span><i>EDIT ›</i></button><button class="ib" data-open-settings aria-label="Settings">⚙</button></div>'+
+ '<div id="libraryOverview">'+renderLibraryOverviewMarkup()+'</div>'+
+ '<div class="library-menu">'+views.map(([key,name,icon,desc])=>'<button data-library-view="'+key+'"><span class="hardware-icon">'+icon+'</span><span class="library-menu-copy"><b>'+name+'</b><small>'+desc+'</small></span><span>›</span></button>').join("")+
+ '<button data-open-settings><span class="hardware-icon">⚙</span><span class="library-menu-copy"><b>Settings</b><small>Permissions, playback and privacy</small></span><span>›</span></button></div>'+
+ '<p class="meta pad" id="libraryStatus">Your saved media and listening history.</p><div class="chips library-tabs">'+views.map(([key,name])=>'<button class="chip" data-library-view="'+key+'" aria-pressed="'+(libraryView===key)+'">'+name+'</button>').join("")+'</div><div id="libraryContent"></div>';
 };
 const renderOriginalLibraryContent=renderLibraryContent;
 renderLibraryContent = function(){
@@ -343,7 +355,7 @@ window.rushFeedPreferences=function(data){
  if(previousFeedPreferences)previousFeedPreferences(data);
 };
 const previousLibraryData=window.rushLibraryData;
-window.rushLibraryData=function(data){libraryData=data||libraryData;if(page==='explore')renderExploreContent(homeFeedCache);else if(page==='library')renderLibraryContent()};
+window.rushLibraryData=function(data){libraryData=data||libraryData;if(page==='explore')renderExploreContent(homeFeedCache);else if(page==='library'){renderLibraryOverview();renderLibraryContent()}};
 const updateMiniOriginal=updateMini;
 updateMini=function(){updateMiniOriginal();const show=!!mediaState.hasItem&&!!mediaState.isMusic;const mini=$('#mini');if(mini){mini.classList.toggle('on',show);mini.inert=!show;mini.setAttribute('aria-hidden',String(!show))}$('.app').classList.toggle('has-mini',show)};
 const previousCurrentPlayback=window.rushCurrentPlayback;
