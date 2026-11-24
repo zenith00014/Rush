@@ -129,7 +129,7 @@ def main():
         fail("WebView must not require remote font downloads")
 
     ui_contracts = {
-        "no preloaded fixed video player": 'id="videoPlayerHost"' not in html,
+        "watch page creates an inline native video host": 'id="videoPlayerHost"' in html and 'id="videoMiniHost"' in html and "function renderWatchPage()" in js,
         "dedicated music player screen": "function renderPlayerPage()" in js,
         "music player offers explicit video mode": 'id="playerModeToggle"' in html and "data-player-watch-video" in js and "data-player-listen-audio" in js,
         "video mode keeps current track details visible": "VIDEO MODE · PLAYING" in js and "const hasMedia=isMusic||isVideo;" in js,
@@ -143,13 +143,25 @@ def main():
         "lyrics are inside player": 'id="playerLyricsPanel"' in html and 'id="lyricsPanel"' not in html,
         "responsive media row grid": "grid-template-columns:64px minmax(0,1fr) auto!important" in html,
         "explicit video resume button": "data-video-resume" in html and "RushNative.showCurrentVideo()" in js,
-        "no automatic video popup on tab navigation": "if(page!=='videos')RushNative.hideVideo();" in js,
+        "video playback stays inline and collapses to an in-app mini-player": "videoMiniDock" in html and "window.rushUpdateVideoPosition" in js and "RushNative.updateVideoPosition(r.left,r.top,r.width,r.height,true)" in js,
         "obsolete productive-channel copy removed": "selected productive channels" not in html and "productive channel selection" not in html,
         "conditional mini-player spacing": ".app.has-mini #sc" in html,
         "rounded selected feed segment": ".seg button{border-radius:14px!important}" in html and ".seg i{border-radius:14px!important}" in html,
         "solid feed segment without glass": ".seg{border-radius:18px!important;background:#131b21!important" in html,
         "library uses library icon": "library:'M4 4h13v16H4z" in js and "['library','Library','follow']" not in js,
         "edge-to-edge root uses dark surface": "setBackgroundColor(android.graphics.Color.rgb(11,16,20))" in activity,
+        "four persistent primary destinations": all(x in js for x in ("['explore','Explore','home']","['search','Search','search']","['subscribed','Subscribed','follow']","['library','Library','library']")),
+        "Explore has the five content categories": all(("data-home-filter=\\\\\\""+x+"\\\\\\"") in html or ("data-home-filter=\\\\""+x+"\\\\"") in html for x in ("All","Videos","Music","News","Movies")) and "const filters=['All','Videos','Music','News','Movies']" in js,
+        "content type aspect ratios are distinct": "aspect-ratio:16/9" in html and "aspect-ratio:1" in html and "aspect-ratio:2/3" in html,
+        "vertical shelves scroll horizontally": "overflow-x:auto" in html and "scroll-snap-type:x proximity" in html and "function shelf(" in js,
+        "Search autofocuses and stores recent queries": "input.focus()" in js and "rush_search_history_v1" in js and "function renderSearchHistory()" in js,
+        "Subscribed keeps source avatars and a combined feed": "source-rail subscriptions" in html and "function renderSubscribedFeed(data)" in js and 'data-subscription-all' in js,
+        "Library includes watchlist and liked items": "'watchlist','Watchlist'" in js and "'liked','Liked'" in js and "LOCAL_LISTS" in js,
+        "retro music deck uses a spinning CD": "deck-disc" in html and "disc-spin" in html,
+        "video offers speed, quality and captions": "data-option-menu=\\\\\\"speed\\\\\\" " in html and "setPlaybackSpeed" in bridge and "setVideoQuality" in bridge and "setVideoCaptionsEnabled" in bridge,
+        "music player offers sleep timer": "data-sleep-timer" in html and "fun setSleepTimer(minutes: Int)" in bridge,
+        "creator avatar is persisted with subscriptions": "val thumbnail: String = \\"\\"" in prefs and "put(\\"thumbnail\\", it.thumbnail)" in prefs,
+        "video player can be explicitly closed": "fun closeVideo()" in bridge and "data-video-close" in html,
     }
     for contract, valid in ui_contracts.items():
         if not valid:
