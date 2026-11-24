@@ -104,7 +104,7 @@ object FeedPreferences {
     fun setProductive(prefs: SharedPreferences, id: String, name: String, enabled: Boolean) {
         val updated = sources(prefs).toMutableList()
         val index = updated.indexOfFirst { it.kind == "channel" && it.id == id.trim() }
-        val source = FeedSource("channel", id.trim(), name.trim(), enabled)
+        val source = FeedSource("channel", id.trim(), name.trim(), enabled, updated.getOrNull(index)?.thumbnail.orEmpty())
         if (index >= 0) updated[index] = updated[index].copy(productive = enabled) else updated += source
         writeSources(prefs, updated)
     }
