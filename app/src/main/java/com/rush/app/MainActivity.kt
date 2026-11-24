@@ -235,7 +235,7 @@ class MainActivity:ComponentActivity(){
    }
   }
   webView=android.webkit.WebView(this).apply{
-   setBackgroundColor(android.graphics.Color.rgb(14,14,14))
+   setBackgroundColor(android.graphics.Color.rgb(11,16,20))
    isVerticalScrollBarEnabled=false
    isHorizontalScrollBarEnabled=false
    overScrollMode=android.view.View.OVER_SCROLL_NEVER

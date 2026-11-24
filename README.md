@@ -4,10 +4,13 @@ Rush is an Android media and discovery app built with Kotlin, AndroidX Media3 an
 
 ## Current product scope
 
+- Four primary UI destinations: Explore, Search, Subscriptions and Profile; Profile contains the personal library
+- A mixed-content Explore feed with For You / Following modes, All / Videos / Music / News filters and a responsive bento layout
+- A dedicated Subscriptions feed for recent posts from followed channels, musicians and publishers
+- Universal search across YouTube videos, YouTube Music, news, channels and public playlists, with recent and trending queries
 - YouTube video search and playback with native playback controls, captions where available and immersive full-screen viewing
 - YouTube Music search and playback, history, lyrics and taste-based suggestions derived from followed musicians and listening history
 - Source follows for YouTube channels, news publishers and musicians
-- A two-mode Home feed: For You and Following
 - User-selected topics across learning, culture, entertainment and low-focus/viral categories
 - For You recommendations limited to YouTube channels the user explicitly includes in the productive-channel pool
 - News discovery and publisher-aware suggestions using topic relevance, reporting/context signals and followed publishers
