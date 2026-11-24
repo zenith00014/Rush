@@ -2,66 +2,59 @@
 
 ## Product contract
 
-Rush has one shared intelligence layer plus a specialist scorer for each content section. The shared layer uses the same understanding of interests, follows, local watch/listen history, freshness, metadata quality and novelty. Each section then adds its own ranking signals. The two layers are combined for recommendations.
+Rush uses a **YouTube-inspired recommendation pipeline**, not a copy of YouTube's private model. It follows the public pattern of candidate retrieval, personal relevance scoring, explicit feedback, freshness and creator/topic diversification. Recommendations are personalised on-device. Search stays broad and is never restricted to the user's selected topics or watch history.
 
-**Recommendations prioritise productive, informative content. Search is deliberately broader.** Someone searching for memes, pranks, celebrity news, entertainment or another low-focus subject should still find matching results. Feed preferences reorder suggestions; they do not act as search eligibility filters.
+The app does not claim to reproduce YouTube's proprietary ranking, collaborative filtering or watch-time model. It does not invent view counts or engagement values when a provider does not expose reliable data.
 
 ## Pipeline
 
-1. Retrieve candidates from the existing YouTube, YouTube Music and Google News RSS providers.
-2. Normalise Unicode, case and punctuation while preserving provider IDs and metadata.
-3. Score common signals from interests, follows, local history, freshness, completeness, novelty and engagement when genuinely available.
-4. Apply a dedicated scorer for video, news, music, channel or playlist content.
-5. Combine 64% shared score and 36% section specialist score.
-6. Diversify creators, publishers and topic tags.
-7. Render through the existing WebView/native callback contracts.
+1. Retrieve candidates from YouTube/YouTube Music and Google News RSS. Explore's For You feed uses selected topics, recent history terms and followed sources to generate candidates.
+2. Normalise Unicode, case and punctuation while preserving provider IDs and media metadata.
+3. Score shared signals from interests, local watch/listen history, follows, freshness, metadata completeness, provider engagement when available, novelty, likes and dislikes.
+4. Apply a specialist scorer for video, news, music, channel or playlist content.
+5. Combine 68% shared score with 32% section-specialist score.
+6. Suppress explicit "Not interested" items and creators the user has blocked.
+7. Diversify creators and topic tags so one source cannot occupy the entire shelf.
+8. Render the ranked result through the existing WebView/native callback contracts.
 
-The profile is built on-device from preferences and playback history. It is not uploaded to a Rush account or recommendation server.
+Profile and feedback signals remain on the device. Rush does not introduce cross-user tracking or a remote recommendation profile.
 
 ## Shared recommendation model
 
-Each shared signal is normalised to 0..1:
+Signals are normalised to 0..1 unless they are explicit negative feedback:
 
 | Signal | Weight | Purpose |
 |---|---:|---|
-| Topic affinity | 0.26 | Selected interests and detected topic tags |
-| Follow affinity | 0.18 | Followed creator, artist or publisher |
-| History affinity | 0.14 | Local watch/listen title and creator overlap |
-| Freshness | 0.10 | Exponential age decay; unknown dates are neutral |
-| Metadata completeness | 0.12 | Useful title, source and available summary |
-| Engagement | 0.05 | Provider-supplied value only; neutral if missing |
-| Novelty | 0.15 | Prefer unseen candidates and reduce repeats |
+| Topic affinity | 0.22 | Selected interests and candidate topic tags |
+| Watch/listen history affinity | 0.26 | Local playback history title and creator overlap |
+| Follow affinity | 0.16 | Followed channel, artist or publisher |
+| Freshness | 0.10 | Exponential age decay; unknown dates remain neutral |
+| Metadata completeness | 0.06 | Useful title, creator and available summary |
+| Provider engagement | 0.04 | Provider-supplied signal only; neutral when absent |
+| Novelty | 0.08 | Prefer unseen items and reduce immediate repeats |
+| Explicit like | +0.12 | Strong positive feedback |
+| Explicit dislike | -0.42 | Strong negative feedback |
 
-Popularity stays low-weighted so already viral items do not overwhelm useful, personally relevant material.
+"Not interested" and "Don't recommend this channel" are hard exclusions from recommendation ranking. The user can reverse feedback from the app's local preference controls.
 
 ## Section specialists
 
-### Videos
+- **Videos:** topic match, history overlap, freshness and followed-channel affinity.
+- **Music:** topic and listening-history overlap, artist follows and freshness.
+- **News:** topic/history relevance, freshness and followed-publisher affinity.
+- **Channels and playlists:** topic/history relevance and novelty.
 
-Video ranking favours explainers, tutorials, lectures, research, documentaries, science, engineering, lessons and analysis. Longer material receives a modest depth signal, not an eligibility rule. Low-information patterns such as rage bait, pranks, memes and gossip are soft penalties only. Useful short videos remain eligible.
-
-### News
-
-News combines contextual/reporting language, metadata completeness, topic relevance and freshness. RSS publication time uses exponential decay with a 96-hour time scale, bounded so older reporting can still surface. Followed publishers receive a shared relevance boost. RSS metadata alone is not treated as proof of factual accuracy, ownership or editorial authority.
-
-### Music
-
-Music is taste-led, not productivity-gated. Followed artists, recent listening, title/artist overlap, novelty and the shared profile are combined. Songs are not demoted merely because they are entertainment. Repeat penalties and artist diversity help avoid repetitive suggestions.
-
-### Channels and playlists
-
-Channel and playlist discovery use the shared profile plus metadata completeness and novelty. Their direct search results still use the broad search algorithm.
+A creator-diversity pass limits repeated sources and spreads topic coverage. No fixed productivity or entertainment category is used as an eligibility gate; user interest and explicit feedback drive recommendations.
 
 ## Broad search
 
-Search is separate from recommendation eligibility. It searches the candidates returned by YouTube, YouTube Music and Google News RSS regardless of selected topics, followed-source status or productivity classification.
+Search is separate from recommendation eligibility. It searches the provider candidates returned by YouTube, YouTube Music and Google News RSS regardless of selected topics, followed-source status, likes or productivity classification.
 
-The reranker uses BM25-style lexical relevance with title/creator/summary field weights, exact phrase and title boosts, prefix matching, bounded Levenshtein typo matching, a small abbreviation/synonym map (AI, ML and football/soccer), and a very small spam-quality adjustment.
+The reranker uses BM25-style lexical relevance with title/creator/summary field weights, exact phrase and title boosts, prefix matching, bounded Levenshtein typo matching and a small abbreviation/synonym map. Search returns every provider candidate it receives; ranking only reorders them. Provider-side limits and availability still apply.
 
-Search returns every provider candidate it receives. The quality adjustment only reorders results; it does not suppress memes, pranks, celebrity content or other entertainment. Provider-side limits and availability still apply. This is federated live-provider search, not a whole-web crawler or a copy of Google's private ranking system.
+## Current limitations
 
-## Privacy and limitations
-
-No account, cross-user collaborative filtering, tracking pixel or analytics service is introduced. Profile signals stay on-device. Engagement is neutral when no reliable provider signal exists. No verified publisher trust score or original-reporting signal is invented from an RSS entry.
-
-SQLite FTS5 over all locally cached media, on-device semantic embeddings and learned ranking are future milestones. They should be added only after the current lexical baseline is measured. Useful evaluation targets include NDCG@10 and MRR for search, creator/topic diversity, repeat rate, saves and explicit feedback. Do not optimise only for watch time or raw clicks because those can reward clickbait.
+- Watch/listen history is used, but precise watch-time, completion and satisfaction duration are not yet ranking inputs.
+- Reliable view-count/like-count engagement data is not consistently available from the current provider, so missing engagement stays neutral.
+- No account-based collaborative filtering, cross-device profile sync or remote embeddings are used.
+- SQLite FTS5, local semantic embeddings and learned ranking are future milestones. Evaluate search with NDCG@10/MRR and recommendations with explicit feedback, creator/topic diversity, repeat rate and user satisfaction. Do not optimise only for watch time or raw clicks.
