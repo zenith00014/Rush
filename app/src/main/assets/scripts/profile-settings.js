@@ -191,6 +191,7 @@ window.rushHandleBack=function(){
 window.rushAppForeground=function(force){
  const now=Date.now();
  if(!force&&now-rushRefreshAt<150000)return;
+ if(page==="settings"){refreshPermissionStatus();const settingsRoot=$("#v");if(settingsRoot)settingsRoot.innerHTML=renderSettingsPage();return}
  if(!window.RushNative||!["explore","subscribed"].includes(page))return;
  rushRefreshAt=now;
  if(page==="explore"){RushNative.loadHomeFeed("forYou");RushNative.loadHomeFeed("following")}
@@ -215,7 +216,8 @@ window.rushVideoBufferingError=function(message){
  if(overlay){overlay.hidden=false;overlay.innerHTML='<span class="buffer-indicator"><i class="buffer-error-mark">!</i><b>PLAYBACK INTERRUPTED</b><button class="btn" data-video-retry>TRY AGAIN</button></span>';}
  const status=$("#videoPlaybackStatus");if(status)status.textContent=message||"Playback failed. Check your connection and try again.";
 };
-window.rushMusicBuffering=function(buffering){
+window.rushMusicBuffering=function(state){
+ const buffering=typeof state==="boolean"?state:!!(state&&state.buffering);
  const indicator=$("#musicBuffering");if(indicator)indicator.hidden=!buffering;
  const status=$("#playerStatus");if(status&&buffering)status.textContent="BUFFERING AUDIO…";
 };
