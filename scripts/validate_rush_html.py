@@ -125,6 +125,7 @@ def main():
         ROOT / "app/src/main/java/com/rush/app/profile/RushProfileStore.kt",
         ROOT / "app/src/main/java/com/rush/app/permissions/RushPermissionManager.kt",
         ROOT / "app/proguard-rules.pro",
+        ROOT / "docs/PERFORMANCE.md",
     ]
     for path in required_files:
         read_required(path)
@@ -169,6 +170,13 @@ def main():
         "WebView local assets use WebViewAssetLoader": "WebViewAssetLoader" in activity and "shouldInterceptRequest" in activity and "loadUrl(\"https://rush.local/assets/rush.html\")" in activity,
         "no remote web fonts are needed": "fonts.googleapis.com" not in html + js + styles and "fonts.gstatic.com" not in html + js + styles,
         "four-page shell stays inside app viewport": "height:100dvh" in styles or "height:100dvh" in (ASSET_ROOT / "styles/rush-base.css").read_text(encoding="utf-8"),
+        "Explore skips DOM rebuilds when item signatures are unchanged": "lastExploreMarkupKey" in js and "markupKey===lastExploreMarkupKey" in js,
+        "feed failure preserves cache and provides retry": "data-feed-retry" in js and "cachedCount" in js,
+        "WebView renderer loss restores the previous route": "onRenderProcessGone" in activity and "rush.local/assets/rush.html#$route" in activity,
+        "WebView rendering is hardware accelerated": 'android:hardwareAccelerated="true"' in manifest and "RENDERER_PRIORITY_IMPORTANT" in activity,
+        "media buffering uses separate streaming and local profiles": "setBufferDurationsMsForStreaming(15_000, 60_000, 1_500, 3_000)" in service and "setBufferDurationsMsForLocalPlayback(3_000, 20_000, 500, 1_000)" in service,
+        "first-load shimmer is not an infinite feed animation": "animation:skeleton-shimmer 1.3s ease-out 1" in styles,
+        "reduced-motion disables decorative animation": "prefers-reduced-motion:reduce" in styles,
     }
     for name, passed in contracts.items():
         if not passed:
@@ -222,6 +230,8 @@ def main():
         fail("Fullscreen video handoff is missing")
     if "android:usesCleartextTraffic=\"false\"" not in manifest:
         fail("Cleartext traffic must remain disabled")
+    if "minBufferMs" in service:
+        fail("Keep Media3 load-control configuration compatible with the pinned Java/Kotlin API")
 
     with tempfile.NamedTemporaryFile("w", suffix=".js", encoding="utf-8") as handle:
         handle.write(js)
