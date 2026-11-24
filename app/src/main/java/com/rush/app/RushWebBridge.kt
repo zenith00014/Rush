@@ -375,6 +375,7 @@ class RushWebBridge(
                         .put("artist", item.creator).put("duration", item.duration)
                         .put("thumbnail", item.thumbnailUrl)
                         .put("creatorThumbnail", item.creatorThumbnail)
+                        .put("channelId", item.channelId.ifBlank { source?.id.orEmpty() })
                         .put("sourceId", source?.id.orEmpty()).put("sourceName", source?.name ?: query)
                     val previous = videoHits[item.videoId]
                     if (previous == null || score > previous.score) {
