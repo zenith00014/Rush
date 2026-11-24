@@ -51,7 +51,7 @@ The current movie shelf uses long-form YouTube search results as discovery candi
 
 ## Third-party licence review
 
-The repository identifies the LibreTube/NewPipeExtractor-derived player as GPL-3.0-or-later and its FFmpegKit-compatible audio package as LGPL-3.0. Keep the applicable source and notices available and confirm distribution obligations for the exact versions shipped. This is separate from YouTube content rights.
+The repository identifies the LibreTube/NewPipeExtractor-derived player as GPL-3.0-or-later, its FFmpegKit-compatible audio package as LGPL-3.0, and the SmartException Java/Android helper as BSD-3-Clause. Keep the applicable source and notices available and confirm distribution obligations for the exact versions shipped. This is separate from YouTube content rights.
 
 ## Official references
 
