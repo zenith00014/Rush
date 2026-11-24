@@ -5,6 +5,7 @@ let selectedSubscription='all';
 let videoSpeed=1,videoQuality=0,videoCaptions=true;
 let currentVideo={id:'',title:'',creator:'',thumbnail:''};
 let searchFocusOpen=false;
+let lastExploreMarkupKey='';
 const LOCAL_LISTS={liked:'rush_liked_items_v1',watchlist:'rush_watchlist_v1'};
 function safeLocalRead(key){try{return JSON.parse(localStorage.getItem(key)||'[]')}catch(e){return []}}
 function safeLocalWrite(key,value){try{localStorage.setItem(key,JSON.stringify(value))}catch(e){}}
@@ -63,6 +64,20 @@ function renderFeedResults(data){
 function renderExploreContent(feed){
  const root=$('#exploreShelves');if(!root)return;
  const videos=feed.videos||[],music=feed.music||[],news=feed.news||[];
+ const markupKey=JSON.stringify({
+  filter:homeFilter,
+  videos:videos.map(x=>[x.id,x.title,x.thumbnail]),
+  music:music.map(x=>[x.id,x.title,x.thumbnail]),
+  news:news.map(x=>[x.url,x.title,x.thumbnail]),
+  movies:movieResults.map(x=>[x.id,x.title,x.thumbnail]),
+  followingVideos:(followingFeedCache.videos||[]).map(x=>[x.id,x.title,x.thumbnail]),
+  followingMusic:(followingFeedCache.music||[]).map(x=>[x.id,x.title,x.thumbnail]),
+  followingNews:(followingFeedCache.news||[]).map(x=>[x.url,x.title,x.thumbnail]),
+  history:(libraryData.history||[]).slice(0,8),
+  topics:selectedTopics()
+ });
+ if(markupKey===lastExploreMarkupKey&&root.childElementCount)return;
+ lastExploreMarkupKey=markupKey;
  if(homeFilter==='Movies'){
   const items=movieResults.length?movieResults:videos;
   root.innerHTML=items.length?shelf('Movies & long-form films',items,movieTile,'YOUTUBE FILM DISCOVERY'):'<div class="section-empty">Movie discovery is connected to YouTube search at the moment. Search for a film title to find available long-form videos.</div>';
@@ -284,9 +299,14 @@ window.rushVideoPlaybackState=function(state){
  if(previousVideoState)previousVideoState(state);
  if(state.state==='playing'||state.state==='loading'){
   mediaState.isVideo=true;mediaState.isMusic=false;mediaState.hasItem=true;
-  if(page==='watch'){const t=$('#videoPlaybackStatus');if(t)t.textContent=state.state==='playing'?'PLAYING · '+(state.title||currentVideo.title):'Preparing video…'}
+  if(page==='watch'){
+   const t=$('#videoPlaybackStatus');if(t)t.textContent=state.state==='playing'?'STARTING PLAYBACK · '+(state.title||currentVideo.title):'Preparing video…';
+   if(state.state==='loading'&&window.rushVideoPreparation)window.rushVideoPreparation();
+  }
   const dock=$('#videoMiniDock');if(dock){dock.hidden=page==='watch';const title=$('#videoMiniTitle');if(title)title.textContent=state.title||currentVideo.title||'Now playing'}
   window.setTimeout(()=>window.rushUpdateVideoPosition&&window.rushUpdateVideoPosition(),220);
+ }else if(state.state==='error'){
+  if(page==='watch'&&window.rushVideoBufferingError)window.rushVideoBufferingError(state.message||'Could not start playback. Check your connection.');
  }
 };
 window.rushUpdateVideoPosition=function(){
