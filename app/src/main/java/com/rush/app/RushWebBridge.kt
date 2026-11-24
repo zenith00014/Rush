@@ -292,6 +292,7 @@ class RushWebBridge(
                         val json = JSONObject().put("id", item.videoId).put("title", item.title)
                             .put("artist", item.creator).put("duration", item.duration)
                             .put("thumbnail", item.thumbnailUrl)
+                            .put("creatorThumbnail", item.creatorThumbnail)
                             .put("sourceId", source.id).put("sourceName", source.name)
                         val previous = videoHits[item.videoId]
                         if (previous == null || score > previous.score) {
@@ -736,7 +737,8 @@ class RushWebBridge(
                     results.forEach { item ->
                         put(JSONObject().put("id", item.videoId).put("title", item.title)
                             .put("artist", item.creator).put("duration", item.duration)
-                            .put("thumbnail", thumbnailFor(item.videoId, item.thumbnailUrl)))
+                            .put("thumbnail", thumbnailFor(item.videoId, item.thumbnailUrl))
+                            .put("creatorThumbnail", item.creatorThumbnail))
                     }
                 }
                 publish("rushVideoSearchResults", payload.toString())
