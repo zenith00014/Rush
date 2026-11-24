@@ -1004,7 +1004,7 @@ class RushWebBridge(
             .header("User-Agent", "Rush/1.0 (Android)")
             .build()
         NEWS_RSS_CLIENT.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) throw java.io.IOException("News feed failed (HTTP \${response.code}).")
+            if (!response.isSuccessful) throw java.io.IOException("News feed failed (HTTP ${response.code}).")
             val parser = android.util.Xml.newPullParser()
             parser.setInput(response.body?.byteStream(), null)
             val output = JSONArray()
