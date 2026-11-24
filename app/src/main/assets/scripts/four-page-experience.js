@@ -369,7 +369,13 @@ go = function(){
  if(page==='explore'){
   followingFeedRequested=false;
   loadHomeFeed();
-  if(window.RushNative)RushNative.loadLibrary();
+  if(window.RushNative){
+   RushNative.loadLibrary();
+   if(!movieSearchLoaded&&!movieDiscoveryRequested){
+    movieDiscoveryRequested=true;
+    RushNative.searchVideos('full length movies feature films');
+   }
+  }
  }else if(page==='subscribed'){
   if(window.RushNative)RushNative.loadHomeFeed('following');
  }
