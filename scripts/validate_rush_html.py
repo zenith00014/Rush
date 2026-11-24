@@ -228,6 +228,8 @@ def main():
         fail("New Play submissions must target API 36 or higher")
     if 'androidx.webkit:webkit:1.18.0' not in gradle:
         fail("WebViewAssetLoader dependency is missing")
+    if 'com.arthenica:smart-exception-java:0.2.1' not in gradle:
+        fail("FFmpegKit SmartException Android runtime dependency is missing")
     if "robolectricSdkRuntime" not in gradle or "robolectric.offline" not in gradle:
         fail("Robolectric tests must use the prefetched offline Android runtime")
     if "android-all-instrumented-15-robolectric-12650502-i7.jar" not in gradle:
@@ -238,6 +240,9 @@ def main():
         fail("Fullscreen video handoff is missing")
     if "android:usesCleartextTraffic=\"false\"" not in manifest:
         fail("Cleartext traffic must remain disabled")
+    proguard = (ROOT / "app/proguard-rules.pro").read_text(encoding="utf-8")
+    if "-dontwarn java.beans.**" not in proguard or "-dontwarn javax.script.**" not in proguard:
+        fail("Optional desktop-JVM Rhino adapters must be excluded from Android R8 checks narrowly")
     if "minBufferMs" in service:
         fail("Keep Media3 load-control configuration compatible with the pinned Java/Kotlin API")
 
