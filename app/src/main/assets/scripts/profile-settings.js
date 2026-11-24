@@ -33,6 +33,12 @@ function renderProfilePage(){
  '<section class="profile-hero"><span class="profile-avatar-large">'+esc((rushProfile.displayName||"R").trim().slice(0,1).toUpperCase())+'</span><div><h2>'+name+'</h2><p>'+handle+'</p><small>STORED ON THIS DEVICE</small></div></section>'+
  '<div class="settings-group"><button class="settings-row" data-edit-profile><span class="settings-icon">✎</span><span><b>Edit profile</b><small>Change your display name and handle</small></span><i>›</i></button><button class="settings-row" data-open-settings><span class="settings-icon">⚙</span><span><b>App settings</b><small>Permissions, playback and privacy</small></span><i>›</i></button></div>';
 }
+function renderEditProfilePage(){
+ return pageTop("Edit profile","local profile")+
+ '<section class="settings-section"><label class="onboarding-field"><span>DISPLAY NAME</span><input id="profileName" type="text" maxlength="40" value="'+esc(rushProfile.displayName||"")+'"></label>'+
+ '<label class="onboarding-field"><span>HANDLE <em>OPTIONAL</em></span><input id="profileHandle" type="text" maxlength="24" value="'+esc(rushProfile.handle||"")+'"></label>'+
+ '<p class="permission-note">Your profile is stored only on this device.</p><div class="feed-actions"><button class="btn k" data-profile-save>SAVE PROFILE</button><button class="chip" data-cancel-profile>CANCEL</button></div></section>';
+}
 function renderSettingsPage(){
  const p=permissionSnapshot||{};
  const notify=p.notificationsEnabled?"Enabled":p.notificationsBlockedInSystemSettings?"Blocked in Android settings":p.notificationRuntimePermissionRequired?"Not enabled":"Not required on this Android version";
@@ -107,9 +113,10 @@ go=function(){
  if(route==="profile")rushProfile=readProfile();
  if(route==="privacy"){const root=$("#v");if(root)root.innerHTML=renderPrivacyPage();page="privacy";return}
  if(route==="profile"){const root=$("#v");if(root)root.innerHTML=renderProfilePage();page="profile";return}
+ if(route==="edit-profile"){const root=$("#v");if(root)root.innerHTML=renderEditProfilePage();page="edit-profile";return}
  if(route==="settings"){const root=$("#v");if(root)root.innerHTML=renderSettingsPage();page="settings";return}
  goBeforeProfile();
- if(page==="explore"||page==="subscribed")window.rushAppForeground();
+ const root=$("#v");if(root){root.classList.remove("screen-enter");requestAnimationFrame(()=>root.classList.add("screen-enter"))}
 };
 function saveOnboarding(){
  const name=$("#profileName")?.value.trim()||"";
@@ -168,7 +175,7 @@ window.rushHandleBack=function(){
  if(page==="search"&&document.activeElement?.id==="q"){
   document.activeElement.blur();searchFocusOpen=false;return true;
  }
- if(page==="privacy"||page==="profile"){location.hash="#library";return true}
+ if(page==="privacy"||page==="profile"||page==="edit-profile"){location.hash="#library";return true}
  if(page==="settings"){location.hash="#library";return true}
  if(page==="topics"){location.hash="#settings";return true}
  if(page==="watch"){location.hash="#explore";return true}
