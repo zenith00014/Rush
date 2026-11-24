@@ -6,6 +6,7 @@ let videoSpeed=1,videoQuality=0,videoCaptions=true;
 let currentVideo={id:'',title:'',creator:'',thumbnail:''};
 let searchFocusOpen=false;
 let lastExploreMarkupKey='';
+let explorePriorityImageAssigned=false;
 const LOCAL_LISTS={liked:'rush_liked_items_v1',watchlist:'rush_watchlist_v1'};
 function safeLocalRead(key){try{return JSON.parse(localStorage.getItem(key)||'[]')}catch(e){return []}}
 function safeLocalWrite(key,value){try{localStorage.setItem(key,JSON.stringify(value))}catch(e){}}
@@ -28,29 +29,34 @@ function creatorAvatar(name){
  const thumbnail=safeUrl(followed&&followed.thumbnail);
  return '<span class="creator-avatar" aria-hidden="true">'+(thumbnail?'<img src="'+esc(thumbnail)+'" alt="" loading="lazy" decoding="async" onerror="this.hidden=true">':esc(creatorInitial(name)))+'</span>';
 }
-function videoTile(x,index=0){
+function videoTile(x,index=0,priorityImage=false){
  const thumb=safeUrl(x.thumbnail),creator=x.artist||x.creator||'YouTube';
- const priority=index===0?' loading="eager" fetchpriority="high"':' loading="lazy"';
+ const priority=priorityImage?' loading="eager" fetchpriority="high"':' loading="lazy"';
  return '<article class="media-tile"><button class="home-media-open" data-video-id="'+esc(x.id)+'" data-title="'+esc(x.title)+'" data-creator="'+esc(creator)+'" data-thumbnail="'+esc(thumb)+'" aria-label="Watch '+esc(x.title)+'"><span class="media-art video">'+(thumb?'<img src="'+esc(thumb)+'" alt="" width="190" height="107" decoding="async"'+priority+' onerror="this.hidden=true">':'')+'<span class="media-kind">VIDEO</span><span class="media-play">'+ic('play')+'</span></span></button><span class="media-copy">'+creatorAvatar(creator)+'<span><b>'+esc(x.title)+'</b><span>'+esc(creator)+(x.duration?' · '+esc(x.duration):'')+'</span></span></span></article>';
 }
-function movieTile(x,index=0){
+function movieTile(x,index=0,priorityImage=false){
  const thumb=safeUrl(x.thumbnail),creator=x.artist||x.creator||'YouTube';
- const priority=index===0?' loading="eager" fetchpriority="high"':' loading="lazy"';
+ const priority=priorityImage?' loading="eager" fetchpriority="high"':' loading="lazy"';
  return '<article class="media-tile movie"><button class="home-media-open" data-video-id="'+esc(x.id)+'" data-title="'+esc(x.title)+'" data-creator="'+esc(creator)+'" data-thumbnail="'+esc(thumb)+'" aria-label="Play '+esc(x.title)+'"><span class="media-art movie">'+(thumb?'<img src="'+esc(thumb)+'" alt="" width="132" height="198" decoding="async"'+priority+' onerror="this.hidden=true">':'')+'<span class="media-kind">FILM</span><span class="media-play">'+ic('play')+'</span></span></button><span class="media-copy"><span><b>'+esc(x.title)+'</b><span>'+esc(creator)+'</span></span></span></article>';
 }
-function musicTile(x,index=0){
+function musicTile(x,index=0,priorityImage=false){
  const thumb=safeUrl(x.thumbnail),artist=x.artist||'Unknown artist';
  const priority=index===0?' loading="eager" fetchpriority="high"':' loading="lazy"';
  return '<article class="media-tile music"><button class="home-media-open" data-track="'+esc(x.id)+'" data-title="'+esc(x.title)+'" data-artist="'+esc(artist)+'" data-thumbnail="'+esc(thumb)+'" aria-label="Play '+esc(x.title)+'"><span class="media-art music">'+(thumb?'<img src="'+esc(thumb)+'" alt="" width="144" height="144" decoding="async"'+priority+' onerror="this.hidden=true">':'')+'<span class="media-kind">AUDIO</span><span class="media-play">'+ic('play')+'</span></span></button><span class="media-copy"><span><b>'+esc(x.title)+'</b><span>'+esc(artist)+(x.duration?' · '+esc(x.duration):'')+'</span></span></span></article>';
 }
-function newsShelfCard(x,index=0){
+function newsShelfCard(x,index=0,priorityImage=false){
  const thumb=safeUrl(x.thumbnail);
  const priority=index===0?' loading="eager" fetchpriority="high"':' loading="lazy"';
  return '<button class="news-shelf-card" data-news-url="'+esc(safeUrl(x.url))+'"><img src="'+esc(thumb)+'" alt="" width="108" height="78" decoding="async"'+priority+' referrerpolicy="no-referrer" onerror="this.hidden=true"><span class="news-shelf-copy"><small>'+esc(x.source||'News')+'</small><b>'+esc(x.title)+'</b><span>'+esc(x.date||'Latest report')+'</span></span></button>';
 }
 function shelf(title,items,renderer,label){
  if(!items||!items.length)return '';
- return '<section class="explore-shelf"><div class="shelf-heading"><h2>'+esc(title)+'</h2><small>'+esc(label||String(items.length)+' PICKS')+'</small></div><div class="shelf-row">'+items.map((item,index)=>renderer(item,index)).join('')+'</div></section>';
+ const rendered=items.map((item,index)=>{
+  const priority=!explorePriorityImageAssigned&&!!safeUrl(item.thumbnail);
+  if(priority)explorePriorityImageAssigned=true;
+  return renderer(item,index,priority);
+ }).join('');
+ return '<section class="explore-shelf"><div class="shelf-heading"><h2>'+esc(title)+'</h2><small>'+esc(label||String(items.length)+' PICKS')+'</small></div><div class="shelf-row">'+rendered+'</div></section>';
 }
 function topicShelf(){
  return '<section class="explore-shelf"><div class="shelf-heading"><h2>Explore topics</h2><small>FIND YOUR NEXT INTEREST</small></div><div class="topic-shelf">'+(selectedTopics().slice(0,8).length?selectedTopics().slice(0,8):TOPICS.slice(0,8)).map((x,i)=>'<button class="topic-tile" data-topic-search="'+esc(x)+'"><b>'+esc(x)+'</b><span>Explore stories and videos ↗</span></button>').join('')+'</div></section>';
@@ -82,6 +88,7 @@ function renderExploreContent(feed){
  });
  if(markupKey===lastExploreMarkupKey&&root.childElementCount)return;
  lastExploreMarkupKey=markupKey;
+ explorePriorityImageAssigned=false;
  if(homeFilter==='Movies'){
   const items=movieResults.length?movieResults:videos;
   root.innerHTML=items.length?shelf('Movies & long-form films',items,movieTile,'YOUTUBE FILM DISCOVERY'):'<div class="section-empty">Movie discovery is connected to YouTube search at the moment. Search for a film title to find available long-form videos.</div>';
