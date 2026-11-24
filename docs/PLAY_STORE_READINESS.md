@@ -10,6 +10,7 @@
 - [x] The app uses WebViewAssetLoader to serve bundled HTML, CSS and JavaScript under an HTTPS origin.
 - [x] Network cleartext is disabled.
 - [x] Background media uses a Media3 MediaSessionService and the mediaPlayback foreground-service type.
+- [x] WorkManager is pinned to 2.12.0; long downloads declare `dataSync`, and MP3 conversion uses `mediaProcessing` on Android 15+.
 - [x] Picture-in-Picture is declared in the manifest.
 - [x] Notification permission is requested contextually on Android 13+.
 - [x] No camera, microphone, contacts, location or shared-storage permission is declared.
@@ -41,6 +42,7 @@ The Apple App Store review and Human Interface Guidelines files supplied for thi
 - [ ] Provide accurate screenshots and describe the current functionality; do not claim a licensed movie catalogue.
 - [ ] Declare and justify foreground-service use where Play Console asks for it.
 - [ ] Test install, upgrade, notification denial, playback, PiP, downloads, offline transitions and data-reset behaviour on physical devices.
+- [ ] On Android 15+, test WorkManager's `dataSync` and `mediaProcessing` foreground work against the six-hour-per-type/24-hour timeout. Verify the worker yields, retries or stops safely; do not allow an FGS timeout to crash the app. Use Android's `FGS_INTRODUCE_TIME_LIMITS` compatibility switch and shortened `device_config` durations for the test.
 - [ ] Review the Play pre-launch report and Android vitals before production rollout.
 
 ## Content-rights blocker: YouTube playback and downloads
