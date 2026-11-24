@@ -629,9 +629,10 @@ function homeMusicTile(x){
 }
 function renderFeedResults(data){
  if(page!=='home')return;
- homeFeedCache=data||{videos:[],music:[],news:[]};
+ const feed=data||{videos:[],music:[],news:[]};
+ homeFeedCache=feed;
  const root=$('#homeFeedResults'),status=$('#homeFeedStatus');if(!root)return;
- const allVideos=homeFeedCache.videos||[],allMusic=homeFeedCache.music||[],allNews=homeFeedCache.news||[];
+ const allVideos=feed.videos||[],allMusic=feed.music||[],allNews=feed.news||[];
  const videos=homeFilter==='Music'||homeFilter==='News'?[]:allVideos;
  const music=homeFilter==='Videos'||homeFilter==='News'?[]:allMusic;
  const news=homeFilter==='Videos'||homeFilter==='Music'?[]:allNews;
@@ -643,7 +644,7 @@ function renderFeedResults(data){
  music.slice(1).forEach(item=>tiles.push(homeMusicTile(item)));
  news.slice(1).forEach(item=>tiles.push('<div class="home-news-slot">'+newsCard(item)+'</div>'));
  const count=videos.length+music.length+news.length;
- root.innerHTML=count?'<section class="home-feed-section"><div class="home-section-heading"><h2>'+(homeFilter==='All'?(homeTab==='fy'?'Picked for you':'From your subscriptions'):homeFilter)+'</h2><span>'+count+' ITEMS</span></div><div class="home-bento">'+tiles.join('')+'</div></section>':'<div class="empty-state"><b>'+(homeFilter==='All'?(data.message||'Your feed is taking shape.'):'Nothing in '+esc(homeFilter)+' yet.')+'</b><p>'+(homeFilter==='All'?'Follow channels, musicians or publishers and choose topics to shape your feed. Search stays open to every kind of content.':'Try another category or explore all recommendations.')+'</p><button class="btn k" data-open-search>FIND SOURCES</button></div>';
+ root.innerHTML=count?'<section class="home-feed-section"><div class="home-section-heading"><h2>'+(homeFilter==='All'?(homeTab==='fy'?'Picked for you':'From your subscriptions'):homeFilter)+'</h2><span>'+count+' ITEMS</span></div><div class="home-bento">'+tiles.join('')+'</div></section>':'<div class="empty-state"><b>'+(homeFilter==='All'?(feed.message||'Your feed is taking shape.'):'Nothing in '+esc(homeFilter)+' yet.')+'</b><p>'+(homeFilter==='All'?'Follow channels, musicians or publishers and choose topics to shape your feed. Search stays open to every kind of content.':'Try another category or explore all recommendations.')+'</p><button class="btn k" data-open-search>FIND SOURCES</button></div>';
  if(status)status.textContent=data.message||((allVideos.length+allMusic.length+allNews.length)+' items · '+(homeTab==='fy'?'For You':'Following')+' feed');
 }
 function renderChannels(items){
