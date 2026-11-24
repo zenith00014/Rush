@@ -2,6 +2,8 @@ package com.rush.app
 
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
+import com.rush.app.profile.RushProfileStore
+import com.rush.app.permissions.RushPermissionManager
 import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
@@ -49,6 +51,35 @@ class RushWebBridge(
     @JavascriptInterface
     fun getFeedPreferences(): String =
         FeedPreferences.asJson(activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)).toString()
+
+    @JavascriptInterface
+    fun getUserProfile(): String = RushProfileStore.read(activity).toString()
+
+    @JavascriptInterface
+    fun saveUserProfile(displayName: String, handle: String): Boolean =
+        RushProfileStore.save(activity, displayName, handle)
+
+    @JavascriptInterface
+    fun clearUserProfile() = RushProfileStore.clear(activity)
+
+    @JavascriptInterface
+    fun getPermissionStatus(): String =
+        RushPermissionManager.notificationState(activity).toString()
+
+    @JavascriptInterface
+    fun requestNotificationPermission() {
+        activity.requestDownloadNotificationPermission()
+    }
+
+    @JavascriptInterface
+    fun openApplicationSettings() {
+        activity.openApplicationSettings()
+    }
+
+    @JavascriptInterface
+    fun openPictureInPictureSettings() {
+        activity.openPictureInPictureSettings()
+    }
 
     @JavascriptInterface
     fun saveFeedTopics(topicsJson: String) {
