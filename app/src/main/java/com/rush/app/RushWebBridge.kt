@@ -229,6 +229,9 @@ class RushWebBridge(
                     .distinct().take(3)
             }
 
+            val fetchFailureCount = java.util.concurrent.atomic.AtomicInteger(0)
+            val fetchAttemptCount = channelSources.size + artistSources.size + newsQueries.size
+
             val videoHits = LinkedHashMap<String, RushDiscoveryEngine.FeedHit>()
             val videoPayloads = LinkedHashMap<String, JSONObject>()
             val musicHits = LinkedHashMap<String, RushDiscoveryEngine.FeedHit>()
@@ -245,6 +248,7 @@ class RushWebBridge(
                         val newsJobs = newsQueries.map { query ->
                             async {
                                 query to runCatching { networkSlots.withPermit { requestNews(query) } }
+                                    .onFailure { fetchFailureCount.incrementAndGet() }
                                     .getOrDefault(JSONArray())
                             }
                         }
@@ -252,14 +256,14 @@ class RushWebBridge(
                             async {
                                 source to runCatching {
                                     networkSlots.withPermit { LiveYouTubeSearch.search(source.name, music = false) }
-                                }.getOrDefault(emptyList())
+                                }.onFailure { fetchFailureCount.incrementAndGet() }.getOrDefault(emptyList())
                             }
                         }
                         val musicJobs = artistSources.map { source ->
                             async {
                                 source to runCatching {
                                     networkSlots.withPermit { LiveYouTubeSearch.search(source.name, music = true) }
-                                }.getOrDefault(emptyList())
+                                }.onFailure { fetchFailureCount.incrementAndGet() }.getOrDefault(emptyList())
                             }
                         }
 
@@ -372,7 +376,22 @@ class RushWebBridge(
                 }
             } catch (cancelled: kotlinx.coroutines.CancellationException) {
                 throw cancelled
-            } catch (_: Exception) { }
+            } catch (error: Exception) {
+                publish("rushHomeFeedError", JSONObject()
+                    .put("mode", feedMode)
+                    .put("message", playbackErrorMessage(error, "Could not refresh your feed. Check your connection and try again."))
+                    .toString())
+                return@launch
+            }
+
+            val noFeedItems = videoHits.isEmpty() && musicHits.isEmpty() && newsHits.isEmpty()
+            if (noFeedItems && fetchAttemptCount > 0 && fetchFailureCount.get() > 0) {
+                publish("rushHomeFeedError", JSONObject()
+                    .put("mode", feedMode)
+                    .put("message", "Your sources could not be reached. Your previous feed is being kept.")
+                    .toString())
+                return@launch
+            }
 
             val videos = RushDiscoveryEngine.diversifyFeed(videoHits.values.toList(), 24, 2)
                 .mapNotNull { videoPayloads[it.candidate.id] }
