@@ -191,8 +191,16 @@ class RushWebBridge(
         val profileSnapshot = discoveryProfile(prefs)
         val followingSnapshot = mode.equals("following", true)
         val feedModeSnapshot = if (followingSnapshot) "following" else "forYou"
-        val cacheSignatureSnapshot = profileSnapshot.topics.joinToString("|") + "|" +
-            sourcesSnapshot.joinToString("|") { "${it.kind}:${it.id}:${it.name}" }
+        val cacheSignatureSnapshot = buildString {
+            append(profileSnapshot.topics.joinToString("|"))
+            append("|").append(sourcesSnapshot.joinToString("|") { "${it.kind}:${it.id}:${it.name}" })
+            append("|history=").append(profileSnapshot.historyTerms.sorted().joinToString("|"))
+            append("|recent=").append(profileSnapshot.recentIds.sorted().joinToString("|"))
+            append("|liked=").append(profileSnapshot.likedIds.sorted().joinToString("|"))
+            append("|disliked=").append(profileSnapshot.dislikedIds.sorted().joinToString("|"))
+            append("|notInterested=").append(profileSnapshot.notInterestedIds.sorted().joinToString("|"))
+            append("|blocked=").append(profileSnapshot.blockedCreators.sorted().joinToString("|"))
+        }
         val cacheKeySnapshot = "rush_home_feed_v4_${feedModeSnapshot}_${Integer.toHexString(cacheSignatureSnapshot.hashCode())}"
         if (!activeHomeFeedRequests.add(cacheKeySnapshot)) return
         activity.lifecycleScope.launch {
@@ -844,7 +852,7 @@ class RushWebBridge(
         val id = videoId.trim().take(128)
         val channel = creator.trim().take(160)
         val prefs = activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)
-        val allowed = setOf("like", "dislike", "notInterested", "recommendChannel")
+        val allowed = setOf("like", "unlike", "dislike", "undislike", "notInterested", "recommendChannel")
         if (action !in allowed) return
         val liked = prefs.getStringSet("recommendation_liked_ids", emptySet()).orEmpty().toMutableSet()
         val disliked = prefs.getStringSet("recommendation_disliked_ids", emptySet()).orEmpty().toMutableSet()
@@ -852,7 +860,9 @@ class RushWebBridge(
         val blockedCreators = prefs.getStringSet("recommendation_blocked_creators", emptySet()).orEmpty().toMutableSet()
         when (action) {
             "like" -> if (id.isNotBlank()) { liked.add(id); disliked.remove(id) }
+            "unlike" -> if (id.isNotBlank()) liked.remove(id)
             "dislike" -> if (id.isNotBlank()) { disliked.add(id); liked.remove(id) }
+            "undislike" -> if (id.isNotBlank()) disliked.remove(id)
             "notInterested" -> if (id.isNotBlank()) notInterested.add(id)
             "recommendChannel" -> if (channel.isNotBlank()) blockedCreators.add(channel)
         }
@@ -863,6 +873,7 @@ class RushWebBridge(
             .putStringSet("recommendation_blocked_creators", blockedCreators)
             .apply()
         loadHomeFeed("forYou")
+        loadHomeFeed("following")
     }
 
     @JavascriptInterface
@@ -918,7 +929,8 @@ class RushWebBridge(
                         put(JSONObject().put("id", item.videoId).put("title", item.title)
                             .put("artist", item.creator).put("duration", item.duration)
                             .put("thumbnail", thumbnailFor(item.videoId, item.thumbnailUrl))
-                            .put("creatorThumbnail", item.creatorThumbnail))
+                            .put("creatorThumbnail", item.creatorThumbnail)
+                            .put("channelId", item.channelId))
                     }
                 }
                 publish("rushUpNextResults", payload.toString())
