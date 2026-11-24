@@ -86,21 +86,6 @@ jobs:
       - name: Run unit tests and build debug APK
         run: gradle --no-daemon --stacktrace :app:testDebugUnitTest :app:assembleDebug
 
-      - name: Build release Android App Bundle
-        run: gradle --no-daemon --stacktrace :app:bundleRelease
-
-      - name: Verify release bundle
-        run: |
-          BUNDLE="app/build/outputs/bundle/release/app-release.aab"
-          test -s "$BUNDLE"
-          if [ "$RUSH_RELEASE_SIGNED" = "true" ]; then
-            jarsigner -verify "$BUNDLE"
-            echo "SIGNED: upload key supplied" > release-bundle-status.txt
-          else
-            echo "UNSIGNED: configure RUSH_UPLOAD_KEYSTORE_BASE64 and the upload-key secrets before Play Console upload" > release-bundle-status.txt
-          fi
-          sha256sum "$BUNDLE" | tee release-bundle.sha256
-
       - name: Verify APK output
         run: |
           test -s app/build/outputs/apk/debug/app-debug.apk
@@ -115,6 +100,21 @@ jobs:
             app-debug.apk.sha256
           if-no-files-found: error
           retention-days: 14
+
+      - name: Build release Android App Bundle
+        run: gradle --no-daemon --stacktrace :app:bundleRelease
+
+      - name: Verify release bundle
+        run: |
+          BUNDLE="app/build/outputs/bundle/release/app-release.aab"
+          test -s "$BUNDLE"
+          if [ "$RUSH_RELEASE_SIGNED" = "true" ]; then
+            jarsigner -verify "$BUNDLE"
+            echo "SIGNED: upload key supplied" > release-bundle-status.txt
+          else
+            echo "UNSIGNED: configure RUSH_UPLOAD_KEYSTORE_BASE64 and the upload-key secrets before Play Console upload" > release-bundle-status.txt
+          fi
+          sha256sum "$BUNDLE" | tee release-bundle.sha256
 
       - name: Upload release AAB
         uses: actions/upload-artifact@v4
