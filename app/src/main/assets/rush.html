@@ -1163,7 +1163,7 @@ window.addEventListener('hashchange',go);
 window.addEventListener('resize',()=>{navPosition();indicator()});
 
 /* Four-page navigation and screen composition override the earlier prototype UI. */
-let movieResults=[];
+let movieResults=[],movieSearchLoaded=false,movieDiscoveryRequested=false;
 let followingFeedCache={videos:[],music:[],news:[]};
 let selectedSubscription='all';
 let videoSpeed=1,videoQuality=0,videoCaptions=true;
@@ -1218,13 +1218,18 @@ function renderExploreContent(feed){
   root.innerHTML=items.length?shelf('Movies & long-form films',items,movieTile,'YOUTUBE FILM DISCOVERY'):'<div class="section-empty">Movie discovery is connected to YouTube search at the moment. Search for a film title to find available long-form videos.</div>';
   return;
  }
+ const historyItems=(libraryData.history||[]).slice(0,8).map(id=>libraryData.items&&libraryData.items[id]).filter(Boolean);
+ const historyVideos=historyItems.filter(x=>!x.music),historyMusic=historyItems.filter(x=>x.music);
  const v=homeFilter==='All'||homeFilter==='Videos'?videos:[];
  const m=homeFilter==='All'||homeFilter==='Music'?music:[];
  const n=homeFilter==='All'||homeFilter==='News'?news:[];
  let html='';
+ if(homeFilter==='All')html+=shelf('Continue where you left off',historyVideos,videoTile,'RECENT');
+ if(homeFilter==='All')html+=shelf('Recently played',historyMusic,musicTile,'RECENT');
  if(homeFilter==='All'||homeFilter==='Videos')html+=shelf(homeFilter==='Videos'?'Videos':'Recommended for you',v,videoTile);
  if(homeFilter==='All'||homeFilter==='Music')html+=shelf(homeFilter==='Music'?'Music':'Music for your day',m,musicTile);
  if(homeFilter==='All'||homeFilter==='News')html+=shelf(homeFilter==='News'?'News':'Top headlines',n,newsShelfCard);
+ if(homeFilter==='All'&&movieResults.length)html+=shelf('Movies & long-form films',movieResults,movieTile,'YOUTUBE FILM DISCOVERY');
  if(homeFilter==='All')html+=shelf('From your subscriptions',followingFeedCache.videos||[],videoTile,'FOLLOWING');
  if(homeFilter==='All')html+=shelf('Latest from followed musicians',followingFeedCache.music||[],musicTile,'FOLLOWING');
  if(homeFilter==='All')html+=shelf('Publisher updates',followingFeedCache.news||[],newsShelfCard,'FOLLOWING');
@@ -1250,10 +1255,10 @@ renderFeedResults = function(data){
 };
 renderSearchPage = function(){
  const history=searchHistory();
- const trending=TOPICS.slice(0,10);
+ const trending=(selectedTopics().length?selectedTopics():TOPICS).slice(0,10);
  return '<header class="search-hero"><h1>Search</h1><p>Find videos, music, stories, creators and films.</p></header>'+
  '<label class="search-box">'+ic('search')+'<input id="q" type="search" placeholder="What do you want to find?" aria-label="Search Rush" autocomplete="off"><button class="ib" type="button" data-search-clear aria-label="Clear search" style="width:34px;height:34px">×</button></label>'+
- '<div id="searchIdle"><div class="search-idle-heading">Trending topics</div><div class="trend-row">'+trending.map(x=>'<button class="trend-chip" data-topic-search="'+esc(x)+'">'+esc(x)+'</button>').join('')+'</div>'+
+ '<div id="searchIdle"><div class="search-idle-heading">Topics to explore</div><div class="trend-row">'+trending.map(x=>'<button class="trend-chip" data-topic-search="'+esc(x)+'">'+esc(x)+'</button>').join('')+'</div>'+
  '<div class="search-idle-heading">Your subscriptions</div><div class="source-rail">'+(prefs.sources.length?prefs.sources.slice(0,12).map(x=>'<button class="source-avatar" data-search-source="'+esc(x.kind)+'" data-source-name="'+esc(x.name)+'"><span class="avatar">'+(safeUrl(x.thumbnail)?'<img src="'+esc(safeUrl(x.thumbnail))+'" alt="" loading="lazy" decoding="async">':esc(creatorInitial(x.name)))+'</span><b>'+esc(x.name)+'</b></button>').join(''):'<span class="meta">Follow channels and publishers to see them here.</span>')+'</div>'+
  '<div class="search-idle-heading">Browse categories</div><div class="trend-row">'+['Videos','Music','News','Movies','Technology','Science','Sports','Culture'].map(x=>'<button class="trend-chip" data-topic-search="'+esc(x)+'">'+esc(x)+'</button>').join('')+'</div>'+
  '<div class="search-idle-heading">Recent searches</div><div class="search-history" id="searchHistory">'+(history.length?history.map(x=>'<button class="search-history-item" data-search-history="'+esc(x)+'">◷ <span>'+esc(x)+'</span></button>').join(''):'<span class="meta">Your recent searches will appear here.</span>')+'</div></div>'+
@@ -1262,8 +1267,8 @@ renderSearchPage = function(){
 };
 renderSubscribedPage = function(){
  return '<header class="subscribed-head"><h1>Subscribed</h1><p>Updates from the creators and publishers you follow.</p></header>'+
- '<div class="source-rail subscriptions" id="subscriptionSources">'+(prefs.sources.length?prefs.sources.map((x,i)=>'<button class="source-avatar" data-subscription-source="'+i+'"><span class="avatar">'+esc(creatorInitial(x.name))+'</span><b>'+esc(x.name)+'</b></button>').join(''):'<button class="source-avatar" data-open-search><span class="avatar">+</span><b>Find creators</b></button>')+'</div>'+
- '<div class="subscription-feed"><div class="subscription-toolbar"><b id="subscriptionTitle">All subscriptions</b><small id="subscriptionStatus">LATEST UPDATES</small></div><div id="subscriptionFeed" class="subscription-results"><p class="meta pad">Loading your subscriptions…</p></div></div>';
+ '<div class="source-rail subscriptions" id="subscriptionSources">'+(prefs.sources.length?prefs.sources.map((x,i)=>'<button class="source-avatar" data-subscription-source="'+i+'"><span class="avatar">'+(safeUrl(x.thumbnail)?'<img src="'+esc(safeUrl(x.thumbnail))+'" alt="" loading="lazy" decoding="async">':esc(creatorInitial(x.name)))+'</span><b>'+esc(x.name)+'</b></button>').join(''):'<button class="source-avatar" data-open-search><span class="avatar">+</span><b>Find creators</b></button>')+'</div>'+
+ '<div class="subscription-feed"><div class="subscription-toolbar"><b id="subscriptionTitle">All subscriptions</b><span><small id="subscriptionStatus">LATEST UPDATES</small> <button class="chip" data-subscription-all>All</button></span></div><div id="subscriptionFeed" class="subscription-results"><p class="meta pad">Loading your subscriptions…</p></div></div>';
 };
 function renderSubscribedFeed(data){
  const root=$('#subscriptionFeed');if(!root)return;
@@ -1348,7 +1353,10 @@ go = function(){
  if(page==='library')loadLibrary();
  if(page==='explore'){
   loadHomeFeed();
-  if(window.RushNative){RushNative.loadHomeFeed('following');RushNative.loadLibrary()}
+  if(window.RushNative){
+   RushNative.loadHomeFeed('following');RushNative.loadLibrary();
+   if(!movieSearchLoaded){movieSearchLoaded=true;movieDiscoveryRequested=true;RushNative.searchVideos('full length movie film')}
+  }
  }else if(page==='subscribed'){
   if(window.RushNative)RushNative.loadHomeFeed('following');
  }
@@ -1364,7 +1372,7 @@ go = function(){
 function renderSearchHistory(){
  const root=$('#searchHistory');if(!root)return;
  const items=searchHistory();
- root.innerHTML=items.length?items.map(x=>'<button class="search-history-item" data-search-history="'+esc(x)+'">◷ <span>'+esc(x)+'</span></button>').join(''):'<span class="meta">No recent searches.</span>';
+ root.innerHTML=items.length?items.map(x=>'<button class="search-history-item" data-search-history="'+esc(x)+'">◷ <span>'+esc(x)+'</span></button>').join('')+'<button class="trend-chip" data-search-history-clear>Clear history</button>':'<span class="meta">No recent searches.</span>';
 }
 function runUnifiedSearch(){
  const input=$('#q'),q=input?.value.trim();if(!q)return;
@@ -1381,7 +1389,7 @@ window.rushHomeFeedResults = function(data){
 };
 const previousVideoResults=window.rushVideoSearchResults;
 window.rushVideoSearchResults=function(items){
- if(page==='explore'&&homeFilter==='Movies'){movieResults=items||[];renderExploreContent(homeFeedCache);return}
+ if(page==='explore'&&(homeFilter==='Movies'||movieDiscoveryRequested)){movieResults=items||[];movieDiscoveryRequested=false;renderExploreContent(homeFeedCache);return}
  if(page==='subscribed'&&selectedSubscription!=='all'){
   const root=$('#subscriptionFeed');if(root)root.innerHTML=(items||[]).map(videoRow).join('')||'<p class="meta pad">No videos found for this creator.</p>';return;
  }
@@ -1400,6 +1408,8 @@ window.rushNewsResults=function(items){
  if(page==='subscribed'&&selectedSubscription!=='all'){const root=$('#subscriptionFeed');if(root)root.innerHTML=(items||[]).map(newsCard).join('');return}
  if(previousNewsResults)previousNewsResults(items);
 };
+const previousLibraryData=window.rushLibraryData;
+window.rushLibraryData=function(data){libraryData=data||libraryData;if(page==='explore')renderExploreContent(homeFeedCache);else if(page==='library')renderLibraryContent()};
 const previousCurrentPlayback=window.rushCurrentPlayback;
 window.rushCurrentPlayback=function(data){
  if(previousCurrentPlayback)previousCurrentPlayback(data);
@@ -1443,7 +1453,7 @@ document.addEventListener('click',e=>{
  if(b.hasAttribute('data-home-filter')){
   homeFilter=b.dataset.homeFilter||'All';
   document.querySelectorAll('[data-home-filter]').forEach(x=>{x.setAttribute('aria-pressed',String(x===b));x.setAttribute('aria-selected',String(x===b))});
-  if(homeFilter==='Movies'&&window.RushNative){movieResults=[];const root=$('#exploreShelves');if(root)root.innerHTML='<p class="meta pad">Finding films on YouTube…</p>';RushNative.searchVideos('full length movie film')}
+  if(homeFilter==='Movies'&&window.RushNative){movieResults=[];movieDiscoveryRequested=true;const root=$('#exploreShelves');if(root)root.innerHTML='<p class="meta pad">Finding films on YouTube…</p>';RushNative.searchVideos('full length movie film')}
   else renderExploreContent(homeFeedCache);
   return;
  }
@@ -1513,6 +1523,13 @@ document.addEventListener('click',e=>{
  }
  if(b.hasAttribute('data-search-history')){
   const value=b.dataset.searchHistory||'';const input=$('#q');if(input){input.value=value;runUnifiedSearch()}return;
+ }
+ if(b.hasAttribute('data-search-history-clear')){
+  safeLocalWrite('rush_search_history_v1',[]);renderSearchHistory();return;
+ }
+ if(b.hasAttribute('data-subscription-all')){
+  selectedSubscription='all';const title=$('#subscriptionTitle');if(title)title.textContent='All subscriptions';
+  if(window.RushNative)RushNative.loadHomeFeed('following');return;
  }
  if(b.hasAttribute('data-search-clear')){
   const input=$('#q');if(input){input.value='';input.focus()}const root=$('#unifiedResults');if(root)root.innerHTML='';return;
