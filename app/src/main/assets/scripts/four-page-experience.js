@@ -238,7 +238,7 @@ go = function(){
   window.setTimeout(()=>{const input=$('#q');if(input){input.focus();searchFocusOpen=true;renderSearchHistory() }},90);
  }
  if(page==='player'&&window.RushNative){RushNative.loadCurrentPlayback();RushNative.loadCurrentMusicLyrics()}
- if(page==='watch'&&window.RushNative)RushNative.loadCurrentPlayback();
+ if(page==='watch'&&window.RushNative){RushNative.loadCurrentPlayback();if(currentVideo.id)RushNative.searchVideos(currentVideo.title||currentVideo.creator)}
  const dock=$('#videoMiniDock');if(dock){const show=page!=='watch'&&mediaState.isVideo&&mediaState.hasItem;dock.hidden=!show;if(show){const title=$('#videoMiniTitle');if(title)title.textContent=mediaState.title||'Now playing'}}
  window.setTimeout(()=>window.rushUpdateVideoPosition&&window.rushUpdateVideoPosition(),120);
  if(window.RushNative)RushNative.loadCurrentPlayback();
@@ -257,7 +257,7 @@ function runUnifiedSearch(){
  if(window.RushNative){RushNative.searchVideos(q);RushNative.searchMusic(q);RushNative.searchNews(q);RushNative.searchChannels(q);RushNative.searchPlaylists(q)}
 }
 window.rushHomeFeedResults = function(data){
- if(page==='subscribed'&&data&&data.mode==='following'){renderSubscribedFeed(data);return}
+ if(page==='subscribed'&&data&&data.mode==='following'){if(selectedSubscription==='all')renderSubscribedFeed(data);return}
  if(page==='explore'&&data&&data.mode==='following'){followingFeedCache=data;renderExploreContent(homeFeedCache);return;}
  if(page==='explore'&&data&&data.mode==='forYou'&&data.fetchedAt&&!followingFeedRequested){
   followingFeedRequested=true;
@@ -445,6 +445,7 @@ document.addEventListener('click',e=>{
  if(b.hasAttribute('data-library-view')&&(b.dataset.libraryView==='liked'||b.dataset.libraryView==='watchlist')){
   libraryView=b.dataset.libraryView;renderLibraryContent();return;
  }
+ if(b.hasAttribute('data-player-back')){homeFilter='Music';location.hash='#explore';return}
  if(b.hasAttribute('data-player-toggle')){if(window.RushNative)RushNative.togglePlayback();return}
  if(b.hasAttribute('data-player-prev')){if(window.RushNative)RushNative.skipPrevious();return}
  if(b.hasAttribute('data-player-next')){if(window.RushNative)RushNative.skipNext();return}
