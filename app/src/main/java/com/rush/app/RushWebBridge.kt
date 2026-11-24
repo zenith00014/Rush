@@ -990,8 +990,17 @@ class RushWebBridge(
                     if (articleUrl.isBlank() || !articleUrl.startsWith("https://")) {
                         return@async article to ""
                     }
-                    if (cachedImages.has(articleUrl)) {
-                        return@async article to cachedImages.optString(articleUrl)
+                    val cachedEntry = cachedImages.optJSONObject(articleUrl)
+                    if (cachedEntry != null) {
+                        val cachedImage = cachedEntry.optString("image")
+                        val cachedAt = cachedEntry.optLong("at", 0L)
+                        val cacheAge = System.currentTimeMillis() - cachedAt
+                        val cacheIsValid = cachedAt > 0L && if (cachedImage.isNotBlank()) {
+                            cacheAge in 0..(7L * 24 * 60 * 60 * 1000)
+                        } else {
+                            cacheAge in 0..(6L * 60 * 60 * 1000)
+                        }
+                        if (cacheIsValid) return@async article to cachedImage
                     }
                     val image = imageSlots.withPermit { extractArticleThumbnail(articleUrl) }
                     article to image
@@ -1002,13 +1011,25 @@ class RushWebBridge(
         results.forEach { (article, image) ->
             val articleUrl = article.optString("url").trim()
             if (articleUrl.isBlank() || article.optString("thumbnail").startsWith("https://")) return@forEach
-            if (!cachedImages.has(articleUrl)) cachedImages.put(articleUrl, image)
+            cachedImages.put(articleUrl, JSONObject()
+                .put("image", image)
+                .put("at", System.currentTimeMillis()))
             if (image.startsWith("https://")) article.put("thumbnail", image)
         }
         while (cachedImages.length() > 160) {
             val keys = cachedImages.keys()
-            if (!keys.hasNext()) break
-            cachedImages.remove(keys.next())
+            var oldestKey: String? = null
+            var oldestAt = Long.MAX_VALUE
+            while (keys.hasNext()) {
+                val key = keys.next()
+                val at = cachedImages.optJSONObject(key)?.optLong("at", 0L) ?: 0L
+                if (at < oldestAt) {
+                    oldestAt = at
+                    oldestKey = key
+                }
+            }
+            if (oldestKey == null) break
+            cachedImages.remove(oldestKey)
         }
         prefs.edit().putString(NEWS_THUMBNAIL_CACHE_KEY, cachedImages.toString()).apply()
         return items
