@@ -472,34 +472,44 @@ class RushWebBridge(
         activity.lifecycleScope.launch {
             val profile = discoveryProfile(prefs)
             val followedPublishers = FeedPreferences.sources(prefs).filter { it.kind == "news" }
-            val queries = (profile.topics.take(5) + followedPublishers.take(3).map { it.name }).distinct()
+            val queries = (profile.topics.take(3) + followedPublishers.take(2).map { it.name }).distinct()
             val hits = LinkedHashMap<String, RushDiscoveryEngine.FeedHit>()
             val payloads = LinkedHashMap<String, JSONObject>()
-            withContext(Dispatchers.IO) {
-                queries.forEach { query ->
-                    runCatching {
-                        val items = requestNews(query)
-                        for (index in 0 until items.length()) {
-                            val item = items.optJSONObject(index) ?: continue
-                            val publisher = item.optString("source")
-                            val followed = followedPublishers.any {
-                                publisher.contains(it.name, true) || it.name.contains(publisher, true)
-                            }
-                            val candidate = newsCandidate(item, followed)
-                            val score = RushDiscoveryEngine.scoreFeed(candidate, profile)
-                            val key = item.optString("url")
-                            val previous = hits[key]
-                            if (key.isNotBlank() && (previous == null || score > previous.score)) {
-                                hits[key] = RushDiscoveryEngine.FeedHit(candidate, score)
-                                payloads[key] = item
-                            }
+            val results = withContext(Dispatchers.IO) {
+                coroutineScope {
+                    val slots = Semaphore(4)
+                    queries.map { query ->
+                        async {
+                            query to runCatching { slots.withPermit { requestNews(query) } }
+                                .getOrDefault(JSONArray())
                         }
+                    }.awaitAll()
+                }
+            }
+            results.forEach { (_, items) ->
+                for (index in 0 until items.length()) {
+                    val item = items.optJSONObject(index) ?: continue
+                    val publisher = item.optString("source")
+                    val followed = followedPublishers.any {
+                        publisher.contains(it.name, true) || it.name.contains(publisher, true)
+                    }
+                    val candidate = newsCandidate(item, followed)
+                    val score = RushDiscoveryEngine.scoreFeed(candidate, profile)
+                    val key = item.optString("url")
+                    val previous = hits[key]
+                    if (key.isNotBlank() && (previous == null || score > previous.score)) {
+                        hits[key] = RushDiscoveryEngine.FeedHit(candidate, score)
+                        payloads[key] = item
                     }
                 }
             }
-            val articles = RushDiscoveryEngine.diversifyFeed(hits.values.toList(), 40, 3)
+            val articles = RushDiscoveryEngine.diversifyFeed(hits.values.toList(), 32, 3)
                 .mapNotNull { payloads[it.candidate.id] }
             publish("rushNewsResults", JSONArray(articles).toString())
+            val enriched = enrichNewsThumbnails(articles, prefs, 16)
+            if (enriched.any { it.optString("thumbnail").isNotBlank() }) {
+                publish("rushNewsResults", JSONArray(enriched).toString())
+            }
         }
     }
 
@@ -912,9 +922,12 @@ class RushWebBridge(
             }
             else publish("rushNewsLoading", JSONObject().put("query", query).toString())
             try {
-                val articles = withContext(Dispatchers.IO) { rankNewsItems(query, requestNews(query)) }
-                prefs.edit().putString(cacheKey, articles.toString()).apply()
-                publish("rushNewsResults", articles.toString())
+                val ranked = withContext(Dispatchers.IO) { rankNewsItems(query, requestNews(query)) }
+                val articles = (0 until ranked.length()).mapNotNull { ranked.optJSONObject(it) }
+                val enriched = enrichNewsThumbnails(articles, prefs, 16)
+                val output = JSONArray(enriched)
+                prefs.edit().putString(cacheKey, output.toString()).apply()
+                publish("rushNewsResults", output.toString())
             } catch (error: Exception) {
                 if (cached.isNullOrBlank()) publish("rushNewsError", JSONObject().put("message", playbackErrorMessage(error, "Could not load news.")).toString())
             }
