@@ -266,6 +266,9 @@ class MainActivity:ComponentActivity(){
     override fun onPageFinished(view:android.webkit.WebView,url:String?){
      super.onPageFinished(view,url)
      webPageLoaded=true
+     if(RushPlaybackService.activeInstance?.hasCurrentMediaItem()==true){
+      view.evaluateJavascript("if(window.RushNative)RushNative.loadCurrentPlayback()",null)
+     }
      if(pendingOpenDownloads||intent.getBooleanExtra("open_downloads",false)){
       pendingOpenDownloads=false
       intent.removeExtra("open_downloads")
@@ -304,7 +307,8 @@ class MainActivity:ComponentActivity(){
   if(::webView.isInitialized){
    webView.onResume()
    webView.resumeTimers()
-   if(webPageLoaded)webView.evaluateJavascript("if(window.RushNative)RushNative.loadCurrentPlayback()",null)
+   if(webPageLoaded&&RushPlaybackService.activeInstance?.hasCurrentMediaItem()==true)
+    webView.evaluateJavascript("if(window.RushNative)RushNative.loadCurrentPlayback()",null)
   }
  }
  override fun onStop(){
