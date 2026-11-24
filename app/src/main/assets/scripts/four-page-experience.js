@@ -387,6 +387,11 @@ window.rushHomeFeedResults = function(data){
  if(page==='explore'&&data&&data.mode==='forYou'&&data.fetchedAt&&!followingFeedRequested){
   followingFeedRequested=true;
   window.setTimeout(()=>{if(page==='explore'&&window.RushNative)RushNative.loadHomeFeed('following')},120);
+  window.setTimeout(()=>{
+   if(page==='explore'&&homeFilter==='All'&&!movieSearchLoaded&&!movieDiscoveryRequested&&window.RushNative){
+    movieDiscoveryRequested=true;RushNative.searchVideos('full length movie film');
+   }
+  },1600);
  }
  renderFeedResults(data);
 };
@@ -508,7 +513,7 @@ document.addEventListener('click',e=>{
   exploreCategoryQuery='';exploreCategoryResults={videos:[],music:[],news:[]};
   document.querySelectorAll('[data-home-filter]').forEach(x=>{x.setAttribute('aria-pressed',String(x===b));x.setAttribute('aria-selected',String(x===b))});
   const root=$('#exploreShelves');
-  if(homeFilter==='Movies'&&window.RushNative&&!movieSearchLoaded){
+  if(homeFilter==='Movies'&&window.RushNative&&!movieSearchLoaded&&!movieDiscoveryRequested){
    movieResults=[];movieDiscoveryRequested=true;
    if(root)root.innerHTML='<div class="category-loading"><i class="buffer-spinner"></i><span>Finding movies…</span></div>';
    RushNative.searchVideos('full length movie film');
