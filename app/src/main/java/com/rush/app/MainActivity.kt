@@ -134,7 +134,8 @@ class MainActivity:ComponentActivity(){
   runOnUiThread {
    val view=nativeVideoView?:return@runOnUiThread
    if(nativeVideoFullscreen||!nativeVideoRequested)return@runOnUiThread
-   val scale=webView.scale.coerceAtLeast(0.5f)
+   // CSS pixels from getBoundingClientRect must be converted to Android view pixels.
+   val scale=resources.displayMetrics.density*webView.scale.coerceAtLeast(0.5f)
    val w=(width*scale).toInt().coerceAtLeast(1)
    val h=(height*scale).toInt().coerceAtLeast(1)
    val params=android.widget.FrameLayout.LayoutParams(w,h,android.view.Gravity.TOP or android.view.Gravity.START)
