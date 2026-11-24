@@ -510,6 +510,7 @@ class RushWebBridge(
                 controller.setMediaItem(item)
                 controller.prepare()
                 controller.play()
+                activity.hideNativeVideo()
                 val history = runCatching { JSONArray(prefs.getString("music_history", "[]") ?: "[]") }.getOrDefault(JSONArray())
                 val updatedHistory = JSONArray().put(JSONObject()
                     .put("id", videoId).put("title", title).put("artist", artist).put("thumbnail", thumbnail))

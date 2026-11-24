@@ -266,6 +266,9 @@ class MainActivity:ComponentActivity(){
     override fun onPageFinished(view:android.webkit.WebView,url:String?){
      super.onPageFinished(view,url)
      webPageLoaded=true
+     if(RushPlaybackService.activeInstance?.hasCurrentMediaItem()==true){
+      view.evaluateJavascript("if(window.RushNative)RushNative.loadCurrentPlayback()",null)
+     }
      if(pendingOpenDownloads||intent.getBooleanExtra("open_downloads",false)){
       pendingOpenDownloads=false
       intent.removeExtra("open_downloads")
@@ -291,6 +294,28 @@ class MainActivity:ComponentActivity(){
     else webView.evaluateJavascript("location.hash='#home'",null)
    }
   })
+ }
+ override fun onPause(){
+  if(::webView.isInitialized){
+   webView.onPause()
+   webView.pauseTimers()
+  }
+  super.onPause()
+ }
+ override fun onResume(){
+  super.onResume()
+  if(::webView.isInitialized){
+   webView.onResume()
+   webView.resumeTimers()
+   if(webPageLoaded&&RushPlaybackService.activeInstance?.hasCurrentMediaItem()==true)
+    webView.evaluateJavascript("if(window.RushNative)RushNative.loadCurrentPlayback()",null)
+  }
+ }
+ override fun onStop(){
+  // Unbind the Activity controller so a dismissed video session can stop cleanly.
+  // Keep the controller attached in PiP so native video controls remain available.
+  if(!pipModeState.value&&::rushWebBridge.isInitialized)rushWebBridge.release()
+  super.onStop()
  }
  override fun onNewIntent(intent:android.content.Intent){
   super.onNewIntent(intent)

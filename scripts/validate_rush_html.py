@@ -14,6 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 HTML_PATH = ROOT / "app/src/main/assets/rush.html"
 BRIDGE_PATH = ROOT / "app/src/main/java/com/rush/app/RushWebBridge.kt"
 ACTIVITY_PATH = ROOT / "app/src/main/java/com/rush/app/MainActivity.kt"
+SERVICE_PATH = ROOT / "app/src/main/java/com/rush/app/RushPlaybackService.kt"
 GRADLE_PATH = ROOT / "app/build.gradle.kts"
 
 
@@ -60,12 +61,15 @@ def main():
         fail(f"Missing native bridge: {BRIDGE_PATH}")
     if not ACTIVITY_PATH.is_file():
         fail(f"Missing Android activity: {ACTIVITY_PATH}")
+    if not SERVICE_PATH.is_file():
+        fail(f"Missing playback service: {SERVICE_PATH}")
     if not GRADLE_PATH.is_file():
         fail(f"Missing app Gradle configuration: {GRADLE_PATH}")
 
     html = HTML_PATH.read_text(encoding="utf-8")
     bridge = BRIDGE_PATH.read_text(encoding="utf-8")
     activity = ACTIVITY_PATH.read_text(encoding="utf-8")
+    service = SERVICE_PATH.read_text(encoding="utf-8")
     gradle = GRADLE_PATH.read_text(encoding="utf-8")
     parser = RushHtmlParser()
     parser.feed(html)
@@ -127,6 +131,14 @@ def main():
     ui_contracts = {
         "no preloaded fixed video player": 'id="videoPlayerHost"' not in html,
         "dedicated music player screen": "function renderPlayerPage()" in js,
+        "music player offers explicit video mode": 'id="playerModeToggle"' in html and "data-player-watch-video" in js and "data-player-listen-audio" in js,
+        "video mode keeps current track details visible": "VIDEO MODE · PLAYING" in js and "const hasMedia=isMusic||isVideo;" in js,
+        "music playback resolves audio only": "resolvePlaybackMedia(videoId, audioOnly = true" in bridge,
+        "video dismissed with app task": "override fun onTaskRemoved(rootIntent: android.content.Intent?)" in service and "pauseAllPlayersAndStopSelf()" in service,
+        "background task queue excludes video": "queuedIsAudioOnly" in service and "player.removeMediaItem(index)" in service,
+        "WebView timers pause while app is backgrounded": "webView.pauseTimers()" in activity and "webView.resumeTimers()" in activity,
+        "background Activity releases its controller": "rushWebBridge.release()" in activity and "override fun onStop()" in activity,
+        "playback re-sync does not start an idle service": "activeInstance?.hasCurrentMediaItem()==true" in activity and "fun hasCurrentMediaItem()" in service,
         "lyrics are inside player": 'id="playerLyricsPanel"' in html and 'id="lyricsPanel"' not in html,
         "responsive media row grid": "grid-template-columns:64px minmax(0,1fr) auto!important" in html,
         "explicit video resume button": "data-video-resume" in html and "RushNative.showCurrentVideo()" in js,
