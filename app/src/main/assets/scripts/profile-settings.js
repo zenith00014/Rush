@@ -141,7 +141,10 @@ document.addEventListener("click",event=>{
   return;
  }
  if(button.hasAttribute("data-feed-retry")){
-  if(window.RushNative){RushNative.loadHomeFeed("forYou");RushNative.loadHomeFeed("following")}
+  if(window.RushNative){
+   if(page==="subscribed")RushNative.loadHomeFeed("following");
+   else{RushNative.loadHomeFeed("forYou");RushNative.loadHomeFeed("following")}
+  }
   return;
  }
  if(button.hasAttribute("data-profile-complete")){saveOnboarding();return}
@@ -210,6 +213,13 @@ window.rushHomeFeedLoading=function(state){
 };
 window.rushHomeFeedError=function(error){
  const message=error.message||"Feed refresh failed.";
+ if(page==="subscribed"){
+  const root=$("#subscriptionFeed");
+  const hasVisibleItems=!!root?.querySelector(".result-wrap,.row,.news-card");
+  if(root&&!hasVisibleItems)root.innerHTML='<div class="feed-recovery"><b>Could not refresh Subscribed</b><p>'+esc(message)+'</p><button class="btn" data-feed-retry>TRY AGAIN</button></div>';
+  return;
+ }
+ if(page!=="explore")return;
  const status=$("#homeFeedStatus");if(status)status.textContent=message+" Showing your last saved picks where available.";
  const root=$("#exploreShelves");
  const cachedCount=(homeFeedCache.videos||[]).length+(homeFeedCache.music||[]).length+(homeFeedCache.news||[]).length;
