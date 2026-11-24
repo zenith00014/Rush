@@ -15,6 +15,7 @@ HTML_PATH = ASSET_ROOT / "rush.html"
 BRIDGE_PATH = ROOT / "app/src/main/java/com/rush/app/RushWebBridge.kt"
 ACTIVITY_PATH = ROOT / "app/src/main/java/com/rush/app/MainActivity.kt"
 SERVICE_PATH = ROOT / "app/src/main/java/com/rush/app/RushPlaybackService.kt"
+SEARCH_PATH = ROOT / "app/src/main/java/com/rush/app/LiveYouTubeSearch.kt"
 MANIFEST_PATH = ROOT / "app/src/main/AndroidManifest.xml"
 GRADLE_PATH = ROOT / "app/build.gradle.kts"
 
@@ -228,6 +229,22 @@ def main():
         fail("Notification runtime permission must be declared for Android 13+")
     if "targetSdk = 36" not in gradle:
         fail("New Play submissions must target API 36 or higher")
+    if "androidx.work:work-runtime-ktx:2.12.0" not in gradle:
+        fail("WorkManager must use the current 2.12 stable release")
+    if "FOREGROUND_SERVICE_MEDIA_PROCESSING" not in manifest or "dataSync|mediaProcessing" not in manifest:
+        fail("WorkManager foreground service must declare data sync and media processing types")
+    if "FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING" not in download_worker:
+        fail("Media conversion must use the mediaProcessing foreground type on Android 15+")
+    if "HOME_FEED_NETWORK_SLOTS = Semaphore(5)" not in bridge or "val networkSlots = HOME_FEED_NETWORK_SLOTS" not in bridge:
+        fail("For You and Following must share one global five-request network budget")
+    if "searchResultCache" not in search_client or "inFlightSearches" not in search_client:
+        fail("Identical recent YouTube searches must use the in-memory cache and in-flight coalescer")
+    if "explorePriorityImageAssigned" not in js or "priorityImage" not in js:
+        fail("Only the first useful Explore artwork may be eagerly fetched")
+    if "RushNative.searchVideos('full length movie film')" not in js or "movieSearchLoaded" not in js:
+        fail("Movie discovery must be lazy and start only after the Movies filter is opened")
+    if "data-profile-guest" not in js or "function continueAsGuest()" not in js:
+        fail("First-run profile setup must provide a guest path")
     if 'androidx.webkit:webkit:1.18.0' not in gradle:
         fail("WebViewAssetLoader dependency is missing")
     if 'com.arthenica:smart-exception-java:0.2.1' not in gradle:
