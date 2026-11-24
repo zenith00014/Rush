@@ -41,7 +41,7 @@ function musicTile(x){
 }
 function newsShelfCard(x){
  const thumb=safeUrl(x.thumbnail);
- return '<button class="news-shelf-card" data-news-url="'+esc(safeUrl(x.url))+'"><img src="'+esc(thumb)+'" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.style.visibility=\\'hidden\\'"><span class="news-shelf-copy"><small>'+esc(x.source||'News')+'</small><b>'+esc(x.title)+'</b><span>'+esc(x.date||'Latest report')+'</span></span></button>';
+ return '<button class="news-shelf-card" data-news-url="'+esc(safeUrl(x.url))+'"><img src="'+esc(thumb)+'" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.hidden=true"><span class="news-shelf-copy"><small>'+esc(x.source||'News')+'</small><b>'+esc(x.title)+'</b><span>'+esc(x.date||'Latest report')+'</span></span></button>';
 }
 function shelf(title,items,renderer,label){
  if(!items||!items.length)return '';
