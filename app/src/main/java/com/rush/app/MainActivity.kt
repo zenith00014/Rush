@@ -330,8 +330,10 @@ class MainActivity:ComponentActivity(){
    settings.javaScriptCanOpenWindowsAutomatically=false
    settings.setSupportMultipleWindows(false)
    settings.safeBrowsingEnabled=true
-   settings.setSupportZoom(false)
-   settings.builtInZoomControls=false
+   // Follow Android's text scaling preference and allow pinch zoom for accessibility.
+   settings.textZoom=(resources.configuration.fontScale*100f).toInt().coerceAtLeast(50)
+   settings.setSupportZoom(true)
+   settings.builtInZoomControls=true
    settings.displayZoomControls=false
    if(android.os.Build.VERSION.SDK_INT>=26){
     setRendererPriorityPolicy(android.webkit.WebView.RENDERER_PRIORITY_IMPORTANT,true)
