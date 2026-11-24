@@ -1163,6 +1163,7 @@ window.addEventListener('resize',()=>{navPosition();indicator()});
 /* Four-page navigation and screen composition override the earlier prototype UI. */
 let movieResults=[];
 let selectedSubscription='all';
+let videoSpeed=1,videoQuality=0,videoCaptions=true;
 let currentVideo={id:'',title:'',creator:'',thumbnail:''};
 let searchFocusOpen=false;
 const LOCAL_LISTS={liked:'rush_liked_items_v1',watchlist:'rush_watchlist_v1'};
@@ -1316,7 +1317,7 @@ renderPlayerPage = function(){
  '<div class="deck-controls"><button class="deck-control" data-player-prev aria-label="Previous track">|◀</button><button class="deck-control main" data-player-toggle aria-label="Play or pause">'+(x.isPlaying?'Ⅱ':'▶')+'</button><button class="deck-control" data-player-next aria-label="Next track">▶|</button></div>'+
  '<p class="meta pad" id="playerStatus">'+(x.hasItem?'NOW PLAYING':'Nothing is playing yet.')+'</p>'+
  '<div class="player-progress"><input id="playerSeek" type="range" min="0" max="1000" step="1" value="0" aria-label="Seek through track"><div class="player-time"><span id="playerElapsed">0:00</span><span id="playerDuration">0:00</span></div></div></div>'+
- '<div class="player-utilities"><button class="chip" data-player-lyrics-toggle>Lyrics</button><button class="chip" data-player-queue>Up next</button><button class="chip" data-player-save>Save track</button></div>'+
+ '<div class="player-utilities"><button class="chip" data-player-lyrics-toggle>Lyrics</button><button class="chip" data-sleep-timer>Sleep timer</button><button class="chip" data-player-queue>Up next</button><button class="chip" data-player-save>Save track</button></div><div id="sleepTimerOptions" class="video-options" hidden><button class="video-option" data-sleep-choice="15">15 min</button><button class="video-option" data-sleep-choice="30">30 min</button><button class="video-option" data-sleep-choice="45">45 min</button><button class="video-option" data-sleep-choice="60">60 min</button><button class="video-option" data-sleep-choice="0">Cancel</button></div>'+
  '<div class="lyrics-section" id="playerLyrics" hidden><h2>Lyrics</h2><p class="meta" id="playerLyricsStatus">Synced lyrics</p><div class="lyrics-panel" id="playerLyricsPanel"></div></div>';
 };
 renderNewsPage = function(){homeFilter='News';return renderHome()};
@@ -1461,6 +1462,36 @@ document.addEventListener('click',e=>{
   mediaState.isVideo=false;mediaState.hasItem=false;return;
  }
  if(b.hasAttribute('data-video-fullscreen')){if(window.RushNative)RushNative.setVideoFullscreen(true);return}
+ if(b.hasAttribute('data-option-menu')){
+  const root=$('#videoOptions');if(!root)return;
+  const kind=b.dataset.optionMenu;
+  const speedChoices=[0.5,0.75,1,1.25,1.5,1.75,2];
+  const qualityChoices=[['Auto',0],['1080p',1080],['720p',720],['480p',480],['360p',360]];
+  if(kind==='speed')root.innerHTML=speedChoices.map(x=>'<button class="video-option" data-video-speed-choice="'+x+'" aria-pressed="'+(videoSpeed===x)+'">'+x+'×</button>').join('');
+  else if(kind==='quality')root.innerHTML=qualityChoices.map(([label,value])=>'<button class="video-option" data-video-quality-choice="'+value+'" aria-pressed="'+(videoQuality===value)+'">'+label+'</button>').join('');
+  else root.innerHTML='<button class="video-option" data-video-cc-toggle>'+ (videoCaptions?'Turn captions off':'Turn captions on')+'</button>';
+  root.hidden=false;return;
+ }
+ if(b.hasAttribute('data-video-speed-choice')){
+  videoSpeed=Number(b.dataset.videoSpeedChoice)||1;if(window.RushNative)RushNative.setPlaybackSpeed(videoSpeed);
+  const label=$('[data-option-menu="speed"]');if(label)label.textContent=videoSpeed+'× Speed';const root=$('#videoOptions');if(root)root.hidden=true;return;
+ }
+ if(b.hasAttribute('data-video-quality-choice')){
+  videoQuality=Number(b.dataset.videoQualityChoice)||0;if(window.RushNative)RushNative.setVideoQuality(videoQuality);
+  const label=$('[data-option-menu="quality"]');if(label)label.textContent=videoQuality?videoQuality+'p':'Auto quality';const root=$('#videoOptions');if(root)root.hidden=true;return;
+ }
+ if(b.hasAttribute('data-video-cc-toggle')){
+  videoCaptions=!videoCaptions;if(window.RushNative)RushNative.setVideoCaptionsEnabled(videoCaptions);
+  const label=$('[data-option-menu="captions"]');if(label)label.textContent=videoCaptions?'CC On':'CC Off';const root=$('#videoOptions');if(root)root.hidden=true;return;
+ }
+ if(b.hasAttribute('data-sleep-timer')){
+  const root=$('#sleepTimerOptions');if(root)root.hidden=!root.hidden;return;
+ }
+ if(b.hasAttribute('data-sleep-choice')){
+  const minutes=Number(b.dataset.sleepChoice)||0;if(window.RushNative)RushNative.setSleepTimer(minutes);
+  const status=$('#playerStatus');if(status)status.textContent=minutes?'Sleep timer · '+minutes+' min':'Sleep timer cancelled';
+  const root=$('#sleepTimerOptions');if(root)root.hidden=true;return;
+ }
  if(b.hasAttribute('data-local-like')||b.hasAttribute('data-local-watchlist')){
   const kind=b.hasAttribute('data-local-like')?'liked':'watchlist';
   toggleLocalItem(kind,{id:currentVideo.id,title:currentVideo.title,creator:currentVideo.creator,thumbnail:currentVideo.thumbnail});
@@ -1494,6 +1525,7 @@ document.addEventListener('click',e=>{
   const panel=$('#playerLyrics');if(panel){panel.hidden=!panel.hidden;if(!panel.hidden&&window.RushNative)RushNative.loadCurrentMusicLyrics()}return;
  }
 },true);
+window.rushSleepTimerState=state=>{const status=$('#playerStatus');if(status)status.textContent=state.finished?'Sleep timer finished · playback paused':state.active?'Sleep timer · '+state.minutes+' min':'Sleep timer off'};
 window.addEventListener('resize',()=>window.rushUpdateVideoPosition&&window.rushUpdateVideoPosition());
 document.addEventListener('scroll',()=>window.rushUpdateVideoPosition&&window.rushUpdateVideoPosition(),true);
 
