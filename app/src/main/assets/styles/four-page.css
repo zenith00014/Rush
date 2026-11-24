@@ -620,3 +620,7 @@ h2::after{height:1px;background:var(--border)}
 .mini{bottom:calc(var(--nav) + var(--sa) + 14px)!important}
 .video-mini-dock{bottom:calc(var(--nav) + var(--sa) + 10px)!important}
 .app.has-mini #sc{padding-bottom:calc(var(--nav) + var(--sa) + 112px)!important}
+
+.media-copy-open{display:grid;width:100%;min-width:0;min-height:46px;padding:8px 1px 0;border:0;background:transparent;text-align:left;color:inherit}
+.media-copy-open:active{opacity:.86}
+.media-tile.music .media-copy-open,.media-tile.movie .media-copy-open{grid-template-columns:1fr}
