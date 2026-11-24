@@ -59,9 +59,9 @@ class RushWebBridge(
     }
 
     @JavascriptInterface
-    fun followSource(kind: String, id: String, name: String, productive: Boolean) {
+    fun followSource(kind: String, id: String, name: String, productive: Boolean, thumbnail: String) {
         val prefs = activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)
-        runCatching { FeedPreferences.follow(prefs, kind, id, name, productive) }
+        runCatching { FeedPreferences.follow(prefs, kind, id, name, productive, thumbnail) }
             .onSuccess { publish("rushFeedPreferences", FeedPreferences.asJson(prefs).toString()) }
             .onFailure { publish("rushFeedPreferencesError", JSONObject().put("message", it.message ?: "Could not follow this source.").toString()) }
     }
