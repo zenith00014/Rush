@@ -244,21 +244,21 @@ class MainActivity:ComponentActivity(){
   return builder.build()
  }
  fun setPipEligible(eligible:Boolean){
-  pipEligible.value=eligible
+  pipEligible=eligible
   setPictureInPictureParams(buildPipParams())
  }
  fun updatePipAspectRatio(width:Int,height:Int){
   if(width<=0||height<=0)return
   val ratio=(width.toFloat()/height).coerceIn(1f/2.39f,2.39f)
   pipAspectRatio=android.util.Rational((ratio*1000).toInt().coerceAtLeast(1),1000)
-  if(pipEligible.value)setPictureInPictureParams(buildPipParams())
+  if(pipEligible)setPictureInPictureParams(buildPipParams())
  }
  fun enterPlayerPip(){
-  if(pipEligible.value)enterPictureInPictureMode(buildPipParams())
+  if(pipEligible)enterPictureInPictureMode(buildPipParams())
  }
  override fun onUserLeaveHint(){
   super.onUserLeaveHint()
-  if(android.os.Build.VERSION.SDK_INT<31&&pipEligible.value)enterPlayerPip()
+  if(android.os.Build.VERSION.SDK_INT<31&&pipEligible)enterPlayerPip()
  }
  private fun createRushWebView():android.webkit.WebView {
   return android.webkit.WebView(this).apply{
