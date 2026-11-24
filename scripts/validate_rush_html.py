@@ -138,6 +138,7 @@ def main():
         "background task queue excludes video": "queuedIsAudioOnly" in service and "player.removeMediaItem(index)" in service,
         "WebView timers pause while app is backgrounded": "webView.pauseTimers()" in activity and "webView.resumeTimers()" in activity,
         "background Activity releases its controller": "rushWebBridge.release()" in activity and "override fun onStop()" in activity,
+        "playback re-sync does not start an idle service": "activeInstance?.hasCurrentMediaItem()==true" in activity and "fun hasCurrentMediaItem()" in service,
         "lyrics are inside player": 'id="playerLyricsPanel"' in html and 'id="lyricsPanel"' not in html,
         "responsive media row grid": "grid-template-columns:64px minmax(0,1fr) auto!important" in html,
         "explicit video resume button": "data-video-resume" in html and "RushNative.showCurrentVideo()" in js,
