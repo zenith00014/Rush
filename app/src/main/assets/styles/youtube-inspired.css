@@ -190,3 +190,13 @@ button:focus-visible,a:focus-visible,input:focus-visible{
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}
 }
+
+/* Topic preferences are an action in the content-type strip, not a second nav row. */
+.explore-tabs .explore-topics{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  margin-left:auto;flex:0 0 auto;
+  background:transparent;color:var(--yt-text);
+  border:1px solid #454545;
+}
+.explore-tabs .explore-topics svg{width:14px;height:14px;flex:0 0 auto}
+.explore-tabs .explore-topics:active{background:var(--yt-surface-2)}
