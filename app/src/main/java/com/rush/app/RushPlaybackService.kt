@@ -299,14 +299,20 @@ class RushPlaybackService : MediaSessionService() {
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? =
         mediaSession
 
-    override fun onTaskRemoved(rootIntent: android.content.Intent?) {
-        val player = mediaSession?.player
-        val currentItem = player?.currentMediaItem
+    /**
+     * Apply Rush's background playback policy whenever the Activity leaves the foreground
+     * or its task is dismissed: keep actively playing audio-only music; stop every video.
+     *
+     * @return true when audio-only playback is allowed to continue in the background.
+     */
+    fun enforceBackgroundPlaybackPolicy(): Boolean {
+        val player = mediaSession?.player ?: return false
+        val currentItem = player.currentMediaItem
         val currentIsAudioOnly = currentItem?.mediaMetadata?.extras
             ?.getBoolean(PlaybackMetadata.AUDIO_ONLY, false) == true
 
-        if (player?.isPlaying == true && currentIsAudioOnly) {
-            // Keep background music, but never let a queued video start after the app is dismissed.
+        if (player.isPlaying && currentIsAudioOnly) {
+            // A video must not begin after the user has left Rush.
             val firstQueuedIndex = (player.currentMediaItemIndex + 1).coerceAtLeast(0)
             for (index in player.mediaItemCount - 1 downTo firstQueuedIndex) {
                 val queuedItem = player.getMediaItemAt(index)
@@ -314,12 +320,18 @@ class RushPlaybackService : MediaSessionService() {
                     ?.getBoolean(PlaybackMetadata.AUDIO_ONLY, false) == true
                 if (!queuedIsAudioOnly) player.removeMediaItem(index)
             }
-            super.onTaskRemoved(rootIntent)
-            return
+            return true
         }
 
-        // Video is an in-app activity. Dismissing Rush ends video playback and the session.
+        // Video, paused media, and empty sessions do not stay alive in the background.
         pauseAllPlayersAndStopSelf()
+        return false
+    }
+
+    override fun onTaskRemoved(rootIntent: android.content.Intent?) {
+        if (enforceBackgroundPlaybackPolicy()) {
+            super.onTaskRemoved(rootIntent)
+        }
     }
 
     override fun onDestroy() {
