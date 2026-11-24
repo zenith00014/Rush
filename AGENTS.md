@@ -67,3 +67,15 @@ Review third-party licences and content rights before changing the media pipelin
 - Hardware acceleration is enabled. Handle WebView renderer process loss by recreating the WebView and restoring the current route.
 - Benchmark time-to-first-frame, rebuffer time/count, dropped frames, startup, memory and scroll jank on real low/mid-range Android hardware before claiming smoothness.
 - Follow Anti-Slop settings: Energy 2/5, Rhythm 3/5, Motion 1/5. Keep the established visual direction; motion and visual weight should support content and controls, not overwhelm them.
+
+## Accessibility and onboarding
+
+- Prefer Android host conventions over copying Apple controls literally. Keep the HIG principles that transfer: clear hierarchy, honest status, visible recovery, readable text, labels, focus and user control.
+- Use at least 48dp touch targets for primary and frequent controls where the layout permits. Keep actual hit areas larger than decorative icons and provide clear focus styling.
+- Do not encode meaning by color alone. Pair selected, error, buffering and notification states with text, shape or an icon.
+- Respect Android font scaling and system reduced-motion preferences. Avoid clipping labels at larger text sizes; reflow the screen instead.
+- Keep the first-run profile short and local. The user can continue as Guest; notification permission and other optional preferences must not be prerequisites for opening Explore.
+- Request notification permission only after the user invokes notification-dependent functionality or explicitly enables it in settings. Provide a clear route to Android settings when permission was denied or disabled.
+- For every modal/sheet, implement Back/Escape, Close, focus restoration and a non-blocking status path. Don't use alerts for ordinary loading or feed errors.
+- Show cached/useful content before network enrichment. Distinguish first-load progress, background refresh, buffering, empty results, provider failure and retry states.
+- Do not report native accessibility, real device font scaling or motion support as verified from static source checks alone; test TalkBack and Android font/display settings on real devices.
