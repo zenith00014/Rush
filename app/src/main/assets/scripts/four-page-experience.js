@@ -70,7 +70,8 @@ function libraryRecordTile(item,shape){
  const klass=shape==='movie'?'movie':music?'music':'video';
  const ratio=klass==='movie'?'media-art movie':klass==='music'?'media-art music':'media-art video';
  const creator=item.creator||item.artist||'YouTube';
- return '<article class="media-tile '+(klass==='movie'?'movie':klass==='music'?'music':'')+'"><button data-video-id="'+esc(id)+'" data-title="'+esc(item.title||'')+'" data-creator="'+esc(creator)+'" data-thumbnail="'+esc(thumb)+'"><span class="'+ratio+'">'+(thumb?'<img src="'+esc(thumb)+'" alt="" loading="lazy" decoding="async">':'')+'<span class="media-play">'+ic('play')+'</span></span></button><span class="media-copy"><span><b>'+esc(item.title||'Untitled media')+'</b><span>'+esc(creator)+'</span></span></span></article>';
+ const play=music?'<button data-track="'+esc(item.sourceId||id)+'" data-title="'+esc(item.title||'')+'" data-artist="'+esc(creator)+'" data-thumbnail="'+esc(thumb)+'">':'<button data-video-id="'+esc(id)+'" data-title="'+esc(item.title||'')+'" data-creator="'+esc(creator)+'" data-thumbnail="'+esc(thumb)+'">';
+ return '<article class="media-tile '+(klass==='movie'?'movie':klass==='music'?'music':'')+'">'+play+'<span class="'+ratio+'">'+(thumb?'<img src="'+esc(thumb)+'" alt="" loading="lazy" decoding="async">':'')+'<span class="media-play">'+ic('play')+'</span></span></button><span class="media-copy"><span><b>'+esc(item.title||'Untitled media')+'</b><span>'+esc(creator)+'</span></span></span></article>';
 }
 function librarySection(title,items,renderer,view){
  if(!items||!items.length)return '';
@@ -119,7 +120,7 @@ function compactNewsRow(x,index=0,priorityImage=false){
 function renderExploreContent(feed){
  const root=$('#exploreShelves');if(!root)return;
  const videos=feed.videos||[],music=feed.music||[],news=feed.news||[];
- const historyItems=(libraryData.history||[]).slice(0,10).map(id=>libraryData.items&&libraryData.items[id]).filter(Boolean);
+ const historyItems=(libraryData.history||[]).slice(0,10).map(id=>{const item=libraryData.items&&libraryData.items[id];return item?Object.assign({id},item):null}).filter(Boolean);
  const historyVideos=historyItems.filter(item=>!item.music);
  const historyMusic=historyItems.filter(item=>item.music);
  const watchLater=localItems('watchlist');
@@ -179,7 +180,7 @@ function renderExploreContent(feed){
  root.innerHTML=html||'<div class="section-empty">Nothing here yet. Search or choose another category.</div>';
 }
 renderHome = function(){
- const filters=['All','Videos','Music','News','Movies','Mixes','Live','Podcasts','Gaming','Trending','Sci-Fi & Cinema','Lo-Fi & Beats','Tech & World','Watch Later','Recently Uploaded'];
+ const filters=['All','Videos','Music','News','Movies'];
  return '<div class="explore-tabs" role="tablist" aria-label="Explore categories">'+filters.map(x=>'<button class="explore-tab" role="tab" data-home-filter="'+esc(x)+'" aria-selected="'+(homeFilter===x)+'" aria-pressed="'+(homeFilter===x)+'">'+esc(x)+'</button>').join('')+'</div>'+
  '<p class="meta pad home-feed-status" id="homeFeedStatus" aria-live="polite">Your recommendations and subscriptions.</p><div id="exploreShelves"></div>';
 };
@@ -205,7 +206,7 @@ renderSearchPage = function(){
  '<p class="meta pad" id="unifiedStatus">Search all of Rush.</p><div id="unifiedResults"></div><div id="publicPlaylistContent"></div>';
 };
 renderSubscribedPage = function(){
- const filters=['All','Today','Videos','Music','Movies','News'];
+ const filters=['All','Videos','Music','Movies','News'];
  return '<div class="source-rail subscriptions" id="subscriptionSources"><button class="source-avatar '+(selectedSubscriptionId==='all'?'active':'')+'" data-subscription-all><span class="avatar all-avatar">ALL</span><b>All</b></button>'+
  (prefs.sources.length?prefs.sources.map((x,i)=>'<button class="source-avatar '+(selectedSubscriptionId===x.id?'active':'')+'" data-subscription-source="'+i+'"><span class="avatar">'+(safeUrl(x.thumbnail)?'<img src="'+esc(safeUrl(x.thumbnail))+'" alt="" loading="lazy" decoding="async">':esc(creatorInitial(x.name)))+'</span><b>'+esc(x.name)+'</b></button>').join(''):'<button class="source-avatar" data-open-search><span class="avatar all-avatar">+</span><b>Find</b></button>')+'</div>'+
  '<div class="subscription-tabs">'+filters.map(x=>'<button class="explore-tab '+(subscriptionFilter===x?'selected':'')+'" data-subscription-filter="'+x+'" aria-pressed="'+(subscriptionFilter===x)+'">'+x+'</button>').join('')+'</div>'+
@@ -264,7 +265,7 @@ function subscriptionSourceSearch(index){
  else RushNative.loadChannelUploads(source.id,source.name);
 }
 renderLibraryPage = function(){
- const history=(libraryData.history||[]).slice(0,12).map(id=>libraryData.items&&libraryData.items[id]).filter(Boolean);
+ const history=(libraryData.history||[]).slice(0,12).map(id=>{const item=libraryData.items&&libraryData.items[id];return item?Object.assign({id},item):null}).filter(Boolean);
  const playlists=libraryData.playlists||[];
  const watchlist=localItems('watchlist');
  const savedNews=localItems('news');
@@ -276,7 +277,7 @@ renderLibraryPage = function(){
  (savedNews.length?'<section class="explore-shelf news-column"><div class="shelf-heading"><h2>Saved news</h2><button class="shelf-view-all" data-library-view="news">VIEW ALL ›</button></div>'+savedNews.slice(0,5).map(item=>newsShelfCard(item)).join('')+'</section>':'')+
  '<section class="library-list">'+listRows.map(([key,label,icon])=>'<button data-library-view="'+key+'"><span class="library-row-icon">'+icon+'</span><b>'+label+'</b><span>›</span></button>').join('')+'</section><div class="library-view-all" id="libraryContent"></div>';
 };
-const renderOriginalLibraryContent=renderLibraryContent;const renderOriginalLibraryContent=renderLibraryContent;
+const renderOriginalLibraryContent=renderLibraryContent;
 renderLibraryContent = function(){
  const root=$('#libraryContent');if(!root)return;
  if(libraryView==='liked'||libraryView==='watchlist'){
@@ -304,7 +305,7 @@ renderWatchPage = function(){
  '<p class="meta" id="videoPlaybackStatus" aria-live="polite">Video controls and playback options are available here.</p></section>'+
  '<div class="watch-suggestions"><div class="shelf-heading"><h2>Up next</h2><small>MORE TO WATCH</small></div><div id="watchSuggestions">'+(homeFeedCache.videos||[]).filter(v=>v.id!==x.id).map(videoRow).join('')+'</div></div>';
 };
-renderPlayerPage = function(){renderPlayerPage = function(){
+renderPlayerPage = function(){
  const x=mediaState;
  return '<section class="player-screen"><div class="player-head"><button class="chip" data-player-back>← Back to Explore</button><span class="stk">RUSH DECK</span></div>'+
  '<div class="music-deck"><div class="deck-label"><span>COMPACT DISC PLAYER</span><span>MODE · AUDIO</span></div>'+
@@ -326,7 +327,7 @@ go = function(){
  page=(location.hash||'#explore').slice(1);
  if(page==='home')page='explore';
  if(!R[page])page='explore';
- if(page==='subscribed')selectedSubscription='all';
+ if(page==='subscribed'){selectedSubscription='all';selectedSubscriptionId='all';selectedSubscriptionName='All subscriptions';subscriptionFilter='All';}
  loadFeedPreferences();
  $('#v').innerHTML=R[page]();
  const activePage=page==='watch'?'explore':page==='player'?'explore':page;
@@ -365,7 +366,7 @@ function runUnifiedSearch(){
  if(window.RushNative){RushNative.searchVideos(q);RushNative.searchMusic(q);RushNative.searchNews(q);RushNative.searchChannels(q);RushNative.searchPlaylists(q)}
 }
 window.rushHomeFeedResults = function(data){
- if(page==='subscribed'&&data&&data.mode==='following'){if(selectedSubscription==='all')renderSubscribedFeed(data);return}
+ if(page==='subscribed'&&data&&data.mode==='following'){if(selectedSubscriptionId==='all')renderSubscribedFeed(data);return}
  if(page==='explore'&&data&&data.mode==='following'){followingFeedCache=data;renderExploreContent(homeFeedCache);return;}
  if(page==='explore'&&data&&data.mode==='forYou'&&data.fetchedAt&&!followingFeedRequested){
   followingFeedRequested=true;
@@ -432,7 +433,7 @@ window.rushFeedPreferences=function(data){
  if(previousFeedPreferences)previousFeedPreferences(data);
 };
 const previousLibraryData=window.rushLibraryData;
-window.rushLibraryData=function(data){libraryData=data||libraryData;if(page==='explore')renderExploreContent(homeFeedCache);else if(page==='library'){renderLibraryOverview();renderLibraryContent()}};
+window.rushLibraryData=function(data){libraryData=data||libraryData;if(page==='explore')renderExploreContent(homeFeedCache);else if(page==='library'){const root=$('#v');if(root)root.innerHTML=renderLibraryPage();renderLibraryContent()}};
 const updateMiniOriginal=updateMini;
 updateMini=function(){updateMiniOriginal();const show=!!mediaState.hasItem&&!!mediaState.isMusic;const mini=$('#mini');if(mini){mini.classList.toggle('on',show);mini.inert=!show;mini.setAttribute('aria-hidden',String(!show))}$('.app').classList.toggle('has-mini',show)};
 const previousCurrentPlayback=window.rushCurrentPlayback;
@@ -509,15 +510,14 @@ document.addEventListener('click',e=>{
   selectedSubscriptionId='all';selectedSubscription='all';selectedSubscriptionName='All subscriptions';
   document.querySelectorAll('[data-subscription-source]').forEach(x=>x.classList.remove('active'));
   b.classList.add('active');const title=$('#subscriptionTitle');if(title)title.textContent=selectedSubscriptionName;
+  const root=$('#subscriptionFeed');if(root)root.innerHTML='<p class="meta pad">Loading all subscriptions…</p>';
   if(window.RushNative)RushNative.loadHomeFeed('following');return;
  }
  if(b.hasAttribute('data-subscription-filter')){
   subscriptionFilter=b.dataset.subscriptionFilter||'All';
   document.querySelectorAll('[data-subscription-filter]').forEach(x=>{x.classList.toggle('selected',x===b);x.setAttribute('aria-pressed',String(x===b))});
   if(selectedSubscriptionId==='all')renderSubscribedFeed(followingFeedCache);
-  else if(subscriptionFilter==='All'||subscriptionFilter==='Videos')subscriptionSourceSearch(prefs.sources.findIndex(x=>x.id===selectedSubscriptionId));
-  else if(subscriptionFilter==='Music')subscriptionSourceSearch(prefs.sources.findIndex(x=>x.id===selectedSubscriptionId));
-  else renderSubscribedFeed(followingFeedCache);
+  else subscriptionSourceSearch(prefs.sources.findIndex(x=>x.id===selectedSubscriptionId));
   return;
  }
  if(b.hasAttribute('data-subscription-source-retry')){
@@ -612,13 +612,6 @@ document.addEventListener('click',e=>{
  }
  if(b.hasAttribute('data-search-history-clear')){
   safeLocalWrite('rush_search_history_v1',[]);renderSearchHistory();return;
- }
- if(b.hasAttribute('data-subscription-all')){
-  selectedSubscription='all';
-  document.querySelectorAll('#subscriptionSources [data-subscription-all],#subscriptionSources [data-subscription-source]').forEach(x=>x.setAttribute('aria-pressed',String(x.hasAttribute('data-subscription-all'))));
-  const title=$('#subscriptionTitle');if(title)title.textContent='All subscriptions';
-  const root=$('#subscriptionFeed');if(root)root.innerHTML='<p class="meta pad">Loading all subscriptions…</p>';
-  if(window.RushNative)RushNative.loadHomeFeed('following');return;
  }
  if(b.hasAttribute('data-search-clear')){
   const input=$('#q');if(input){input.value='';input.focus()}const root=$('#unifiedResults');if(root)root.innerHTML='';return;
