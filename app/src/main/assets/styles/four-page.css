@@ -270,7 +270,7 @@ h2::after{height:1px;background:rgba(255,255,255,.18)}
 .skeleton-tile b,.skeleton-tile span{display:block;height:9px;margin-top:9px;border-radius:6px;background:#29363d}
 .skeleton-tile span{width:65%;height:7px;margin-top:6px}
 .skeleton-news{display:grid;grid-template-columns:100px minmax(0,1fr);gap:11px;margin:8px 18px;padding:10px;border:1px solid var(--border);border-radius:10px;background:#182229}
-.skeleton-news i{height:72px;border-radius:7px;background:linear-gradient(100deg,#202c33 20%,#35444c 38%,#202c33 60%);background-size:200% 100%;animation:skeleton-shimmer 1.45s ease-in-out infinite}
+.skeleton-news i{height:72px;border-radius:7px;background:linear-gradient(100deg,#202c33 20%,#35444c 38%,#202c33 60%);background-size:200% 100%;animation:skeleton-shimmer 1.3s ease-out 1}
 .skeleton-news span{height:11px;margin-top:8px;border-radius:6px;background:#29363d}
 @keyframes skeleton-shimmer{to{background-position:-200% 0}}
 .watch-player{position:relative}
@@ -304,10 +304,26 @@ h2::after{height:1px;background:rgba(255,255,255,.18)}
 .shelf-row,.topic-shelf,.source-rail{overscroll-behavior-x:contain;touch-action:pan-x pan-y}
 .media-art img,.news-shelf-card img{background:linear-gradient(135deg,#243139,#1a2228)}
 button{touch-action:manipulation}
-.media-art,.news-shelf-card,.library-quick,.topic-tile{transform:translateZ(0)}
+.media-art,.news-shelf-card,.library-quick,.topic-tile{backface-visibility:hidden}
 @media(prefers-reduced-motion:no-preference){
  .explore-tab,.watch-action,.deck-control,.library-quick{transition:transform .14s ease,filter .14s ease,background .14s ease}
  .explore-tab:active,.watch-action:active,.deck-control:active,.library-quick:active{transform:translateY(2px) scale(.985)}
 }
 
 .watch-buffer-overlay.error-state{pointer-events:auto}
+
+.btn,.ib,.chip,.explore-tab,.trend-chip,.watch-action,.video-option,.onboarding-topic{min-height:48px}
+.ib{min-width:48px}
+.top .ib{width:48px;height:48px}
+.explore-tab{min-width:64px}
+.trend-chip{padding:0 14px}
+.watch-action{padding:0 13px}
+.video-option{padding:0 12px}
+.onboarding-topic{padding:0 14px}
+.permission-card .chip{min-height:48px}
+.video-mini-dock{width:min(224px,62vw)}
+.video-mini-actions button{min-width:48px;min-height:48px}
+.search-history-item{min-height:48px}
+.guest-continue{display:block;min-height:48px;width:100%;margin-top:8px;border:1px solid transparent;border-radius:10px;background:transparent;color:var(--mu);font:600 12px var(--f)}
+.guest-continue:active{background:rgba(255,255,255,.06)}
+[data-search-clear]{width:48px!important;height:48px!important;min-width:48px!important;min-height:48px!important}
