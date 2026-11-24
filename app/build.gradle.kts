@@ -98,6 +98,7 @@ android {
 
 dependencies {
     implementation("androidx.core:core-ktx:1.15.0")
+    implementation("androidx.activity:activity-ktx:1.10.0")
     implementation("androidx.webkit:webkit:1.18.0")
     implementation("androidx.media3:media3-exoplayer:1.9.2")
     implementation("androidx.media3:media3-datasource:1.9.2")
