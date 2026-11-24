@@ -240,19 +240,14 @@ function subscriptionPost(item,kind){
 function renderSubscribedFeed(data){
  const root=$('#subscriptionFeed');if(!root)return;
  const videos=data.videos||[],music=data.music||[],news=data.news||[];
- let rows=[];
- if(subscriptionFilter==='All'||subscriptionFilter==='Videos'){
-  rows.push(...videos.map(item=>({item,kind:'video'})));
- }
- if(subscriptionFilter==='All'||subscriptionFilter==='Music'){
-  rows.push(...music.map(item=>({item,kind:'music'})));
- }
- if(subscriptionFilter==='All'||subscriptionFilter==='News'){
-  rows.push(...news.map(item=>({item,kind:'news'})));
- }
- if(subscriptionFilter==='Movies'){
-  rows.push(...videos.filter(item=>durationSeconds(item.duration)>=900).map(item=>({item,kind:'video'})));
- }
+ let queues=[];
+ if(subscriptionFilter==='All')queues=[videos.map(item=>({item,kind:'video'})),music.map(item=>({item,kind:'music'})),news.map(item=>({item,kind:'news'}))];
+ else if(subscriptionFilter==='Videos')queues=[videos.map(item=>({item,kind:'video'}))];
+ else if(subscriptionFilter==='Music')queues=[music.map(item=>({item,kind:'music'}))];
+ else if(subscriptionFilter==='News')queues=[news.map(item=>({item,kind:'news'}))];
+ else if(subscriptionFilter==='Movies')queues=[videos.filter(item=>durationSeconds(item.duration)>=900).map(item=>({item,kind:'video'}))];
+ const rows=[];
+ while(queues.some(queue=>queue.length))queues.forEach(queue=>{if(queue.length)rows.push(queue.shift())});
  root.innerHTML=rows.length?rows.map(row=>subscriptionPost(row.item,row.kind)).join(''):'<div class="section-empty">No recent updates in this filter. Select All or search for more creators.</div>';
  const status=$('#subscriptionStatus');if(status)status.textContent=rows.length+' UPDATES';
 }
@@ -267,13 +262,10 @@ function renderSelectedChannelFeed(){
  const root=$('#subscriptionFeed');if(!root)return;
  let kind=selectedSubscriptionKind==='artist'?'music':selectedSubscriptionKind==='news'?'news':'video';
  let items=selectedChannelUploads||[];
- if(subscriptionFilter==='Music')kind='music';
+ if(subscriptionFilter==='Videos'||subscriptionFilter==='Movies')kind='video';
+ else if(subscriptionFilter==='Music')kind='music';
  else if(subscriptionFilter==='News')kind='news';
- else if(subscriptionFilter==='Movies'){kind='video';items=items.filter(item=>durationSeconds(item.duration)>=900)}
- else if(subscriptionFilter==='Today'){
-  const start=new Date();start.setHours(0,0,0,0);
-  items=items.filter(item=>item.date&&Date.parse(item.date)>=start.getTime());
- }
+ if(subscriptionFilter==='Movies')items=items.filter(item=>durationSeconds(item.duration)>=900);
  const rows=items.map(item=>subscriptionPost(item,kind));
  root.innerHTML=rows.length?rows.join(''):'<div class="section-empty">No recent '+esc(subscriptionFilter.toLowerCase())+' updates from '+esc(selectedSubscriptionName)+'.</div>';
  const status=$('#subscriptionStatus');if(status)status.textContent=rows.length+' UPDATES';
@@ -291,6 +283,7 @@ function subscriptionSourceSearch(index){
  const root=$('#subscriptionFeed');if(root)root.innerHTML='<p class="meta pad">Loading '+esc(source.name)+'…</p>';
  if(!window.RushNative)return;
  if(subscriptionFilter==='News'||source.kind==='news')RushNative.searchNews(source.name);
+ else if(subscriptionFilter==='Videos'||subscriptionFilter==='Movies')RushNative.searchVideos(source.name);
  else if(subscriptionFilter==='Music'||source.kind==='artist')RushNative.searchMusic(source.name);
  else RushNative.loadChannelUploads(source.id,source.name);
 }
