@@ -132,6 +132,7 @@ def main():
         "no preloaded fixed video player": 'id="videoPlayerHost"' not in html,
         "dedicated music player screen": "function renderPlayerPage()" in js,
         "music player offers explicit video mode": 'id="playerModeToggle"' in html and "data-player-watch-video" in js and "data-player-listen-audio" in js,
+        "video mode keeps current track details visible": "VIDEO MODE · PLAYING" in js and "const hasMedia=isMusic||isVideo;" in js,
         "music playback resolves audio only": "resolvePlaybackMedia(videoId, audioOnly = true" in bridge,
         "video dismissed with app task": "override fun onTaskRemoved(rootIntent: android.content.Intent?)" in service and "pauseAllPlayersAndStopSelf()" in service,
         "background task queue excludes video": "queuedIsAudioOnly" in service and "player.removeMediaItem(index)" in service,
