@@ -78,6 +78,7 @@ class MainActivity:ComponentActivity(){
  private var nativeVideoFullscreen=false
  private var previousRequestedOrientation=android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
  private var fullscreenExitButton:android.widget.TextView?=null
+ private var videoErrorDialog:android.app.AlertDialog?=null
  private var webPageLoaded=false
  private var mainFrameLoadFailed=false
  private var startupOverlay:android.view.View?=null
@@ -161,6 +162,7 @@ class MainActivity:ComponentActivity(){
      override fun onPlayerError(error:androidx.media3.common.PlaybackException){
       publishVideoBuffering(false)
       runOnUiThread { webView.evaluateJavascript("window.rushVideoBufferingError&&window.rushVideoBufferingError('Playback failed. Check your connection and try again.')",null) }
+      showVideoPlaybackError(player)
      }
     }
     observedNativeVideoPlayer=player
@@ -190,6 +192,33 @@ class MainActivity:ComponentActivity(){
    view.bringToFront()
    if(mini)updatePipAspectRatio(w,h)
    setPipEligible(true)
+  }
+ }
+ private fun showVideoPlaybackError(player:androidx.media3.common.Player){
+  runOnUiThread {
+   if(isFinishing||isDestroyed||!lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED))return@runOnUiThread
+   val item=player.currentMediaItem
+   val videoId=item?.mediaId.orEmpty()
+   val title=item?.mediaMetadata?.title?.toString().orEmpty().ifBlank { "Video" }
+   val creator=item?.mediaMetadata?.artist?.toString().orEmpty()
+   val thumbnail=item?.mediaMetadata?.artworkUri?.toString().orEmpty()
+   videoErrorDialog?.dismiss()
+   videoErrorDialog=android.app.AlertDialog.Builder(this)
+    .setTitle("Video playback interrupted")
+    .setMessage("Rush could not continue this stream. Check your connection and retry.")
+    .setPositiveButton("Retry"){_,_->
+     if(videoId.matches(Regex("[A-Za-z0-9_-]{11}"))){
+      rushWebBridge.playVideo(videoId,title,creator,thumbnail)
+     }else{
+      runCatching { player.prepare();player.play() }
+     }
+    }
+    .setNegativeButton("Close"){_,_->hideNativeVideo()}
+    .create()
+    .also { dialog->
+     dialog.setOnDismissListener { if(videoErrorDialog===dialog)videoErrorDialog=null }
+     dialog.show()
+    }
   }
  }
  private fun publishVideoBuffering(buffering:Boolean){
