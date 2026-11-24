@@ -610,7 +610,8 @@ document.addEventListener('click',e=>{
  }
  if(b.hasAttribute('data-sleep-choice')){
   const minutes=Number(b.dataset.sleepChoice)||0;if(window.RushNative)RushNative.setSleepTimer(minutes);
-  const status=$('#playerStatus');if(status)status.textContent=minutes?'Sleep timer · '+minutes+' min':'Sleep timer cancelled';
+  const message=minutes?'Sleep timer · '+minutes+' min':'Sleep timer cancelled';
+  const status=$('#playerStatus')||$('#videoPlaybackStatus');if(status)status.textContent=message;
   const root=$('#sleepTimerOptions');if(root)root.hidden=true;return;
  }
  if(b.hasAttribute('data-local-dislike')){
@@ -659,6 +660,6 @@ document.addEventListener('click',e=>{
   const panel=$('#playerLyrics');if(panel){panel.hidden=!panel.hidden;if(!panel.hidden&&window.RushNative)RushNative.loadCurrentMusicLyrics()}return;
  }
 },true);
-window.rushSleepTimerState=state=>{const status=$('#playerStatus');if(status)status.textContent=state.finished?'Sleep timer finished · playback paused':state.active?'Sleep timer · '+state.minutes+' min':'Sleep timer off'};
+window.rushSleepTimerState=state=>{const status=$('#playerStatus')||$('#videoPlaybackStatus');if(status)status.textContent=state.finished?'Sleep timer finished · playback paused':state.active?'Sleep timer · '+state.minutes+' min':'Sleep timer off'};
 window.addEventListener('resize',()=>window.rushUpdateVideoPosition&&window.rushUpdateVideoPosition());
 document.addEventListener('scroll',()=>window.rushUpdateVideoPosition&&window.rushUpdateVideoPosition(),true);
