@@ -79,6 +79,7 @@ class MainActivity:ComponentActivity(){
  private var previousRequestedOrientation=android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
  private var fullscreenExitButton:android.widget.TextView?=null
  private var webPageLoaded=false
+ private var startupOverlay:android.view.View?=null
  private var pendingOpenDownloads=false
  private val notificationPermissionLauncher=registerForActivityResult(
   androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
@@ -357,6 +358,7 @@ class MainActivity:ComponentActivity(){
     override fun onPageFinished(view:android.webkit.WebView,url:String?){
      super.onPageFinished(view,url)
      webPageLoaded=true
+     hideStartupOverlay()
      if(RushPlaybackService.activeInstance?.hasCurrentMediaItem()==true){
       view.evaluateJavascript("if(window.RushNative)RushNative.loadCurrentPlayback()",null)
      }
@@ -371,6 +373,76 @@ class MainActivity:ComponentActivity(){
    rushWebBridge=RushWebBridge(this@MainActivity,this)
    addJavascriptInterface(rushWebBridge,"RushNative")
   }
+ }
+ private fun showStartupOverlay(message:String="Preparing Rush…"){
+  if(!::rootLayout.isInitialized)return
+  startupOverlay?.let { rootLayout.removeView(it) }
+  val panel=android.widget.LinearLayout(this).apply{
+   orientation=android.widget.LinearLayout.VERTICAL
+   gravity=android.view.Gravity.CENTER
+   setPadding((28*resources.displayMetrics.density).toInt(),(24*resources.displayMetrics.density).toInt(),(28*resources.displayMetrics.density).toInt(),(24*resources.displayMetrics.density).toInt())
+   setBackgroundColor(android.graphics.Color.rgb(11,16,20))
+  }
+  panel.addView(android.widget.TextView(this).apply{
+   text="rush"
+   textSize=38f
+   typeface=android.graphics.Typeface.create("sans-serif-black",android.graphics.Typeface.BOLD)
+   setTextColor(android.graphics.Color.rgb(215,250,94))
+   gravity=android.view.Gravity.CENTER
+  },android.widget.LinearLayout.LayoutParams(-2,-2))
+  panel.addView(android.widget.ProgressBar(this).apply{isIndeterminate=true},android.widget.LinearLayout.LayoutParams(
+   (42*resources.displayMetrics.density).toInt(),(42*resources.displayMetrics.density).toInt()).apply{topMargin=(26*resources.displayMetrics.density).toInt()})
+  panel.addView(android.widget.TextView(this).apply{
+   text=message;textSize=12f;setTextColor(android.graphics.Color.rgb(168,178,185));gravity=android.view.Gravity.CENTER
+  },android.widget.LinearLayout.LayoutParams(-2,-2).apply{topMargin=(14*resources.displayMetrics.density).toInt()})
+  startupOverlay=panel
+  rootLayout.addView(panel,android.widget.FrameLayout.LayoutParams(-1,-1))
+  panel.bringToFront()
+ }
+ private fun hideStartupOverlay(){
+  startupOverlay?.let { rootLayout.removeView(it) }
+  startupOverlay=null
+ }
+ private fun showStartupFailure(error:Throwable){
+  if(!::rootLayout.isInitialized)return
+  startupOverlay?.let { rootLayout.removeView(it) }
+  val panel=android.widget.LinearLayout(this).apply{
+   orientation=android.widget.LinearLayout.VERTICAL
+   gravity=android.view.Gravity.CENTER
+   setPadding(36,36,36,36)
+   setBackgroundColor(android.graphics.Color.rgb(11,16,20))
+  }
+  panel.addView(android.widget.TextView(this).apply{
+   text="Rush could not start"
+   textSize=23f;setTextColor(android.graphics.Color.WHITE);gravity=android.view.Gravity.CENTER
+  })
+  panel.addView(android.widget.TextView(this).apply{
+   text="Android System WebView could not initialize. Update Android System WebView and try again."
+   textSize=13f;setTextColor(android.graphics.Color.LTGRAY);gravity=android.view.Gravity.CENTER
+  },android.widget.LinearLayout.LayoutParams(-1,-2).apply{topMargin=18})
+  panel.addView(android.widget.Button(this).apply{
+   text="RESTART RUSH"
+   setOnClickListener {
+    val launch=packageManager.getLaunchIntentForPackage(packageName)
+    launch?.addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP or android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+    if(launch!=null){startActivity(launch);finish()}else recreate()
+   }
+  },android.widget.LinearLayout.LayoutParams(-2,-2).apply{topMargin=22})
+  startupOverlay=panel
+  rootLayout.addView(panel,android.widget.FrameLayout.LayoutParams(-1,-1))
+  panel.bringToFront()
+  android.util.Log.e("RushStartup","WebView startup failed",error)
+ }
+ private fun attachRushWebView(){
+  if(isFinishing||isDestroyed||::webView.isInitialized)return
+  webViewAssetLoader=WebViewAssetLoader.Builder()
+   .setDomain("rush.local")
+   .addPathHandler("/assets/",WebViewAssetLoader.AssetsPathHandler(this))
+   .build()
+  webView=createRushWebView()
+  rootLayout.addView(webView,android.widget.FrameLayout.LayoutParams(-1,-1))
+  webView.setOnScrollChangeListener { _,_,_,_,_-> updateNativeVideoPosition() }
+  webView.loadUrl("https://rush.local/assets/rush.html")
  }
  @SuppressLint("SetJavaScriptEnabled")
  override fun onCreate(savedInstanceState:Bundle?){
@@ -390,20 +462,18 @@ class MainActivity:ComponentActivity(){
     windowInsets
    }
   }
-  webViewAssetLoader=WebViewAssetLoader.Builder()
-   .setDomain("rush.local")
-   .addPathHandler("/assets/",WebViewAssetLoader.AssetsPathHandler(this))
-   .build()
-  webView=createRushWebView()
-  rootLayout.addView(webView,android.widget.FrameLayout.LayoutParams(
-   android.widget.FrameLayout.LayoutParams.MATCH_PARENT,android.widget.FrameLayout.LayoutParams.MATCH_PARENT))
-  webView.setOnScrollChangeListener { _,_,_,_,_-> updateNativeVideoPosition() }
   setContentView(rootLayout)
   androidx.core.view.ViewCompat.requestApplyInsets(rootLayout)
-  webView.loadUrl("https://rush.local/assets/rush.html")
+  showStartupOverlay()
+  RushApplication.instance.webViewStartupReady.whenComplete { _, error ->
+   runOnUiThread {
+    if(error==null)attachRushWebView() else showStartupFailure(error)
+   }
+  }
   onBackPressedDispatcher.addCallback(this,object:androidx.activity.OnBackPressedCallback(true){
    override fun handleOnBackPressed(){
     if(nativeVideoFullscreen){setNativeVideoFullscreen(false);return}
+    if(!::webView.isInitialized){finish();return}
     webView.evaluateJavascript("window.rushHandleBack ? window.rushHandleBack() : false"){handled->
      if(handled!="true"){
       if(webView.canGoBack())webView.goBack()
