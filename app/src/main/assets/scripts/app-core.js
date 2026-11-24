@@ -590,23 +590,38 @@ window.rushNewsResults=items=>{
 };
 window.rushMusicLyricsLoading=()=>{
  window._rushLyrics=[];
+ lastActiveLyricIndex=-2;
  const status=$('#playerLyricsStatus'),root=$('#playerLyricsPanel');
  if(status)status.textContent='Loading lyrics…';
  if(root)root.replaceChildren();
 };
+let lastActiveLyricIndex=-2;
 setInterval(()=>{
  if(page==='library'&&libraryView==='downloads'&&window.RushNative)RushNative.loadDownloads();
-},2000);
+},5000);
 setInterval(()=>{
  if(page!=='player'||!window._rushLyrics?.length||!window.RushNative||!mediaState.isMusic)return;
- const pos=RushNative.musicPosition()/1000;let active=-1;
- window._rushLyrics.forEach((x,i)=>{if(x.time<=pos)active=i});
- document.querySelectorAll('.lyric-line').forEach((line,i)=>{
-  const on=i===active;line.classList.toggle('active',on);
-  if(on&&line.dataset.visible!=='1'){line.dataset.visible='1';line.scrollIntoView({block:'nearest',behavior:RM?'auto':'smooth'})}
-  else if(!on)line.dataset.visible='0';
- });
-},350);
+ const lines=window._rushLyrics;
+ const pos=RushNative.musicPosition()/1000;
+ let low=0,high=lines.length-1,active=-1;
+ while(low<=high){
+  const middle=(low+high)>>1;
+  if(lines[middle].time<=pos){active=middle;low=middle+1}
+  else high=middle-1;
+ }
+ if(active===lastActiveLyricIndex)return;
+ const root=$('#playerLyricsPanel');
+ const previous=root?.querySelector('.lyric-line.active');
+ if(previous)previous.classList.remove('active');
+ if(active>=0){
+  const current=root?.querySelector('[data-lyric-index="'+active+'"]');
+  if(current){
+   current.classList.add('active');
+   current.scrollIntoView({block:'nearest',behavior:RM?'auto':'smooth'});
+  }
+ }
+ lastActiveLyricIndex=active;
+},500);
 setInterval(()=>{if(page==='player'&&window.RushNative&&mediaState.hasItem&&mediaState.isMusic)renderPlayerProgress(RushNative.musicPosition(),RushNative.musicDuration())},1000);
 window.addEventListener('hashchange',()=>go());
 window.addEventListener('resize',()=>{navPosition();indicator()});
