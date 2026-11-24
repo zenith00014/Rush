@@ -170,6 +170,8 @@ def main():
         "WebView local assets use WebViewAssetLoader": "WebViewAssetLoader" in activity and "shouldInterceptRequest" in activity and "loadUrl(\"https://rush.local/assets/rush.html\")" in activity,
         "no remote web fonts are needed": "fonts.googleapis.com" not in html + js + styles and "fonts.gstatic.com" not in html + js + styles,
         "four-page shell stays inside app viewport": "height:100dvh" in styles or "height:100dvh" in (ASSET_ROOT / "styles/rush-base.css").read_text(encoding="utf-8"),
+        "main mobile controls meet 48dp touch target guidance": ".btn,.ib,.chip,.explore-tab,.trend-chip,.watch-action,.video-option,.onboarding-topic{min-height:48px}" in styles,
+        "visible keyboard focus styling is present": ":focus-visible{outline:3px solid var(--ink);outline-offset:3px}" in (ASSET_ROOT / "styles/rush-base.css").read_text(encoding="utf-8"),
         "Explore skips DOM rebuilds when item signatures are unchanged": "lastExploreMarkupKey" in js and "markupKey===lastExploreMarkupKey" in js,
         "feed failure preserves cache and provides retry": "data-feed-retry" in js and "cachedCount" in js,
         "provider failures do not overwrite feed cache with empty results": "fetchFailureCount" in bridge and "fetchAttemptCount" in bridge and "rushHomeFeedError" in bridge,
