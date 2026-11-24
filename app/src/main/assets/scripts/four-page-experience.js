@@ -185,7 +185,6 @@ function renderExploreContent(feed){
   html+=shelf('From your subscriptions',recentVideos,videoTile,'LATEST UPLOADS');
   html+=shelf('Latest from followed artists',recentMusic,musicTile,'FOLLOWING');
   if(recentNews.length)html+='<section class="explore-shelf news-column"><div class="shelf-heading"><h2>Publisher updates</h2><small>FOLLOWING</small></div>'+recentNews.slice(0,4).map(newsShelfCard).join('')+'</section>';
-  html+=topicShelf();
  }else{
   const title=homeFilter;
   if(categoryVideos.length)html+=shelf(title,categoryVideos,videoTile,'VIDEO RESULTS');
@@ -197,7 +196,7 @@ function renderExploreContent(feed){
 }
 renderHome = function(){
  const filters=['All','Videos','Music','News','Movies'];
- return '<div class="explore-tabs" role="tablist" aria-label="Explore categories">'+filters.map(x=>'<button class="explore-tab" role="tab" data-home-filter="'+esc(x)+'" aria-selected="'+(homeFilter===x)+'" aria-pressed="'+(homeFilter===x)+'">'+esc(x)+'</button>').join('')+'</div>'+
+ return '<div class="explore-tabs" role="tablist" aria-label="Content type">'+filters.map(x=>'<button class="explore-tab" role="tab" data-home-filter="'+esc(x)+'" aria-selected="'+(homeFilter===x)+'" aria-pressed="'+(homeFilter===x)+'">'+esc(x)+'</button>').join('')+'<button class="explore-tab explore-topics" type="button" data-open-topics aria-label="Choose topics and interests">'+ic('sliders-horizontal')+'<span>Topics</span></button></div>'+
  '<p class="meta pad home-feed-status" id="homeFeedStatus" aria-live="polite">Your recommendations and subscriptions.</p><div id="exploreShelves"></div>';
 };
 renderFeedResults = function(data){
