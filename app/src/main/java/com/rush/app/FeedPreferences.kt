@@ -9,7 +9,8 @@ data class FeedSource(
     val kind: String,
     val id: String,
     val name: String,
-    val productive: Boolean
+    val productive: Boolean,
+    val thumbnail: String = ""
 )
 
 object FeedPreferences {
@@ -73,12 +74,12 @@ object FeedPreferences {
                 val id = item.optString("id").trim()
                 val name = item.optString("name").trim()
                 if (kind !in setOf("channel", "news", "artist") || id.isBlank() || name.isBlank()) continue
-                add(FeedSource(kind, id, name, item.optBoolean("productive", false)))
+                add(FeedSource(kind, id, name, item.optBoolean("productive", false), item.optString("thumbnail")))
             }
         }
     }
 
-    fun follow(prefs: SharedPreferences, kind: String, id: String, name: String, productive: Boolean = false) {
+    fun follow(prefs: SharedPreferences, kind: String, id: String, name: String, productive: Boolean = false, thumbnail: String = "") {
         val normalizedKind = kind.trim().lowercase(Locale.ROOT)
         val cleanId = id.trim().take(256)
         val cleanName = name.trim().take(160)
@@ -86,7 +87,9 @@ object FeedPreferences {
         require(cleanId.isNotBlank() && cleanName.isNotBlank()) { "A source name and ID are required." }
         val updated = sources(prefs).toMutableList()
         val index = updated.indexOfFirst { it.kind == normalizedKind && it.id == cleanId }
-        val source = FeedSource(normalizedKind, cleanId, cleanName, productive)
+        val cleanThumbnail = thumbnail.trim().take(2048).takeIf { it.startsWith("https://") }.orEmpty()
+        val existingThumbnail = updated.getOrNull(index)?.thumbnail.orEmpty()
+        val source = FeedSource(normalizedKind, cleanId, cleanName, productive, cleanThumbnail.ifBlank { existingThumbnail })
         if (index >= 0) updated[index] = source else updated += source
         writeSources(prefs, updated)
     }
@@ -121,7 +124,7 @@ object FeedPreferences {
         val sourceArray = JSONArray().apply {
             sources(prefs).forEach {
                 put(JSONObject().put("kind", it.kind).put("id", it.id).put("name", it.name)
-                    .put("productive", it.productive))
+                    .put("productive", it.productive).put("thumbnail", it.thumbnail))
             }
         }
         return JSONObject().put("topics", topicArray).put("sources", sourceArray)
@@ -135,7 +138,7 @@ object FeedPreferences {
         val array = JSONArray()
         sources.forEach {
             array.put(JSONObject().put("kind", it.kind).put("id", it.id).put("name", it.name)
-                .put("productive", it.productive))
+                .put("productive", it.productive).put("thumbnail", it.thumbnail))
         }
         prefs.edit().putString(SOURCES_KEY, array.toString()).apply()
     }
