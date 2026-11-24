@@ -177,6 +177,20 @@ def main():
         fail("Empty music queue must produce a persistent informational message")
     if "safeUrl(x.url)" not in js:
         fail("News cards must validate HTTPS article links before rendering")
+    if "HOME_FEED_CACHE_TTL_MS" not in bridge or "rush_home_feed_v4_" not in bridge:
+        fail("Home feed must render a cached payload before refetching")
+    if "Semaphore(5)" not in bridge or "awaitAll()" not in bridge:
+        fail("Home feed source lookups must run concurrently with bounded parallelism")
+    if "NEWS_RSS_CLIENT" not in bridge or "NEWS_ARTICLE_CLIENT" not in bridge:
+        fail("News feed and article thumbnail requests must reuse configured HTTP clients")
+    if "imageFromRssMarkup(description)" not in bridge:
+        fail("RSS image extraction must inspect embedded article markup")
+    if "og:image:secure_url" not in bridge or "twitter:image" not in bridge:
+        fail("Article thumbnail extraction must include publisher social metadata")
+    if "NEWS_THUMBNAIL_CACHE_KEY" not in bridge or "enrichNewsThumbnails" not in bridge:
+        fail("Resolved article thumbnails must be cached and reused")
+    if "data.mode!==expectedMode" not in js:
+        fail("Home must ignore responses from a previously selected feed tab")
     if "toggle.disabled=!isMusic" not in js or "lyrics.disabled=!isMusic" not in js:
         fail("Player controls must be disabled when no track is loaded")
     if 'data-player-prev aria-label="Previous track" disabled' not in html or 'data-player-toggle aria-label="Play or pause" disabled' not in html:
