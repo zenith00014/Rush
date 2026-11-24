@@ -1140,7 +1140,7 @@ window.rushMusicSearchError=error=>{const s=$('#musicStatus')||$('#unifiedStatus
 window.rushMusicHistory=items=>{const root=$('#musicRecent');if(root)root.innerHTML=items.slice(0,8).map(musicHistoryRow).join('')||'<p class="meta pad">No tracks played yet.</p>'};
 window.rushMusicSuggestionResults=data=>{
  const items=data.items||[],root=$('#musicSuggestions'),status=$('#musicSuggestionStatus');
- if(root)root.innerHTML=items.length?items.slice(0,4).map((item,index)=>bentoMusicCard(item,index===0)).join('')+(items.length>4?'<div class="music-more">'+items.slice(4,9).map(musicRow).join('')+'</div>'):'<p class="meta pad">'+esc(data.message||'Play music or follow an artist to establish your taste profile.')+'</p>';
+ if(root)root.innerHTML=items.length?items.slice(0,4).map((item,index)=>bentoMusicCard(item,index===0)).join('')+(items.length>4?'<div class="music-more">'+items.slice(4,9).map(musicRow).join('')+'</div>':''):'<p class="meta pad">'+esc(data.message||'Play music or follow an artist to establish your taste profile.')+'</p>';
  if(status)status.textContent=data.message||'Ranked from followed artists, recent listening and new-to-you tracks.';
 };
 window.rushMusicPlaybackState=state=>{
