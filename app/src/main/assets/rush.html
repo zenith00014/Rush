@@ -471,7 +471,7 @@ function renderPlayerPage(){
  '<div class="player-track"><div class="player-track-copy"><h2 id="playerTitle">Choose a track</h2><p id="playerArtist">Your next favourite song starts here.</p><p class="meta" id="playerStatus" aria-live="polite">Nothing is playing yet.</p></div><button class="ib" id="playerSave" data-player-save aria-label="Save current track" disabled>♡</button></div>'+
  '<div class="player-progress"><input id="playerSeek" type="range" min="0" max="1000" step="1" value="0" disabled aria-label="Seek through track"><div class="player-time"><span id="playerElapsed">0:00</span><span id="playerDuration">0:00</span></div></div>'+
  '<div class="player-controls"><button class="ib" data-player-prev aria-label="Previous track" disabled>|◀</button><button class="ib p player-play" id="playerToggle" data-player-toggle aria-label="Play or pause" disabled>'+ic('play')+'</button><button class="ib" data-player-next aria-label="Next track" disabled>▶|</button></div>'+
- '<div class="player-utilities"><button class="chip" id="playerLyricsToggle" data-player-lyrics-toggle aria-expanded="false" disabled>SHOW LYRICS</button><button class="chip" data-player-queue>UP NEXT</button></div>'+
+ '<div class="player-utilities"><button class="chip" id="playerLyricsToggle" data-player-lyrics-toggle aria-expanded="false" disabled>SHOW LYRICS</button><button class="chip" id="playerModeToggle" data-player-watch-video hidden>WATCH VIDEO</button><button class="chip" data-player-queue>UP NEXT</button></div>'+
  '<section class="player-lyrics" id="playerLyrics" hidden><h2>Lyrics</h2><p class="meta" id="playerLyricsStatus" aria-live="polite">Open lyrics for the current track.</p><div class="lyrics-panel" id="playerLyricsPanel"></div></section></section>';
 }
 function renderNewsPage(){
@@ -739,6 +739,21 @@ function renderPlayerState(){
  if(previous)previous.disabled=!isMusic;if(next)next.disabled=!isMusic;
  const lyrics=$('[data-player-lyrics-toggle]');if(lyrics)lyrics.disabled=!isMusic;
  const save=$('#playerSave');if(save)save.disabled=!isMusic;
+ const modeToggle=$('#playerModeToggle');
+ if(modeToggle){
+  const isVideo=!!mediaState.hasItem&&!!mediaState.isVideo;
+  modeToggle.hidden=!isMusic&&!isVideo;
+  modeToggle.disabled=!isMusic&&!isVideo;
+  if(isMusic){
+   modeToggle.removeAttribute('data-player-listen-audio');
+   modeToggle.setAttribute('data-player-watch-video','');
+   modeToggle.textContent='WATCH VIDEO';
+  }else if(isVideo){
+   modeToggle.removeAttribute('data-player-watch-video');
+   modeToggle.setAttribute('data-player-listen-audio','');
+   modeToggle.textContent='LISTEN TO AUDIO';
+  }
+ }
  renderPlayerProgress(mediaState.position,mediaState.duration);
 }
 function renderPreferencePage(){
@@ -817,6 +832,16 @@ document.addEventListener('click',e=>{
  if(b.hasAttribute('data-video-close')){if(window.RushNative)RushNative.hideVideo();return}
  if(b.hasAttribute('data-open-player')){location.hash='#player';return}
   if(b.hasAttribute('data-player-back')){location.hash='#music';return}
+  if(b.hasAttribute('data-player-watch-video')){
+   const d=mediaState;
+   if(d.hasItem&&d.isMusic&&d.mediaId&&window.RushNative)RushNative.playVideo(d.mediaId,d.title||'',d.artist||'',d.artwork||'');
+   return;
+  }
+  if(b.hasAttribute('data-player-listen-audio')){
+   const d=mediaState;
+   if(d.hasItem&&d.isVideo&&d.mediaId&&window.RushNative)RushNative.playMusic(d.mediaId,d.title||'',d.artist||'',d.artwork||'');
+   return;
+  }
   if(b.hasAttribute('data-player-toggle')){if(window.RushNative)RushNative.togglePlayback();return}
   if(b.hasAttribute('data-player-prev')){if(window.RushNative)RushNative.skipPrevious();return}
   if(b.hasAttribute('data-player-next')){if(window.RushNative)RushNative.skipNext();return}
