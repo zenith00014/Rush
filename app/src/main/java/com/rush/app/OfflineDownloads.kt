@@ -535,11 +535,14 @@ class OfflineDownloadWorker(
                 .setPriority(NotificationCompat.PRIORITY_LOW)
                 .build()
             return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                ForegroundInfo(
-                    notificationId,
-                    notification,
+                val foregroundType = if (
+                    converting && Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM
+                ) {
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING
+                } else {
                     ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
-                )
+                }
+                ForegroundInfo(notificationId, notification, foregroundType)
             } else {
                 ForegroundInfo(notificationId, notification)
             }
