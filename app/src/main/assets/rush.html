@@ -291,6 +291,61 @@ html,body{background:var(--paper);color:var(--ink)}
 .seg button{border-radius:14px!important}
 .seg i{border-radius:14px!important}
 .bi{background:#131b21!important;box-shadow:none!important}
+
+/* Rush home: a YouTube discovery rhythm with a content-led bento composition. */
+:root{--sp:#ff765f}
+.app{background:var(--paper)!important}
+.app::before{opacity:0!important}
+.nav{background:rgba(13,18,22,.78)!important;-webkit-backdrop-filter:blur(18px) saturate(1.25)!important;backdrop-filter:blur(18px) saturate(1.25)!important;border:1px solid rgba(255,255,255,.22)!important;box-shadow:0 10px 30px rgba(0,0,0,.38),inset 0 1px 0 rgba(255,255,255,.12)!important}
+.nav .pill{background:rgba(255,118,95,.18)!important;border:1px solid rgba(255,118,95,.72)!important}
+.nav a{background:transparent!important;color:var(--ink)}
+.top .ib,.feed-actions .chip,.home-filter{background:transparent!important;border:1px solid var(--border)!important;box-shadow:none!important}
+.top .ib:active,.feed-actions .chip:active,.home-filter:active{background:rgba(255,255,255,.08)!important;transform:scale(.97)}
+.btn,.ib,.chip{border-radius:8px!important}
+.a,.row .a,.row img,.av,.me .a,.mini .a{border-radius:6px!important}
+.card,.source-card,.video-player-tools,.library-item,.library-playlist,.music-now,.news-card{border-radius:8px!important}
+.home-tools{position:sticky;top:0;z-index:2;padding:4px 0 8px;background:rgba(11,16,20,.94);border-bottom:1px solid var(--border)}
+.home-categories{display:flex;gap:8px;overflow-x:auto;padding:8px 16px 10px;scrollbar-width:none}
+.home-categories::-webkit-scrollbar{display:none}
+.home-filter{flex:none;min-width:58px;min-height:40px;padding:0 14px;color:var(--ink);font:600 13px var(--f);text-transform:none;letter-spacing:0}
+.home-filter[aria-pressed=true]{background:var(--ink)!important;color:var(--paper)!important;border-color:var(--ink)!important}
+.home-tools .feed-actions{display:flex;gap:8px;padding:0 16px;flex-wrap:wrap}
+.home-tools .feed-actions .chip{min-height:36px;padding-inline:10px;font-size:10px}
+.home-feed-status{padding:8px 16px 4px!important;font-size:10px!important}
+.home-feed-section{padding:0 14px 32px}
+.home-section-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 2px 14px}
+.home-section-heading h2{padding:0;margin:0;font:800 23px/1.05 var(--f);letter-spacing:-.035em}
+.home-section-heading h2:after{display:none}
+.home-section-heading>span{color:var(--mu);font:10px var(--m);white-space:nowrap}
+.home-bento{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start}
+.home-tile{min-width:0;overflow:hidden;border:1px solid var(--border);background:var(--paper2);border-radius:8px}
+.home-video-feature{grid-column:1/-1}
+.home-media-open{display:block;width:100%;min-width:0;padding:0;text-align:left;background:transparent}
+.home-media-art{position:relative;display:block;width:100%;overflow:hidden;background:#1d2930;isolation:isolate}
+.home-video-art{aspect-ratio:16/9}
+.home-music-art{aspect-ratio:1}
+.home-media-art>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.home-media-kind{position:absolute;left:8px;top:8px;padding:4px 6px;background:rgba(7,11,14,.78);color:#fff;font:700 9px var(--m);letter-spacing:.08em}
+.home-play-mark{position:absolute;right:9px;bottom:9px;width:34px;height:34px;display:grid;place-items:center;border:1px solid rgba(255,255,255,.72);border-radius:50%;background:rgba(7,11,14,.62);color:#fff}
+.home-play-mark .ic{width:16px;height:16px}
+.home-tile-copy{display:block;min-width:0;padding:10px 10px 11px}
+.home-tile-copy b{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;font:750 13px/1.22 var(--f);letter-spacing:-.01em;overflow-wrap:anywhere}
+.home-video-feature .home-tile-copy b{font-size:16px}
+.home-tile-copy>span{display:block;margin-top:5px;color:var(--mu);font:10px/1.35 var(--m);overflow-wrap:anywhere}
+.home-tile .result-actions{display:flex;gap:5px;flex-wrap:wrap;padding:0 8px 8px}
+.home-tile .result-actions .chip{min-height:32px;padding:0 8px;font-size:9px;background:transparent;border-color:rgba(255,255,255,.14)}
+.home-music-tile .home-tile-copy{padding-bottom:12px}
+.home-news-slot{grid-column:1/-1;min-width:0}
+.home-news-slot .news-card{margin:0;padding:12px;background:var(--paper2);border:1px solid var(--border);box-shadow:none}
+.home-news-slot .news-open{grid-template-columns:minmax(0,1fr) 104px;gap:12px}
+.home-news-slot .news-copy b{font-size:15px}
+.home-news-slot .news-copy p{-webkit-line-clamp:2}
+.home-news-slot .result-actions .chip{background:transparent}
+.empty-state{margin:12px 14px 24px;padding:22px 18px;border:1px solid var(--border);border-radius:8px;background:var(--paper2)}
+.empty-state b{display:block;font-size:17px;line-height:1.2}
+.empty-state p{margin:8px 0 16px;color:var(--mu);font-size:13px;line-height:1.5}
+@media(max-width:360px){.home-bento{gap:8px}.home-section-heading h2{font-size:20px}.home-news-slot .news-open{grid-template-columns:minmax(0,1fr) 88px;gap:8px}}
+@media(prefers-reduced-motion:reduce){.home-media-art img{transition:none!important}}
 </style></head>
 <body>
 <div class="app">
@@ -330,7 +385,7 @@ const TOPICS=['Science','Technology','AI and machine learning','Programming','Cy
 const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const safeUrl=v=>/^https:\/\/[^\s"'<>]+$/i.test(String(v||''))?String(v):'';
 let prefs={topics:['Science','Technology','History','Education','Design','Engineering','Economics','Culture','Environment','Sports','Music','Health','Language','Business','Art','Documentaries'],sources:[]};
-let page='home',homeTab='fy',unifiedMode='all',unifiedQuery='',mediaState={hasItem:false,isMusic:false,isVideo:false,isPlaying:false,title:'',artist:'',artwork:''};
+let page='home',homeTab='fy',homeFilter='All',homeFeedCache={videos:[],music:[],news:[]},unifiedMode='all',unifiedQuery='',mediaState={hasItem:false,isMusic:false,isVideo:false,isPlaying:false,title:'',artist:'',artwork:''};
 const unifiedData={videos:[],music:[],news:[],channels:[],playlists:[]};
 let publicPlaylistData=null;
 const selectedTopics=()=>prefs.topics||[];
@@ -389,10 +444,12 @@ function pageTop(title,kicker){
  return '<header class="pt"><h1>'+title+'</h1><em class="stk">'+kicker+'</em></header>';
 }
 function renderHome(){
+ const filters=['All','Videos','Music','News'];
  return pageTop('Home','your feed')+
  '<div class="seg" role="tablist"><i></i><button role="tab" data-tab="fy" aria-selected="'+(homeTab==='fy')+'">For you</button><button role="tab" data-tab="fo" aria-selected="'+(homeTab==='fo')+'">Following</button></div>'+
- '<div class="feed-actions"><button class="chip" data-open-topics>CHOOSE TOPICS</button><button class="chip" data-open-search>FIND CHANNELS & SOURCES</button></div>'+
- '<p class="meta pad" id="homeFeedStatus">Building your feed…</p><div id="homeFeedResults"></div>';
+ '<div class="home-tools"><div class="home-categories" role="group" aria-label="Filter home feed">'+filters.map(label=>'<button class="home-filter" data-home-filter="'+label+'" aria-pressed="'+(homeFilter===label)+'">'+label+'</button>').join('')+'</div>'+
+ '<div class="feed-actions"><button class="chip" data-open-topics>YOUR TOPICS</button><button class="chip" data-open-search>FIND CHANNELS & SOURCES</button></div></div>'+
+ '<p class="meta pad home-feed-status" id="homeFeedStatus" aria-live="polite">Building your feed…</p><div id="homeFeedResults"></div>';
 }
 function renderVideoPage(){
  return pageTop('Videos','full-screen playback')+
@@ -562,15 +619,32 @@ function loadHomeFeed(){
  const status=$('#homeFeedStatus');if(status)status.textContent=homeTab==='fy'?'Finding a mix of videos, music and news for you…':'Loading posts from sources you follow…';
  if(window.RushNative)RushNative.loadHomeFeed(homeTab==='fy'?'forYou':'following');
 }
+function homeVideoTile(x,featured){
+ const thumb=safeUrl(x.thumbnail);
+ return '<article class="home-tile home-video-tile'+(featured?' home-video-feature':'')+'"><button class="home-media-open" data-video-id="'+esc(x.id)+'" data-title="'+esc(x.title)+'" data-creator="'+esc(x.artist||x.creator)+'" data-thumbnail="'+esc(thumb)+'" aria-label="Play '+esc(x.title)+'"><span class="home-media-art home-video-art">'+(thumb?'<img src="'+esc(thumb)+'" alt="" loading="lazy" decoding="async" onerror="this.hidden=true">':'')+'<span class="home-media-kind">VIDEO</span><span class="home-play-mark">'+ic('play')+'</span></span><span class="home-tile-copy"><b>'+esc(x.title)+'</b><span>' +esc(x.artist||x.creator||'YouTube')+(x.duration?' · '+esc(x.duration):'')+'</span></span></button>'+mediaActions(x,false)+'</article>';
+}
+function homeMusicTile(x){
+ const thumb=safeUrl(x.thumbnail);
+ return '<article class="home-tile home-music-tile"><button class="home-media-open" data-track="'+esc(x.id)+'" data-title="'+esc(x.title)+'" data-artist="'+esc(x.artist||'')+'" data-thumbnail="'+esc(thumb)+'" aria-label="Play '+esc(x.title)+'"><span class="home-media-art home-music-art">'+(thumb?'<img src="'+esc(thumb)+'" alt="" loading="lazy" decoding="async" onerror="this.hidden=true">':'')+'<span class="home-media-kind">MUSIC</span><span class="home-play-mark">'+ic('play')+'</span></span><span class="home-tile-copy"><b>'+esc(x.title)+'</b><span>'+esc(x.artist||'Unknown artist')+(x.duration?' · '+esc(x.duration):'')+'</span></span></button>'+mediaActions(x,true)+'</article>';
+}
 function renderFeedResults(data){
  if(page!=='home')return;
+ homeFeedCache=data||{videos:[],music:[],news:[]};
  const root=$('#homeFeedResults'),status=$('#homeFeedStatus');if(!root)return;
- const videos=(data.videos||[]),music=(data.music||[]),news=(data.news||[]);
- const v=videos.map(videoRow).join(''),m=music.map(musicRow).join(''),n=news.map(newsCard).join('');
- root.innerHTML=(v?section(homeTab==='fy'?'Recommended for your interests':'Latest from followed channels',v):'')+
- (m?section('Music from artists you follow',m):'')+(n?section('News from publishers you follow',n):'')+
- (!v&&!m&&!n?'<div class="empty-state"><b>'+esc(data.message||'No recommendations yet.')+'</b><p>Follow channels, musicians or publishers and choose topics to shape your feed. Search stays open to every kind of content.</p><button class="btn k" data-open-search>FIND SOURCES</button></div>':'');
- if(status)status.textContent=data.message||((videos.length+music.length+news.length)+' items · '+(homeTab==='fy'?'For You recommendations':'Following'));
+ const allVideos=homeFeedCache.videos||[],allMusic=homeFeedCache.music||[],allNews=homeFeedCache.news||[];
+ const videos=homeFilter==='Music'||homeFilter==='News'?[]:allVideos;
+ const music=homeFilter==='Videos'||homeFilter==='News'?[]:allMusic;
+ const news=homeFilter==='Videos'||homeFilter==='Music'?[]:allNews;
+ const tiles=[];
+ if(videos.length)tiles.push(homeVideoTile(videos[0],true));
+ if(music.length)tiles.push(homeMusicTile(music[0]));
+ if(news.length)tiles.push('<div class="home-news-slot">'+newsCard(news[0])+'</div>');
+ videos.slice(1).forEach(item=>tiles.push(homeVideoTile(item,false)));
+ music.slice(1).forEach(item=>tiles.push(homeMusicTile(item)));
+ news.slice(1).forEach(item=>tiles.push('<div class="home-news-slot">'+newsCard(item)+'</div>'));
+ const count=videos.length+music.length+news.length;
+ root.innerHTML=count?'<section class="home-feed-section"><div class="home-section-heading"><h2>'+(homeFilter==='All'?(homeTab==='fy'?'Picked for you':'From your subscriptions'):homeFilter)+'</h2><span>'+count+' ITEMS</span></div><div class="home-bento">'+tiles.join('')+'</div></section>':'<div class="empty-state"><b>'+(homeFilter==='All'?(data.message||'Your feed is taking shape.'):'Nothing in '+esc(homeFilter)+' yet.')+'</b><p>'+(homeFilter==='All'?'Follow channels, musicians or publishers and choose topics to shape your feed. Search stays open to every kind of content.':'Try another category or explore all recommendations.')+'</p><button class="btn k" data-open-search>FIND SOURCES</button></div>';
+ if(status)status.textContent=data.message||((allVideos.length+allMusic.length+allNews.length)+' items · '+(homeTab==='fy'?'For You':'Following')+' feed');
 }
 function renderChannels(items){
  const root=$('#channelResults');if(!root)return;
@@ -710,6 +784,7 @@ document.addEventListener('click',e=>{
  if(b.hasAttribute('data-delete-download')){if(window.RushNative)RushNative.deleteDownload(b.dataset.downloadId);return}
  if(b.hasAttribute('data-current-download')||b.hasAttribute('data-current-mp3')||b.hasAttribute('data-current-save')){const d=mediaState;if(!d.hasItem||!d.mediaId)return;if(window.RushNative){if(b.hasAttribute('data-current-save'))RushNative.saveLibraryItem(d.sourceId||d.mediaId,d.title||'',d.artist||'',!!d.isMusic,d.artwork||'');else if(!d.isOffline)RushNative.downloadMedia(d.sourceId||d.mediaId,d.title||'',d.artist||'',!!d.isMusic,b.hasAttribute('data-current-mp3'))}return}
  if(b.hasAttribute('data-open-search')){location.hash='#search';return}
+ if(b.dataset.homeFilter){homeFilter=b.dataset.homeFilter;renderFeedResults(homeFeedCache);return}
  if(b.dataset.tab){homeTab=b.dataset.tab;$('#v').innerHTML=R.home();indicator();loadHomeFeed();return}
  if(b.hasAttribute('data-save-topics')){saveTopics();return}
  if(b.dataset.topic){const on=b.getAttribute('aria-pressed')!=='true';b.setAttribute('aria-pressed',String(on));updateTopicOptions();return}
