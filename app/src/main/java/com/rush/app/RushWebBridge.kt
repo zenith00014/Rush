@@ -1,5 +1,7 @@
 package com.rush.app
 
+import android.content.Intent
+import android.net.Uri
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import com.rush.app.profile.RushProfileStore
@@ -706,6 +708,19 @@ class RushWebBridge(
     @JavascriptInterface
     fun setVideoFullscreen(enabled: Boolean) {
         activity.setNativeVideoFullscreen(enabled)
+    }
+
+    @JavascriptInterface
+    fun openVideoComments(videoId: String) {
+        val id = videoId.trim()
+        if (!id.matches(Regex("[A-Za-z0-9_-]{11}"))) return
+        runCatching {
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.youtube.com/watch?v=$id"))
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            activity.startActivity(intent)
+        }.onFailure {
+            android.util.Log.w("RushWebBridge", "Could not open the YouTube comments page", it)
+        }
     }
 
     @JavascriptInterface
