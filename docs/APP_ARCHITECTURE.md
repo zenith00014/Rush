@@ -4,44 +4,60 @@
 
 Rush is an Android application with a Kotlin host, a local HTML/CSS/JavaScript interface and a native Media3 playback service.
 
-- app/src/main/java/com/rush/app/MainActivity.kt owns the WebView, system bars, inline native video view, immersive mode and Android Picture-in-Picture.
-- app/src/main/java/com/rush/app/RushWebBridge.kt exposes a narrow @JavascriptInterface bridge for discovery, preferences, profile, permissions, playback, downloads and library operations.
-- app/src/main/java/com/rush/app/RushPlaybackService.kt owns the Media3 session and background playback lifecycle.
-- app/src/main/java/com/rush/app/profile/RushProfileStore.kt stores the local-only profile.
-- app/src/main/java/com/rush/app/permissions/RushPermissionManager.kt reports permissions the app actually uses.
-- app/src/main/assets/rush.html is the WebView shell.
-- app/src/main/assets/styles/ contains the base style system and four-page experience styles.
-- app/src/main/assets/scripts/ contains the app core, four-page screens, profile/settings UI and bootstrap.
-- scripts/validate_rush_html.py checks static UI contracts, JavaScript/native method references, local asset ordering and Play configuration.
+- `MainActivity.kt` owns the WebView, system bars, native video surface, immersive mode and Android Picture-in-Picture.
+- `RushWebBridge.kt` exposes the native discovery, preferences, profile, permissions, playback and library actions used by the UI.
+- `RushPlaybackService.kt` owns the Media3 session and background playback lifecycle.
+- `app/src/main/assets/rush.html` is the small WebView shell.
+- `app/src/main/assets/styles/figma-redesign.css` contains the reference-led responsive visual system.
+- `app/src/main/assets/scripts/figma-experience.js` contains the active screens, navigation, feed and interaction logic.
+- `scripts/validate_rush_html.py` checks the active asset graph, JavaScript/native bridge contract, design scope and Android configuration.
 
-## Four-page navigation
+## Design boundary
 
-1. Explore: All, Videos, Music, News and Movies filters. All combines vertical shelves and horizontal media rails. Video cards use 16:9 artwork, music cards use square artwork, movie discovery uses poster-shaped artwork and news uses compact image-left cards.
-2. Search: focused search input, local search history, interest/topic shortcuts and broad provider search.
-3. Subscribed: followed-source avatars and a combined following feed, with source-specific filtering.
-4. Library: local profile, saved items, history, watchlist, liked items, playlists, queue, downloads and settings.
+The primary visual reference is Juxtopposed's YouTube Redesign Figma Community file, ID `1450380484645543336`. The reference governs the app shell, header, collapsible sidebar, topic strip, video cards, feed shelves, Shorts presentation, search, watch page, library hierarchy and interaction density.
 
-The watch page and music player are playback destinations, not extra primary bottom-navigation items. The watch page embeds the native video surface at the WebView's measured position; the same native view can be moved to the in-app mini-player or Android PiP. Music uses the MediaSession for Android notification/lock-screen controls.
+Rush keeps its own name and identity. It must not use YouTube's logo or wordmark, or imply affiliation.
 
-## Loading and feed resilience
+Only implement these reference surfaces:
 
-- Native Home feed responses are cached per profile/mode for three minutes.
-- The WebView shows the cached response immediately where available, then accepts refreshed results.
-- Home feed source lookups use bounded coroutine concurrency.
-- Explore and Subscribed request background refresh when the app returns to the foreground and at a three-minute visible-page interval.
-- First-load skeletons are only used when no cached content exists.
-- Media3 buffering is surfaced in the native video surface and in the watch/player status UI.
-- Reduced-motion settings disable decorative CSS movement.
+- Home and Explore video feeds
+- Topic chips and topic personalisation
+- Shorts and TV Mode
+- Search for videos and channels
+- Subscriptions and channel-specific uploads
+- Video watch page and native playback controls
+- History, Watch Later, Liked Videos, Playlists and Collections
+- The visible header actions and the settings required to support those surfaces
+
+News, music-player, movie browsing, and unrelated Rush-only screens are outside this rebuild. Do not add them back as secondary tabs, hidden routes, feed shelves or extra navigation.
+
+## Navigation and layout
+
+- Use the reference's collapsible left sidebar on wide screens and a dismissible drawer on phones.
+- Do not add a duplicate bottom navigation bar.
+- Keep one horizontal topic row on Home/Explore. Topic chips filter the existing personalised feed; the settings action opens topic personalisation. Topics are not a second navigation system.
+- Home uses a horizontally browsable "In Case You Missed" shelf, a responsive video grid and a separate Shorts shelf.
+- Search presents video and channel results with loading, empty and error states.
+- TV Mode reuses real feed data with a viewing-distance layout; it does not invent a separate content type.
+- The watch page embeds the native video surface at its measured WebView position. The same native view can move to the mini-player or Android PiP.
+
+## Data and playback
+
+- Kotlin owns network-facing feed discovery, ranking, local preferences and library persistence.
+- The native discovery engine ranks video candidates using selected topics, followed channels and user feedback; the WebView renders the returned results.
+- Topic filtering is local against topic tags returned with the personalised feed, avoiding a second competing search request.
+- Video playback, adaptive stream selection, buffering, audio focus and notification controls remain native Media3 responsibilities.
+- Subscriptions, history, Watch Later, liked state, playlists and collections use the native bridge and local app storage.
+- The app must not fabricate creators, view counts, profile photos, notifications or video content. Initial-based avatars are honest fallbacks.
 
 ## Engineering rules
 
-- Keep Android platform work in Kotlin; keep view-only rendering and interaction in the WebView modules.
-- Add @JavascriptInterface methods only for capabilities that have a real implementation on the native side.
-- Keep WebView modules local. Do not load scripts, styles, fonts or UI frameworks from a CDN.
-- Use WebViewAssetLoader; do not return to file:// access or loadDataWithBaseURL for a multi-file UI.
-- Add permissions only for features that require them, request runtime permissions contextually and provide a route to Android app settings.
-- Preserve cache-first feed behaviour and test stale/out-of-order responses.
-- Keep each CSS/JS responsibility in its own file. Do not add new overrides to the HTML shell.
-- Keep controls at accessible touch sizes, respect system insets and keyboard Back behaviour, and test small screens in portrait and landscape.
-- Keep motion purposeful and respect prefers-reduced-motion.
-- Treat third-party media rights and provider terms as release requirements, not as a runtime implementation detail.
+- Keep Android platform work in Kotlin and view rendering/interaction in the WebView modules.
+- Add JavaScript bridge methods only for capabilities implemented on the native side.
+- Keep all first-party scripts, styles and fonts local. Do not load UI frameworks or fonts from a CDN.
+- Serve packaged assets through AndroidX WebViewAssetLoader; do not return to `file://` access.
+- Request only permissions required by active features, contextually, with a route to Android app settings.
+- Preserve cache-first feed behaviour, bounded network concurrency and stale/out-of-order response handling.
+- Reserve image aspect ratios, lazy-load offscreen artwork and avoid replacing unchanged DOM.
+- Keep controls accessible, respect system insets, font scaling, reduced motion and keyboard Back behaviour.
+- Treat provider terms and media rights as release requirements, not as a runtime implementation detail.
