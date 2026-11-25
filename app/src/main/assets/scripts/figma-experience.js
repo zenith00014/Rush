@@ -1007,3 +1007,59 @@ window.rushAppForeground = function(force = false) {
     if (force) loadFeed('following');
   }
 };
+
+let suggestionsExpanded = false;
+let suggestionsHidden = false;
+const baseRenderVideoShelf = renderVideoShelf;
+renderVideoShelf = function(title, items, short = false, limit = 10) {
+  const content = (items || []).slice(0, limit).map((item, index) =>
+    videoCard(item, { short, priority: !short && title === 'In Case You Missed' && index === 0 })).join('');
+  if (!content) return '';
+  const shelfId = short ? 'shortsShelf' : 'missedShelf';
+  return '<section class="feed-section"><div class="section-head"><h2>' + title + '</h2>' +
+    '<div class="section-head-actions"><button class="shelf-control" data-scroll-shelf="' + shelfId +
+    '" data-direction="left" aria-label="Scroll left">' + icon('chevron') +
+    '</button><button class="shelf-control next" data-scroll-shelf="' + shelfId +
+    '" data-direction="right" aria-label="Scroll right">' + icon('chevron') + '</button></div></div>' +
+    '<div id="' + shelfId + '" class="' + (short ? 'shorts-shelf video-shelf' : 'video-shelf') + '">' +
+    content + '</div></section>';
+};
+renderFeedState = function() {
+  if (feedLoading && !feedData.videos.length) return '<div class="loading-state" role="status"><strong>Loading videos</strong><p>Refreshing your recommendations.</p></div>' +
+    '<div class="video-grid">' + Array.from({ length: 3 }, () =>
+      '<div class="video-card"><div class="video-thumb skeleton-box"></div><div class="video-subtitle">Loading video details</div></div>').join('') + '</div>';
+  if (feedError && !feedData.videos.length) return '<div class="error-state" role="alert"><strong>Could not load videos</strong><p>' +
+    escapeHtml(feedError) + '</p><button class="inline-action" data-retry-feed>Try again</button></div>';
+  if (!feedData.videos.length) return '<div class="empty-state"><strong>No videos to show yet</strong><p>Choose a few topics or follow a channel to build your feed.</p><button class="inline-action" data-edit-topics>Choose topics</button></div>';
+  const videos = feedData.videos;
+  const missed = renderVideoShelf('In Case You Missed', videos.slice(0, 5), false, 5);
+  const mainFeed = videos.slice(5, 13);
+  const suggestions = videos.slice(13, suggestionsExpanded ? 25 : 19);
+  const suggestionsSection = suggestionsHidden || !suggestions.length ? '' :
+    '<section class="shelf-panel"><div class="section-head"><div><h2>Suggestions</h2><p>More videos selected from your interests.</p></div>' +
+    '<div class="section-head-actions"><button class="text-action" data-hide-suggestions>Not interested</button>' +
+    '<button class="text-action" data-expand-suggestions>' + (suggestionsExpanded ? 'Showing more' : 'Show me more') +
+    '</button></div></div><div class="video-grid">' + suggestions.map(item => videoCard(item)).join('') + '</div></section>';
+  return missed + (mainFeed.length ? '<section class="feed-section"><div class="section-head"><h2>Videos for you</h2></div>' +
+    renderVideoGrid(mainFeed) + '</section>' : '') + suggestionsSection +
+    renderVideoShelf('Shorts', shortsData, true, 10);
+};
+document.addEventListener('click', event => {
+  const button = event.target.closest('button');
+  if (!button) return;
+  if (button.hasAttribute('data-scroll-shelf')) {
+    const shelf = document.getElementById(button.dataset.scrollShelf);
+    if (shelf) shelf.scrollBy({ left: (button.dataset.direction === 'right' ? 1 : -1) * shelf.clientWidth * 0.8,
+      behavior: reducedMotion ? 'auto' : 'smooth' });
+    return;
+  }
+  if (button.hasAttribute('data-hide-suggestions')) {
+    suggestionsHidden = true;
+    renderFeed();
+    return;
+  }
+  if (button.hasAttribute('data-expand-suggestions')) {
+    suggestionsExpanded = !suggestionsExpanded;
+    renderFeed();
+  }
+});
