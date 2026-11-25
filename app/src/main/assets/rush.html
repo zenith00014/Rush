@@ -1,32 +1,62 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#141414"><title>RUSH</title>
-<link rel="preconnect" href="https://i.ytimg.com" crossorigin><link rel="preconnect" href="https://news.google.com" crossorigin><link rel="stylesheet" href="styles/rush-base.css"><link rel="stylesheet" href="styles/four-page.css"><link rel="stylesheet" href="styles/youtube-inspired.css"></head>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#111111">
+  <title>Rush</title>
+  <link rel="stylesheet" href="styles/figma-redesign.css">
+</head>
 <body>
-<div class="app">
-<header class="top" id="topAppBar">
-    <div class="wm" aria-label="Rush">rush<i></i></div>
-    <div class="top-actions"><button class="ib header-search" type="button" data-open-search aria-label="Search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"></circle><path d="m16 16 5 5"></path></svg></button><button class="ib notification-bell" id="notificationBell" data-open-notifications aria-label="Notifications"><svg class="bell-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg><span class="notification-dot" aria-hidden="true"></span></button></div>
-  </header>
-<main id="sc"><div id="v"></div></main>
-  <div class="video-mini-dock" id="videoMiniDock" hidden>
-    <div class="video-mini-host" id="videoMiniHost"></div>
-    <div class="video-mini-actions"><b id="videoMiniTitle">Now playing</b><button class="chip" data-mini-expand aria-label="Expand video">↗</button><button class="chip" data-video-close aria-label="Close video">×</button></div>
+  <div class="app" id="app">
+    <header class="top" id="topAppBar">
+      <div class="top-left">
+        <button class="icon-button" id="menuToggle" type="button" aria-label="Toggle navigation" aria-expanded="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+        <a class="rush-brand" href="#home" aria-label="Rush home"><span class="rush-brand-mark" aria-hidden="true">R</span><span>rush</span></a>
+      </div>
+      <form class="search-form" id="searchForm" role="search">
+        <input id="globalSearch" type="search" autocomplete="off" aria-label="Search videos and channels" placeholder="Search">
+        <button class="search-submit" type="submit" aria-label="Search"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.8 18a7.2 7.2 0 1 0 0-14.4 7.2 7.2 0 0 0 0 14.4zM16 16l5 5"/></svg></button>
+      </form>
+      <div class="top-actions">
+        <button class="icon-button" type="button" data-create-playlist aria-label="Create playlist"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+        <button class="icon-button" type="button" id="notificationButton" data-open-notifications aria-label="Notifications" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg></button>
+        <button class="icon-button" type="button" data-open-settings aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.5"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-1.8 3.1-.2-.1a1.7 1.7 0 0 0-1.8.1l-.2.1h-3.6l-.1-.2a1.7 1.7 0 0 0-1.6-1.1h-.3l-3.1-1.8.1-.2a1.7 1.7 0 0 0-.1-1.8l-.1-.2v-3.6l.2-.1a1.7 1.7 0 0 0 1.1-1.6v-.3l1.8-3.1.2.1a1.7 1.7 0 0 0 1.8-.1l.2-.1h3.6l.1.2a1.7 1.7 0 0 0 1.6 1.1h.3l3.1 1.8-.1.2a1.7 1.7 0 0 0 .1 1.8l.1.2V15z"/></svg></button>
+        <button class="profile-button" type="button" id="profileButton" data-open-profile aria-label="Open profile menu" aria-expanded="false">R</button>
+      </div>
+    </header>
+
+    <div id="layout">
+      <aside class="sidebar" id="sidebar" aria-label="Main navigation">
+        <nav id="nav" class="sidebar-nav" aria-label="Primary"></nav>
+      </aside>
+      <button class="layout-backdrop" id="layoutBackdrop" type="button" aria-label="Close navigation"></button>
+      <main id="sc" aria-label="Rush content">
+        <div id="v"></div>
+      </main>
+    </div>
+
+    <section class="video-mini-dock" id="videoMiniDock" hidden aria-label="Minimized video">
+      <div class="video-mini-host" id="videoMiniHost"></div>
+      <div class="video-mini-actions">
+        <strong id="videoMiniTitle">Now playing</strong>
+        <button type="button" data-mini-expand aria-label="Expand video">↗</button>
+        <button type="button" data-close-video aria-label="Close video">×</button>
+      </div>
+    </section>
+
+    <section class="popover" id="notificationsPopover" hidden role="dialog" aria-label="Notifications">
+      <header class="popover-head"><strong>Notifications</strong><button class="icon-button" type="button" data-close-popover aria-label="Close notifications">×</button></header>
+      <div class="popover-body"><strong>No new notifications</strong><p>Channel updates will appear here when available.</p></div>
+    </section>
+
+    <section class="popover" id="userPopover" hidden role="dialog" aria-label="Profile menu">
+      <header class="popover-head"><strong id="profileMenuTitle">Your Rush profile</strong><button class="icon-button" type="button" data-close-popover aria-label="Close profile menu">×</button></header>
+      <div class="popover-body"><p id="profileMenuSubtitle">Profile stored on this device.</p><button class="popover-action" type="button" data-go-settings>Settings</button></div>
+    </section>
+
+    <div id="dialogRoot"></div>
   </div>
-  <section class="mini" id="mini" aria-label="Now playing" inert>
-    <div class="a" id="ma"><img alt="" hidden></div>
-    <div><b id="mt"></b><span id="ms"></span></div>
-    <button class="ib p" id="mp" data-act="toggle" aria-label="Play or pause"></button>
-    <button class="ib" data-act="open" aria-label="Open player">↗</button>
-    <div class="rule"></div>
-  </section>
-  
-  <section class="app-sheet" id="notificationsSheet" hidden aria-modal="true" role="dialog" aria-labelledby="notificationsTitle">
-    <header class="sheet-header"><b id="notificationsTitle">Notifications</b><button class="ib" data-close-sheet aria-label="Close notifications">×</button></header>
-    <div class="sheet-body"><div class="sheet-empty"><span class="hardware-icon">◷</span><b>You're all caught up</b><p>Updates from your subscribed creators will appear here.</p><button class="btn o" data-sheet-subscriptions>View subscriptions</button></div></div>
-  </section>
-  <nav class="nav" id="nav" aria-label="Primary"></nav>
-</div>
-<script src="scripts/app-core.js"></script><script src="scripts/four-page-experience.js"></script><script src="scripts/profile-settings.js"></script><script src="scripts/bootstrap.js"></script>
-</body></html>
+  <script src="scripts/figma-experience.js"></script>
+</body>
+</html>
