@@ -187,6 +187,148 @@ class RushWebBridge(
     }
 
     @JavascriptInterface
+    fun loadVideoFeed(mode: String) {
+        val prefs = activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)
+        val sources = FeedPreferences.sources(prefs)
+        val profile = discoveryProfile(prefs)
+        val following = mode.equals("following", true)
+        val feedMode = if (following) "following" else "forYou"
+        val channels = FeedPreferences.forYouChannels(sources).take(if (following) 12 else 6)
+        val topicQueries = if (following) emptyList() else FeedPreferences.topics(prefs).take(5)
+        val searches = channels.map { source -> source to source.name } +
+            topicQueries.map { query -> null to query }
+        val signature = buildString {
+            append(profile.topics.joinToString("|"))
+            append("|channels=").append(channels.joinToString("|") { "${it.id}:${it.name}" })
+            append("|history=").append(profile.historyTerms.sorted().joinToString("|"))
+            append("|recent=").append(profile.recentIds.sorted().joinToString("|"))
+            append("|liked=").append(profile.likedIds.sorted().joinToString("|"))
+            append("|disliked=").append(profile.dislikedIds.sorted().joinToString("|"))
+            append("|hidden=").append(profile.notInterestedIds.sorted().joinToString("|"))
+            append("|blocked=").append(profile.blockedCreators.sorted().joinToString("|"))
+        }
+        val cacheKey = "rush_video_feed_v1_${feedMode}_${Integer.toHexString(signature.hashCode())}"
+        if (!activeHomeFeedRequests.add(cacheKey)) return
+
+        activity.lifecycleScope.launch {
+            try {
+                val cached = prefs.getString(cacheKey, null)?.let {
+                    runCatching { JSONObject(it) }.getOrNull()
+                }
+                val cachedAt = cached?.optLong("fetchedAt", 0L) ?: 0L
+                val cacheFresh = cached != null && cachedAt > 0L &&
+                    System.currentTimeMillis() - cachedAt in 0..180_000L
+                if (cached != null) {
+                    val cachedForUi = JSONObject(cached.toString())
+                    if (!cacheFresh) cachedForUi.put("message", "Showing saved videos while refreshing.")
+                    publish("rushVideoFeedResults", cachedForUi.toString())
+                    if (cacheFresh) return@launch
+                } else {
+                    publish("rushHomeFeedLoading", JSONObject().put("mode", feedMode).toString())
+                }
+
+                if (following && channels.isEmpty()) {
+                    val empty = JSONObject()
+                        .put("mode", feedMode)
+                        .put("videos", JSONArray())
+                        .put("fetchedAt", System.currentTimeMillis())
+                        .put("message", "Subscribe to YouTube channels to see their latest videos here.")
+                    prefs.edit().putString(cacheKey, empty.toString()).apply()
+                    publish("rushVideoFeedResults", empty.toString())
+                    return@launch
+                }
+
+                val failures = java.util.concurrent.atomic.AtomicInteger(0)
+                val results = withContext(Dispatchers.IO) {
+                    coroutineScope {
+                        searches.map { (source, query) ->
+                            async {
+                                val items = runCatching {
+                                    HOME_FEED_NETWORK_SLOTS.withPermit {
+                                        if (source != null && source.id.startsWith("UC")) {
+                                            LiveYouTubeSearch.latestUploads(source.id)
+                                        } else {
+                                            LiveYouTubeSearch.search(query, music = false)
+                                        }
+                                    }
+                                }.onFailure { failures.incrementAndGet() }.getOrDefault(emptyList())
+                                Triple(source, query, items)
+                            }
+                        }.awaitAll()
+                    }
+                }
+
+                val hits = LinkedHashMap<String, RushDiscoveryEngine.FeedHit>()
+                val records = LinkedHashMap<String, JSONObject>()
+                results.forEach { (source, query, items) ->
+                    items.forEach { item ->
+                        if (item.videoId.isBlank()) return@forEach
+                        val body = item.title + " " + item.description
+                        val tags = profile.topics.filter { body.contains(it, true) }.toSet()
+                        val candidate = RushDiscoveryEngine.Candidate(
+                            id = item.videoId,
+                            kind = RushDiscoveryEngine.Kind.VIDEO,
+                            title = item.title,
+                            creator = item.creator,
+                            summary = item.description,
+                            publishedAtEpochSeconds = item.publishedAtEpochSeconds,
+                            durationSeconds = parseDurationSeconds(item.duration),
+                            sourceFollowed = source != null,
+                            topicTags = tags
+                        )
+                        val score = RushDiscoveryEngine.scoreFeed(candidate, profile)
+                        val payload = JSONObject()
+                            .put("id", item.videoId)
+                            .put("title", item.title)
+                            .put("artist", item.creator)
+                            .put("duration", item.duration)
+                            .put("thumbnail", thumbnailFor(item.videoId, item.thumbnailUrl))
+                            .put("creatorThumbnail", item.creatorThumbnail)
+                            .put("channelId", item.channelId.ifBlank { source?.id.orEmpty() })
+                            .put("sourceId", source?.id.orEmpty())
+                            .put("sourceName", source?.name ?: query)
+                        val old = hits[item.videoId]
+                        if (old == null || score > old.score) {
+                            hits[item.videoId] = RushDiscoveryEngine.FeedHit(candidate, score)
+                            records[item.videoId] = payload
+                        }
+                    }
+                }
+
+                val ranked = RushDiscoveryEngine.diversifyFeed(
+                    hits.values.toList(),
+                    if (following) 48 else 36,
+                    2
+                )
+                val videos = ranked.mapNotNull { records[it.candidate.id] }
+                if (videos.isEmpty() && searches.isNotEmpty() && failures.get() >= searches.size) {
+                    throw java.io.IOException("Video providers could not be reached. Check your connection and try again.")
+                }
+                val payload = JSONObject()
+                    .put("mode", feedMode)
+                    .put("videos", JSONArray(videos))
+                    .put("fetchedAt", System.currentTimeMillis())
+                    .put("message", when {
+                        following && videos.isEmpty() -> "No recent uploads were found from your followed channels."
+                        !following && videos.isEmpty() -> "No videos matched your selected interests. Try another topic."
+                        else -> ""
+                    })
+                prefs.edit().putString(cacheKey, payload.toString()).apply()
+                publish("rushVideoFeedResults", payload.toString())
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                publish("rushHomeFeedError", JSONObject()
+                    .put("mode", feedMode)
+                    .put("message", playbackErrorMessage(error, "Could not refresh videos."))
+                    .toString())
+            } finally {
+                activeHomeFeedRequests.remove(cacheKey)
+            }
+        }
+    }
+
+    @JavascriptInterface
     fun loadHomeFeed(mode: String) {
         val prefs = activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)
         val sourcesSnapshot = FeedPreferences.sources(prefs)
