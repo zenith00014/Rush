@@ -9,6 +9,10 @@ import java.io.IOException
 import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutionException
+import android.util.LruCache
+import android.os.SystemClock
 import java.util.concurrent.TimeUnit
 import org.schabi.newpipe.extractor.InfoItem
 import org.schabi.newpipe.extractor.Page
@@ -33,13 +37,23 @@ data class YouTubeSearchResult(
     val collectionId: String = "",
     val description: String = "",
     val videoCount: String = "",
-    val thumbnailUrl: String = ""
+    val thumbnailUrl: String = "",
+    val creatorThumbnail: String = "",
+    val publishedAtEpochSeconds: Long = 0L,
+    val publishedTime: String = "",
+    val viewCount: Long = -1L
 )
 
 object LiveYouTubeSearch {
     private val client = RushNetwork.newBuilder()
-        .callTimeout(25, TimeUnit.SECONDS)
+        .connectTimeout(5, TimeUnit.SECONDS)
+        .readTimeout(8, TimeUnit.SECONDS)
+        .callTimeout(14, TimeUnit.SECONDS)
         .build()
+    private data class CachedSearchPage(val page: YouTubeSearchPage, val cachedAt: Long)
+    private val searchResultCache = object : LruCache<String, CachedSearchPage>(32) {}
+    private val inFlightSearches = ConcurrentHashMap<String, CompletableFuture<YouTubeSearchPage>>()
+    private val searchCacheTtlMs = 3 * 60 * 1000L
     private val jsonType = "application/json; charset=utf-8".toMediaType()
     private data class SearchCursor(val extractor: SearchExtractor, val page: Page)
     private val searchCursors = ConcurrentHashMap<String, List<SearchCursor>>()
@@ -50,6 +64,55 @@ object LiveYouTubeSearch {
 
     @Throws(IOException::class)
     fun searchPage(query: String, music: Boolean = false, channels: Boolean = false, playlists: Boolean = false): YouTubeSearchPage {
+        val cleanQuery = query.trim()
+        require(cleanQuery.isNotBlank()) { "Enter something to search for." }
+        val key = listOf(cleanQuery.lowercase(Locale.ROOT), music, channels, playlists).joinToString("|")
+        val now = SystemClock.elapsedRealtime()
+        synchronized(searchResultCache) {
+            val cached = searchResultCache.get(key)
+            if (cached != null && now - cached.cachedAt <= searchCacheTtlMs) {
+                return cached.page
+            }
+            if (cached != null) searchResultCache.remove(key)
+        }
+
+        val pending = CompletableFuture<YouTubeSearchPage>()
+        val existing = inFlightSearches.putIfAbsent(key, pending)
+        if (existing != null) {
+            try {
+                return existing.get()
+            } catch (error: ExecutionException) {
+                val cause = error.cause
+                if (cause is IOException) throw cause
+                if (cause is RuntimeException) throw cause
+                throw IOException("YouTube search failed.", cause)
+            } catch (error: InterruptedException) {
+                Thread.currentThread().interrupt()
+                throw IOException("YouTube search was interrupted.", error)
+            }
+        }
+
+        try {
+            val page = searchPageUncached(cleanQuery, music, channels, playlists)
+            synchronized(searchResultCache) {
+                searchResultCache.put(key, CachedSearchPage(page, SystemClock.elapsedRealtime()))
+            }
+            pending.complete(page)
+            return page
+        } catch (error: Throwable) {
+            pending.completeExceptionally(error)
+            throw error
+        } finally {
+            inFlightSearches.remove(key, pending)
+        }
+    }
+
+    private fun searchPageUncached(
+        query: String,
+        music: Boolean,
+        channels: Boolean,
+        playlists: Boolean
+    ): YouTubeSearchPage {
         require(query.isNotBlank()) { "Enter something to search for." }
         val extractorPage = if (music) {
             runCatching { searchWithNewPipe(query, listOf("music_songs", "music_albums"), true) }.getOrNull()
@@ -61,7 +124,7 @@ object LiveYouTubeSearch {
             }
             runCatching { searchWithNewPipe(query, listOf(filter), false) }.getOrNull()
         }
-        if (music && extractorPage != null && extractorPage.items.size >= 8) return extractorPage
+        if (extractorPage != null && extractorPage.items.size >= 8) return extractorPage
 
         val body = searchContext(music)
             .put("query", query)
@@ -75,7 +138,14 @@ object LiveYouTubeSearch {
         val primary = runCatching { executeSearch(body, music, channels, playlists) }.getOrNull()
         val merged = LinkedHashMap<String, YouTubeSearchResult>()
         extractorPage?.items.orEmpty().forEach { merged.putIfAbsent(resultKey(it), it) }
-        primary?.items.orEmpty().forEach { merged.putIfAbsent(resultKey(it), it) }
+        primary?.items.orEmpty().forEach { item ->
+            val key = resultKey(item)
+            val existing = merged[key]
+            if (existing == null) merged[key] = item
+            else if (existing.creatorThumbnail.isBlank() && item.creatorThumbnail.isNotBlank()) {
+                merged[key] = existing.copy(creatorThumbnail = item.creatorThumbnail)
+            }
+        }
         val primaryContinuation = primary?.continuation ?: extractorPage?.continuation
         if (music || merged.size >= 8) {
             if (merged.isEmpty()) throw IOException("YouTube returned no search results.")
@@ -155,7 +225,10 @@ object LiveYouTubeSearch {
                     creator = item.uploaderName.orEmpty().ifBlank { "YouTube creator" },
                     duration = formatDuration(item.duration),
                     isMusic = false,
-                    thumbnailUrl = thumbnail
+                    thumbnailUrl = thumbnail,
+                    publishedAtEpochSeconds = runCatching { item.uploadDate?.instant?.epochSecond ?: 0L }.getOrDefault(0L),
+                    publishedTime = runCatching { item.textualUploadDate.orEmpty() }.getOrDefault(""),
+                    viewCount = runCatching { item.viewCount }.getOrDefault(-1L)
                 )
             }
             is ChannelInfoItem -> {
@@ -330,7 +403,15 @@ object LiveYouTubeSearch {
         if (id.isBlank() || title.isBlank()) return
         val owner = text(item.optJSONObject("ownerText")).ifBlank { text(item.optJSONObject("shortBylineText")) }.ifBlank { "YouTube creator" }
         val duration = text(item.optJSONObject("lengthText"))
-        out.putIfAbsent(id, YouTubeSearchResult(id, title, owner, duration, music, thumbnailUrl = thumbnailUrl(item)))
+        val channelAvatar = item.optJSONObject("channelThumbnailSupportedRenderers")
+            ?.optJSONObject("channelThumbnailWithLinkRenderer")
+            ?.optJSONObject("thumbnail")
+            ?.let(::thumbnailUrl).orEmpty()
+        out.putIfAbsent(id, YouTubeSearchResult(
+            id, title, owner, duration, music,
+            thumbnailUrl = thumbnailUrl(item),
+            creatorThumbnail = channelAvatar
+        ))
     }
 
     private fun addChannel(item: JSONObject, out: MutableMap<String, YouTubeSearchResult>) {

@@ -69,13 +69,10 @@ class RushPlaybackService : MediaSessionService() {
             .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
         val mediaSourceFactory = RushMediaSourceFactory(cachedDataSourceFactory)
         val loadControl = DefaultLoadControl.Builder()
-            .setBufferDurationsMs(
-                25_000,
-                90_000,
-                3_000,
-                5_000
-            )
-            .setBackBuffer(15_000, true)
+            // Start sooner, but keep a useful reservoir for unstable mobile networks.
+            .setBufferDurationsMsForStreaming(15_000, 60_000, 1_500, 3_000)
+            .setBufferDurationsMsForLocalPlayback(3_000, 20_000, 500, 1_000)
+            .setBackBuffer(5_000, true)
             .setPrioritizeTimeOverSizeThresholds(true)
             .build()
         val trackSelector = androidx.media3.exoplayer.trackselection.DefaultTrackSelector(

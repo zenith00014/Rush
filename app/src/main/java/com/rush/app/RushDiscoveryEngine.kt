@@ -19,7 +19,11 @@ object RushDiscoveryEngine {
         val topics: List<String> = emptyList(),
         val followedCreators: Set<String> = emptySet(),
         val historyTerms: Set<String> = emptySet(),
-        val recentIds: Set<String> = emptySet()
+        val recentIds: Set<String> = emptySet(),
+        val likedIds: Set<String> = emptySet(),
+        val dislikedIds: Set<String> = emptySet(),
+        val notInterestedIds: Set<String> = emptySet(),
+        val blockedCreators: Set<String> = emptySet()
     )
 
     data class Candidate(
@@ -46,19 +50,6 @@ object RushDiscoveryEngine {
     data class SearchHit<T>(val value: T, val score: Double, val originalIndex: Int)
     data class FeedHit(val candidate: Candidate, val score: Int)
 
-    private val usefulSignals = listOf(
-        "explained", "analysis", "documentary", "research", "lecture", "tutorial",
-        "how it works", "how to", "deep dive", "history of", "investigation", "report",
-        "review", "guide", "course", "lesson", "learn", "masterclass", "breakdown",
-        "case study", "science", "engineering", "theory", "evidence", "walkthrough",
-        "educational", "study", "field notes", "critical analysis"
-    )
-    private val lowInformationSignals = listOf(
-        "brainrot", "meme", "memes", "prank", "pranks", "rage bait", "ragebait",
-        "celebrity gossip", "influencer drama", "internet drama", "viral challenge",
-        "reaction prank", "shocking", "you won't believe", "you will not believe",
-        "exposed", "destroyed", "insane reaction"
-    )
     private val spamSignals = listOf(
         "free gift", "click here", "subscribe now", "watch till end", "watch till the end",
         "giveaway winner", "shocking!!!", "100% guaranteed", "make money fast"
@@ -72,16 +63,23 @@ object RushDiscoveryEngine {
         "soccer" to setOf("football")
     )
 
-    /** Recommendation score from 0..1000; larger is better. */
+    /**
+     * Local relevance score inspired by YouTube's publicly documented recommendation signals.
+     * This is Rush's own approximation; it does not reproduce YouTube's proprietary model.
+     */
     fun scoreFeed(
         candidate: Candidate,
         profile: Profile,
         nowEpochSeconds: Long = Instant.now().epochSecond
     ): Int {
+        val id = candidate.id.trim()
+        val creator = normalize(candidate.creator)
+        if (id.isNotBlank() && id in profile.notInterestedIds) return 0
+        if (creator.isNotBlank() && profile.blockedCreators.any { normalize(it) == creator }) return 0
+
         val title = normalize(candidate.title)
         val summary = normalize(candidate.summary)
-        val creator = normalize(candidate.creator)
-        val body = title + " " + summary + " " + creator
+        val body = "$title $summary $creator"
         val bodyTokens = tokens(body).toSet()
         val topic = topicAffinity(body, profile.topics, candidate.topicTags)
         val followed = candidate.sourceFollowed || profile.followedCreators.any { name ->
@@ -89,64 +87,54 @@ object RushDiscoveryEngine {
             creator.isNotBlank() && key.isNotBlank() &&
                 (creator == key || creator.contains(key) || key.contains(creator))
         }
-        val follow = if (followed) 1.0 else 0.0
-        val history = if (profile.historyTerms.isEmpty()) 0.35 else {
+        val history = if (profile.historyTerms.isEmpty()) 0.30 else {
             val hits = profile.historyTerms.map(::normalize).filter(String::isNotBlank).count { term ->
                 term.length >= 3 && (body.contains(term) || term.split(' ').any { it in bodyTokens })
             }
-            (hits.toDouble() / minOf(profile.historyTerms.size, 8).coerceAtLeast(1)).coerceIn(0.0, 1.0)
+            (hits.toDouble() / minOf(profile.historyTerms.size, 10).coerceAtLeast(1)).coerceIn(0.0, 1.0)
         }
         val fresh = freshness(candidate.publishedAtEpochSeconds, nowEpochSeconds)
         val complete = completeness(candidate.title, candidate.creator, candidate.summary)
-        val engagement = candidate.engagement?.coerceIn(0.0, 1.0) ?: 0.45
-        val novelty = if (candidate.id.isNotBlank() && candidate.id !in profile.recentIds) 0.75 else 0.12
-        val utility = utilitySignal(body, candidate.summary)
-        val taste = maxOf(topic, history * 0.85)
+        // Provider engagement is not always available, so never invent a view/like count.
+        val providerEngagement = candidate.engagement?.coerceIn(0.0, 1.0) ?: 0.35
+        val novelty = if (id.isNotBlank() && id !in profile.recentIds) 1.0 else 0.12
+        val liked = if (id.isNotBlank() && id in profile.likedIds) 1.0 else 0.0
+        val disliked = if (id.isNotBlank() && id in profile.dislikedIds) 1.0 else 0.0
 
-        // Common profile layer used by every section.
-        val shared =
-            topic * 0.26 +
-            follow * 0.18 +
-            history * 0.14 +
+        val shared = topic * 0.22 +
+            history * 0.26 +
+            (if (followed) 1.0 else 0.0) * 0.16 +
             fresh * 0.10 +
-            complete * 0.12 +
-            engagement * 0.05 +
-            novelty * 0.15
+            complete * 0.06 +
+            providerEngagement * 0.04 +
+            novelty * 0.08 +
+            liked * 0.12 -
+            disliked * 0.42
 
-        // Specialist algorithms: productive material is preferred in video/news; music is taste-led.
         val specialist = when (candidate.kind) {
-            Kind.VIDEO -> {
-                val depth = when {
-                    candidate.durationSeconds <= 0L -> 0.45
-                    candidate.durationSeconds >= 600L -> 0.92
-                    candidate.durationSeconds >= 240L -> 0.72
-                    candidate.durationSeconds >= 60L -> 0.52
-                    else -> 0.36
-                }
-                (utility * 0.58 + depth * 0.20 + complete * 0.12 + topic * 0.10 -
-                    lowInfoPenalty(body)).coerceIn(0.0, 1.0)
-            }
-            Kind.NEWS -> {
-                val context = utility * 0.52 + complete * 0.24 + topic * 0.14 + fresh * 0.10
-                (context - lowInfoPenalty(body) * 1.15).coerceIn(0.0, 1.0)
-            }
-            Kind.MUSIC -> (taste * 0.58 + follow * 0.23 + novelty * 0.12 + fresh * 0.07)
-                .coerceIn(0.0, 1.0)
-            Kind.CHANNEL -> topic * 0.45 + complete * 0.25 + novelty * 0.30
-            Kind.PLAYLIST -> topic * 0.48 + complete * 0.30 + novelty * 0.22
+            Kind.VIDEO -> topic * 0.34 + history * 0.34 + fresh * 0.12 +
+                (if (followed) 0.20 else 0.0)
+            Kind.NEWS -> topic * 0.28 + history * 0.28 + fresh * 0.32 +
+                (if (followed) 0.12 else 0.0)
+            Kind.MUSIC -> topic * 0.42 + history * 0.34 + fresh * 0.08 +
+                (if (followed) 0.16 else 0.0)
+            Kind.CHANNEL -> topic * 0.60 + history * 0.24 + novelty * 0.16
+            Kind.PLAYLIST -> topic * 0.52 + history * 0.30 + novelty * 0.18
         }
-
-        var combined = shared * 0.64 + specialist * 0.36
-        if (candidate.kind == Kind.VIDEO || candidate.kind == Kind.NEWS) {
-            combined += (utility - 0.45) * 0.08
-            combined -= lowInfoPenalty(body) * 0.05
-        }
-        if (candidate.id in profile.recentIds) combined -= 0.12
-        return (combined.coerceIn(0.0, 1.0) * 1000.0).toInt()
+        val score = shared * 0.68 + specialist * 0.32
+        return (score.coerceIn(0.0, 1.0) * 1000.0).toInt()
     }
 
     fun rankFeed(candidates: List<Candidate>, profile: Profile): List<FeedHit> =
-        candidates.map { FeedHit(it, scoreFeed(it, profile)) }.sortedByDescending { it.score }
+        candidates.asSequence()
+            .filter { candidate ->
+                val creator = normalize(candidate.creator)
+                candidate.id.trim() !in profile.notInterestedIds &&
+                    (creator.isBlank() || profile.blockedCreators.none { normalize(it) == creator })
+            }
+            .map { FeedHit(it, scoreFeed(it, profile)) }
+            .sortedByDescending { it.score }
+            .toList()
 
     /** Greedy creator/topic diversification reduces repetitive feeds. */
     fun diversifyFeed(hits: List<FeedHit>, limit: Int, maxPerCreator: Int = 2): List<FeedHit> {
@@ -280,21 +268,6 @@ object RushDiscoveryEngine {
         val strong = (topics + tags).count { normalize(it).let { key -> key.length >= 4 && body.contains(key) } }
         return (0.12 + hits * 0.075 + strong * 0.12).coerceIn(0.0, 1.0)
     }
-
-    private fun utilitySignal(body: String, summary: String): Double {
-        val matches = usefulSignals.count(body::contains)
-        val depth = when {
-            summary.length >= 700 -> 0.30
-            summary.length >= 300 -> 0.22
-            summary.length >= 120 -> 0.14
-            summary.length >= 40 -> 0.07
-            else -> 0.0
-        }
-        return (0.28 + matches * 0.11 + depth).coerceIn(0.0, 1.0)
-    }
-
-    private fun lowInfoPenalty(body: String): Double =
-        (lowInformationSignals.count(body::contains) * 0.095).coerceAtMost(0.42)
 
     private fun freshness(publishedAt: Long, now: Long): Double {
         if (publishedAt <= 0L || publishedAt > now + 86_400L) return 0.42

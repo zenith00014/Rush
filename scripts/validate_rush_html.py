@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate the embedded Rush WebView document and its JavaScript/native bridge."""
+"""Validate the Figma-led Rush WebView surface and Android playback configuration."""
 
 from collections import Counter
 from html.parser import HTMLParser
@@ -9,12 +9,14 @@ import subprocess
 import sys
 import tempfile
 
-
 ROOT = Path(__file__).resolve().parents[1]
-HTML_PATH = ROOT / "app/src/main/assets/rush.html"
+ASSET_ROOT = ROOT / "app/src/main/assets"
+HTML_PATH = ASSET_ROOT / "rush.html"
 BRIDGE_PATH = ROOT / "app/src/main/java/com/rush/app/RushWebBridge.kt"
 ACTIVITY_PATH = ROOT / "app/src/main/java/com/rush/app/MainActivity.kt"
 SERVICE_PATH = ROOT / "app/src/main/java/com/rush/app/RushPlaybackService.kt"
+SEARCH_PATH = ROOT / "app/src/main/java/com/rush/app/LiveYouTubeSearch.kt"
+MANIFEST_PATH = ROOT / "app/src/main/AndroidManifest.xml"
 GRADLE_PATH = ROOT / "app/build.gradle.kts"
 
 
@@ -23,30 +25,40 @@ class RushHtmlParser(HTMLParser):
         super().__init__(convert_charrefs=True)
         self.ids = Counter()
         self.app_containers = 0
-        self.scripts = []
-        self._inside_script = False
-        self._script_parts = []
+        self.script_sources = []
+        self.stylesheet_sources = []
+        self.lang = ""
+        self.title = False
+        self.landmarks = set()
 
     def handle_starttag(self, tag, attrs):
         values = dict(attrs)
-        element_id = values.get("id")
-        if element_id:
-            self.ids[element_id] += 1
+        if values.get("id"):
+            self.ids[values["id"]] += 1
         if tag == "div" and "app" in values.get("class", "").split():
             self.app_containers += 1
-        if tag == "script":
-            self._inside_script = True
-            self._script_parts = []
+        if tag == "script" and values.get("src"):
+            self.script_sources.append(values["src"])
+        if tag == "link" and "stylesheet" in values.get("rel", "").split():
+            self.stylesheet_sources.append(values.get("href", ""))
+        if tag == "html":
+            self.lang = values.get("lang", "")
+        if tag in {"header", "nav", "main"}:
+            self.landmarks.add(tag)
+
+    def handle_startendtag(self, tag, attrs):
+        self.handle_starttag(tag, attrs)
 
     def handle_data(self, data):
-        if self._inside_script:
-            self._script_parts.append(data)
+        if getattr(self, "_in_title", False) and data.strip():
+            self.title = True
+
+    def handle_startendtag(self, tag, attrs):
+        self.handle_starttag(tag, attrs)
 
     def handle_endtag(self, tag):
-        if tag == "script" and self._inside_script:
-            self.scripts.append("".join(self._script_parts))
-            self._inside_script = False
-            self._script_parts = []
+        if tag == "title":
+            self._in_title = False
 
 
 def fail(message):
@@ -54,155 +66,194 @@ def fail(message):
     raise SystemExit(1)
 
 
-def main():
-    if not HTML_PATH.is_file():
-        fail(f"Missing WebView asset: {HTML_PATH}")
-    if not BRIDGE_PATH.is_file():
-        fail(f"Missing native bridge: {BRIDGE_PATH}")
-    if not ACTIVITY_PATH.is_file():
-        fail(f"Missing Android activity: {ACTIVITY_PATH}")
-    if not SERVICE_PATH.is_file():
-        fail(f"Missing playback service: {SERVICE_PATH}")
-    if not GRADLE_PATH.is_file():
-        fail(f"Missing app Gradle configuration: {GRADLE_PATH}")
+def read_required(path):
+    if not path.is_file():
+        fail(f"Missing required file: {path.relative_to(ROOT)}")
+    return path.read_text(encoding="utf-8")
 
-    html = HTML_PATH.read_text(encoding="utf-8")
-    bridge = BRIDGE_PATH.read_text(encoding="utf-8")
-    activity = ACTIVITY_PATH.read_text(encoding="utf-8")
-    service = SERVICE_PATH.read_text(encoding="utf-8")
-    gradle = GRADLE_PATH.read_text(encoding="utf-8")
+
+def main():
+    html = read_required(HTML_PATH)
+    bridge = read_required(BRIDGE_PATH)
+    activity = read_required(ACTIVITY_PATH)
+    service = read_required(SERVICE_PATH)
+    download_worker = read_required(ROOT / "app/src/main/java/com/rush/app/OfflineDownloads.kt")
+    search_client = read_required(SEARCH_PATH)
+    manifest = read_required(MANIFEST_PATH)
+    gradle = read_required(GRADLE_PATH)
+    read_required(ROOT / "DESIGN.md")
+
     parser = RushHtmlParser()
     parser.feed(html)
     parser.close()
 
     if parser.app_containers != 1:
         fail(f"Expected one .app container, found {parser.app_containers}")
-
-    required_ids = ("nav", "sc", "v", "mini")
-    for element_id in required_ids:
+    for element_id in (
+        "topAppBar", "menuToggle", "searchForm", "globalSearch", "nav", "sidebar",
+        "layoutBackdrop", "sc", "v", "videoMiniDock", "videoMiniHost",
+        "notificationsPopover", "userPopover", "dialogRoot",
+    ):
         if parser.ids[element_id] != 1:
             fail(f"Expected exactly one #{element_id}, found {parser.ids[element_id]}")
-
     duplicates = {name: count for name, count in parser.ids.items() if count > 1}
     if duplicates:
         fail(f"Duplicate static HTML IDs: {duplicates}")
+    if not parser.lang or not parser.landmarks.issuperset({"header", "nav", "main"}):
+        fail("The app shell needs a language and header, nav and main landmarks.")
+    if "<title>Rush</title>" not in html:
+        fail("The app shell must declare its Rush document title.")
 
-    if not parser.scripts:
-        fail("No inline JavaScript was found")
+    expected_scripts = ["scripts/figma-experience.js"]
+    expected_styles = ["styles/figma-redesign.css"]
+    if parser.script_sources != expected_scripts:
+        fail(f"Unexpected active WebView scripts: {parser.script_sources}")
+    if parser.stylesheet_sources != expected_styles:
+        fail(f"Unexpected active WebView stylesheets: {parser.stylesheet_sources}")
 
-    js = "\n".join(parser.scripts)
+    scripts = []
+    for source in parser.script_sources:
+        asset = (ASSET_ROOT / source).resolve()
+        if not asset.is_relative_to(ASSET_ROOT.resolve()):
+            fail(f"Script path escapes the asset root: {source}")
+        scripts.append(read_required(asset))
+    css = []
+    for source in parser.stylesheet_sources:
+        asset = (ASSET_ROOT / source).resolve()
+        if not asset.is_relative_to(ASSET_ROOT.resolve()):
+            fail(f"Stylesheet path escapes the asset root: {source}")
+        css.append(read_required(asset))
+    js = "\n".join(scripts)
+    styles = "\n".join(css)
+
     native_methods = set()
-    bridge_lines = bridge.splitlines()
-    for index, line in enumerate(bridge_lines):
+    lines = bridge.splitlines()
+    for index, line in enumerate(lines):
         if "@JavascriptInterface" not in line:
             continue
-        for declaration in bridge_lines[index + 1:index + 5]:
-            if "fun " in declaration:
-                method_name = declaration.split("fun ", 1)[1].split("(", 1)[0].strip()
-                if method_name:
-                    native_methods.add(method_name)
+        for declaration in lines[index + 1:index + 8]:
+            match = re.search(r"\bfun\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(", declaration)
+            if match:
+                native_methods.add(match.group(1))
                 break
-
-    called_methods = set(re.findall(
-        "RushNative[.]([A-Za-z_][A-Za-z0-9_]*)[(]",
-        js,
-    ))
+    called_methods = set(re.findall(r"RushNative\.([A-Za-z_][A-Za-z0-9_]*)\s*\(", js))
     missing = sorted(called_methods - native_methods)
     if missing:
         fail(f"JavaScript calls methods missing from RushWebBridge: {missing}")
 
-    engine_path = ROOT / "app/src/main/java/com/rush/app/RushDiscoveryEngine.kt"
-    prefs_path = ROOT / "app/src/main/java/com/rush/app/FeedPreferences.kt"
-    if not engine_path.is_file() or not prefs_path.is_file():
-        fail("Missing shared discovery engine or feed preferences")
-    engine = engine_path.read_text(encoding="utf-8")
-    prefs = prefs_path.read_text(encoding="utf-8")
-    if "RushDiscoveryEngine.scoreFeed" not in bridge or "RushDiscoveryEngine.rankSearch" not in bridge:
-        fail("Native bridge is not integrated with shared feed and search ranking")
-    if "fun forYouChannels" not in prefs:
-        fail("For You channel eligibility must use followed sources without a second opt-in")
-    if "ADD TO FOR YOU" in html or "data-recommend-channel" in html:
-        fail("Obsolete separate For You channel opt-in remains in the UI")
-    if "topicQuery" not in html or "function filterTopicNames" not in js:
-        fail("Personalisation topic search is missing")
-    if "fonts.googleapis.com" in html or "fonts.gstatic.com" in html:
-        fail("WebView must not require remote font downloads")
-
-    ui_contracts = {
-        "no preloaded fixed video player": 'id="videoPlayerHost"' not in html,
-        "dedicated music player screen": "function renderPlayerPage()" in js,
-        "music player offers explicit video mode": 'id="playerModeToggle"' in html and "data-player-watch-video" in js and "data-player-listen-audio" in js,
-        "video mode keeps current track details visible": "VIDEO MODE · PLAYING" in js and "const hasMedia=isMusic||isVideo;" in js,
-        "music playback resolves audio only": "resolvePlaybackMedia(videoId, audioOnly = true" in bridge,
-        "video dismissed with app task": "override fun onTaskRemoved(rootIntent: android.content.Intent?)" in service and "pauseAllPlayersAndStopSelf()" in service,
-        "video stops whenever app leaves foreground": "enforceBackgroundPlaybackPolicy()" in service and "RushPlaybackService.activeInstance?.enforceBackgroundPlaybackPolicy()" in activity and "!isInPictureInPictureMode" in activity,
-        "background task queue excludes video": "queuedIsAudioOnly" in service and "player.removeMediaItem(index)" in service,
-        "WebView timers pause while app is backgrounded": "webView.pauseTimers()" in activity and "webView.resumeTimers()" in activity,
-        "background Activity releases its controller": "rushWebBridge.release()" in activity and "override fun onStop()" in activity,
-        "playback re-sync does not start an idle service": "activeInstance?.hasCurrentMediaItem()==true" in activity and "fun hasCurrentMediaItem()" in service,
-        "lyrics are inside player": 'id="playerLyricsPanel"' in html and 'id="lyricsPanel"' not in html,
-        "responsive media row grid": "grid-template-columns:64px minmax(0,1fr) auto!important" in html,
-        "explicit video resume button": "data-video-resume" in html and "RushNative.showCurrentVideo()" in js,
-        "no automatic video popup on tab navigation": "if(page!=='videos')RushNative.hideVideo();" in js,
-        "obsolete productive-channel copy removed": "selected productive channels" not in html and "productive channel selection" not in html,
-        "conditional mini-player spacing": ".app.has-mini #sc" in html,
-        "rounded selected feed segment": ".seg button{border-radius:14px!important}" in html and ".seg i{border-radius:14px!important}" in html,
-        "solid feed segment without glass": ".seg{border-radius:18px!important;background:#131b21!important" in html,
-        "library uses library icon": "library:'M4 4h13v16H4z" in js and "['library','Library','follow']" not in js,
-        "edge-to-edge root uses dark surface": "setBackgroundColor(android.graphics.Color.rgb(11,16,20))" in activity,
+    required_methods = {
+        "loadVideoFeed", "loadCurrentPlayback", "recordSearchQuery", "searchVideos",
+        "searchChannels", "saveFeedTopics", "loadUpNext", "saveLibraryItem",
+        "removeSavedLibraryItem", "setRecommendationFeedback", "followSource",
+        "unfollowSource", "loadChannelUploads", "loadLibrary", "playVideo",
+        "playLibraryItem", "clearPlaybackHistory", "createLibraryPlaylist",
+        "deleteLibraryPlaylist", "playLibraryPlaylist", "setVideoQuality",
+        "setVideoCaptionsEnabled", "setVideoFullscreen", "getPermissionStatus",
+        "openApplicationSettings", "requestNotificationPermission",
+        "openPictureInPictureSettings", "updateVideoPosition", "closeVideo",
     }
-    for contract, valid in ui_contracts.items():
-        if not valid:
-            fail(f"UI contract failed: {contract}")
+    if not required_methods.issubset(called_methods):
+        fail(f"Missing expected video and library bridge actions: {sorted(required_methods - called_methods)}")
 
-    for native_method in ("fun musicDuration()", "fun seekPlaybackTo(positionMs: Long)", "fun skipPrevious()", "fun skipNext()"):
-        if native_method not in bridge:
-            fail(f"Native media control missing: {native_method}")
-    gradle_config = (ROOT / "app/build.gradle.kts").read_text(encoding="utf-8")
-    if "robolectricSdkRuntime" not in gradle_config or "robolectric.offline" not in gradle_config:
-        fail("Robolectric Android SDK must be prefetched by Gradle and loaded offline")
-    if "Number((m[3]||'').padEnd(3,'0'))/1000" not in js:
-        fail("LRC fractional timestamps must preserve 1-, 2-, and 3-digit precision")
-    if "window.rushMusicLyricsLoading=()=>{" not in js:
-        fail("Player lyrics loading feedback callback is missing")
-    if "android.text.Html.fromHtml(" not in bridge or ".replace('\\u00A0', ' ')" not in bridge:
-        fail("RSS headlines and summaries must decode HTML entities and normalize non-breaking spaces")
-    if "if (!future.isDone || future.isCancelled) return null" not in bridge:
-        fail("Playback position polling must never block waiting for the media service")
-    if "robolectric.dependency.dir" not in gradle or 'robolectric.offline", "true"' not in gradle:
-        fail("Robolectric tests must use the prefetched offline Android runtime")
-    if "android-all-instrumented-15-robolectric-12650502-i7.jar" not in gradle:
-        fail("Robolectric SDK prefetch must match the API 35 instrumented runtime")
-    if '.put("state", "info")' not in bridge or "No next track is loaded." not in bridge:
-        fail("Empty music queue must produce a persistent informational message")
-    if "safeUrl(x.url)" not in js:
-        fail("News cards must validate HTTPS article links before rendering")
-    if "HOME_FEED_CACHE_TTL_MS" not in bridge or "rush_home_feed_v4_" not in bridge:
-        fail("Home feed must render a cached payload before refetching")
-    if "Semaphore(5)" not in bridge or "awaitAll()" not in bridge:
-        fail("Home feed source lookups must run concurrently with bounded parallelism")
-    if "NEWS_RSS_CLIENT" not in bridge or "NEWS_ARTICLE_CLIENT" not in bridge:
-        fail("News feed and article thumbnail requests must reuse configured HTTP clients")
-    if "imageFromRssMarkup(description)" not in bridge:
-        fail("RSS image extraction must inspect embedded article markup")
-    if "og:image:secure_url" not in bridge or "twitter:image" not in bridge:
-        fail("Article thumbnail extraction must include publisher social metadata")
-    if "NEWS_THUMBNAIL_CACHE_KEY" not in bridge or "enrichNewsThumbnails" not in bridge:
-        fail("Resolved article thumbnails must be cached and reused")
-    if "data.mode!==expectedMode" not in js:
-        fail("Home must ignore responses from a previously selected feed tab")
-    if "toggle.disabled=!isMusic" not in js or "lyrics.disabled=!isMusic" not in js:
-        fail("Player controls must be disabled when no track is loaded")
-    if 'data-player-prev aria-label="Previous track" disabled' not in html or 'data-player-toggle aria-label="Play or pause" disabled' not in html:
-        fail("Player transport controls must start disabled before the first track is loaded")
-    if "window._rushLyrics=[]" not in js or "root.replaceChildren()" not in js:
-        fail("A new lyrics request must clear the previous track's lyrics")
-    if "getElementById('videoPlayerHost')" in activity or 'getElementById("videoPlayerHost")' in activity:
-        fail("Native video must not retain the removed fixed WebView player slot")
-    if "nativeVideoView?.visibility=android.view.View.GONE" not in activity:
-        fail("Exiting native fullscreen must collapse the video surface cleanly")
-    if "RushNative.updateVideoPosition()" in js or "nativeVideoPositionPending" in js:
-        fail("The obsolete WebView video scroll-position hook must be removed")
+    navigation_routes = {
+        "home", "explore", "shorts", "tv", "history", "watch-later",
+        "liked", "playlists", "collections", "subscriptions",
+    }
+    for route in navigation_routes:
+        if not re.search(r"id:\s*'" + re.escape(route) + r"'", js):
+            fail(f"Figma sidebar destination is missing: {route}")
+    for token in (
+        "In Case You Missed", "Videos for you", "Shorts", "Your topics",
+        "Search videos and channels", "Watch Later", "Liked Videos",
+        "Subscriptions", "History", "Playlists", "Collections", "TV Mode",
+    ):
+        if token not in js and token not in html:
+            fail(f"Figma reference surface is missing: {token}")
+    for token in (
+        "--yt-bg:#111111", "--yt-panel:#1f1f1f", "--yt-red:#ff0033",
+        "aspect-ratio:16/9", "aspect-ratio:9/16", ".sidebar.collapsed",
+        ".sidebar.mobile-open", "@media(max-width:760px)",
+        "prefers-reduced-motion:reduce", ":focus-visible",
+    ):
+        if token not in styles:
+            fail(f"Figma design or responsive contract is missing: {token}")
+    if "height:100dvh" not in styles:
+        fail("The app layout must fit the visible app viewport.")
+    if "fonts.googleapis.com" in html + js + styles or "fonts.gstatic.com" in html + js + styles:
+        fail("The native WebView must not depend on remote web fonts.")
+    if any(token in html + js for token in ("data-news", "News", "newsCard", "renderNews")):
+        fail("News is outside the Figma scope and must not be present in the active UI.")
+    if any(token in html + js for token in ("renderMusicPage", "deck-disc", "data-music-search", "Movies")):
+        fail("Music and movie features are outside the Figma scope and must not be present in the active UI.")
+    if any(token in html for token in ("scripts/app-core.js", "scripts/four-page-experience.js",
+                                       "scripts/profile-settings.js", "scripts/bootstrap.js")):
+        fail("The previous prototype modules must not be loaded by the rebuilt app.")
+
+    if "loadVideoFeed(mode: String)" not in bridge or "publish(\"rushVideoFeedResults\"" not in bridge:
+        fail("The video-only native feed bridge is missing.")
+    if "RushDiscoveryEngine.scoreFeed" not in bridge or "RushDiscoveryEngine.rankSearch" not in bridge:
+        fail("Native feed and search paths must use the shared discovery engine.")
+    if "fun forYouChannels" not in read_required(ROOT / "app/src/main/java/com/rush/app/FeedPreferences.kt"):
+        fail("Followed YouTube channels must be eligible for recommendations.")
+    if "HOME_FEED_NETWORK_SLOTS = Semaphore(5)" not in bridge:
+        fail("The native feed must use the bounded shared network budget.")
+    if "searchResultCache" not in search_client or "inFlightSearches" not in search_client:
+        fail("Repeated searches must use the in-memory search cache and request coalescer.")
+
+    if "WebViewAssetLoader" not in activity or "shouldInterceptRequest" not in activity:
+        fail("WebView assets must be served through WebViewAssetLoader.")
+    if 'loadUrl("https://rush.local/assets/rush.html")' not in activity:
+        fail("The native Activity must load the local Rush app shell.")
+    if "window.rushHandleBack" not in activity or "window.rushAppForeground" not in activity:
+        fail("Native Back and foreground lifecycle callbacks must be supported by the web shell.")
+    if "window.rushUpdateVideoPosition" not in activity:
+        fail("Native inline video positioning callback is missing.")
+    if "showVideoPlaybackError" not in activity or 'setPositiveButton("Retry")' not in activity:
+        fail("Native video playback errors must offer a retry.")
+    if "rushWebBridge.release()" not in activity:
+        fail("The WebView bridge controller must be released when the Activity stops.")
+    if "webView.pauseTimers()" not in activity or "webView.resumeTimers()" not in activity:
+        fail("WebView timers must pause in the background and resume in foreground.")
+    if "settings.textZoom=(resources.configuration.fontScale*100f).toInt().coerceAtLeast(50)" not in activity:
+        fail("Android text scaling must be passed to the WebView.")
+    if "settings.setSupportZoom(true)" not in activity or "settings.builtInZoomControls=true" not in activity:
+        fail("WebView pinch zoom must remain available.")
+
+    if any(token in manifest for token in (
+        "CAMERA", "RECORD_AUDIO", "ACCESS_FINE_LOCATION",
+        "READ_EXTERNAL_STORAGE", "WRITE_EXTERNAL_STORAGE",
+    )):
+        fail("The app manifest contains permissions not required by the current UI.")
+    if "android:hardwareAccelerated=\"true\"" not in manifest:
+        fail("Android hardware acceleration must remain enabled.")
+    if "supportsPictureInPicture=\"true\"" not in manifest:
+        fail("Android Picture-in-Picture must be declared.")
+    if "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" not in manifest:
+        fail("Media playback foreground-service permission is missing.")
+    if "android.permission.POST_NOTIFICATIONS" not in manifest:
+        fail("Notification permission must be declared for Android 13+.")
+    if "android:usesCleartextTraffic=\"false\"" not in manifest:
+        fail("Cleartext traffic must remain disabled.")
+    if "targetSdk = 36" not in gradle:
+        fail("The Android release target must be API 36.")
+    if "androidx.webkit:webkit:1.18.0" not in gradle:
+        fail("WebViewAssetLoader dependency is missing.")
+    if "androidx.work:work-runtime-ktx:2.12.0" not in gradle:
+        fail("WorkManager must use the pinned 2.12 stable release.")
+    if "FOREGROUND_SERVICE_MEDIA_PROCESSING" not in manifest or "dataSync|mediaProcessing" not in manifest:
+        fail("WorkManager foreground service types are incomplete.")
+    if "FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING" not in download_worker:
+        fail("Media conversion must use the mediaProcessing foreground type.")
+    if "setBufferDurationsMsForStreaming(15_000, 60_000, 1_500, 3_000)" not in service:
+        fail("Media streaming must keep the configured buffer profile.")
+    if "setBufferDurationsMsForLocalPlayback(3_000, 20_000, 500, 1_000)" not in service:
+        fail("Local playback must keep the configured buffer profile.")
+    if "override fun onTaskRemoved(rootIntent: android.content.Intent?)" not in service:
+        fail("The background playback service task-removal policy is missing.")
+    if "-dontwarn java.beans.**" not in read_required(ROOT / "app/proguard-rules.pro"):
+        fail("The narrow JVM adapter R8 rule is missing.")
+    if "minBufferMs" in service:
+        fail("Media3 load-control configuration must match the pinned API.")
 
     with tempfile.NamedTemporaryFile("w", suffix=".js", encoding="utf-8") as handle:
         handle.write(js)
@@ -216,12 +267,13 @@ def main():
     if result.returncode != 0:
         print(result.stdout, file=sys.stderr)
         print(result.stderr, file=sys.stderr)
-        fail("Embedded JavaScript syntax check failed (node --check)")
+        fail("The active JavaScript failed the Node syntax check.")
 
     print(
-        "Rush WebView validation passed: "
-        f"{parser.app_containers} app shell, {len(parser.ids)} unique IDs, "
-        f"{len(called_methods)} native bridge methods, JavaScript syntax valid."
+        "Rush Figma validation passed: "
+        f"{parser.app_containers} app shell, {len(parser.ids)} unique HTML IDs, "
+        f"{len(parser.script_sources)} active JS module, {len(parser.stylesheet_sources)} active stylesheet, "
+        f"{len(called_methods)} native bridge actions, video-only discovery, and Android API 36 configuration."
     )
 
 

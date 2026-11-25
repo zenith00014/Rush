@@ -1,7 +1,7 @@
 package com.rush.app
 
 import android.os.Bundle
-import androidx.compose.runtime.mutableStateOf
+import kotlinx.coroutines.flow.MutableStateFlow
 
 /**
  * Playback settings travel with each MediaItem so service-side recovery still
@@ -29,5 +29,5 @@ object PlaybackMetadata {
 data class PlaybackRecoveryMessage(val mediaId: String, val message: String)
 
 object PlaybackRecoveryStatus {
-    val current = mutableStateOf<PlaybackRecoveryMessage?>(null)
+    val current = MutableStateFlow<PlaybackRecoveryMessage?>(null)
 }
