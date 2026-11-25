@@ -927,3 +927,83 @@ document.addEventListener('scroll', updateVideoPosition, true);
 window.addEventListener('orientationchange', () => requestAnimationFrame(updateVideoPosition));
 
 initApp();
+
+let currentChannelSource = null;
+let channelUploadItems = [];
+let channelUploadError = '';
+let activeFeedMode = 'forYou';
+const originalLoadFeed = loadFeed;
+loadFeed = function(mode = 'forYou') {
+  if (activeFeedMode !== mode) feedData = { videos: [] };
+  activeFeedMode = mode;
+  return originalLoadFeed(mode);
+};
+const originalRenderSubscriptions = renderSubscriptions;
+renderSubscriptions = function() {
+  if (!currentChannelSource) return originalRenderSubscriptions();
+  const items = channelUploadItems;
+  return '<header class="page-heading"><div><h1>' + escapeHtml(currentChannelSource.name) +
+    '</h1><p>Videos from this channel.</p></div><button class="text-action" data-view-all-subscriptions>All subscriptions</button></header>' +
+    (channelUploadError ? '<div class="error-state"><strong>Could not load channel videos</strong><p>' +
+      escapeHtml(channelUploadError) + '</p><button class="inline-action" data-retry-channel>Try again</button></div>' :
+      items.length ? renderVideoGrid(items) : '<div class="loading-state">Loading channel videos.</div>');
+};
+window.rushChannelUploadsResults = data => {
+  if (!currentChannelSource || !data || data.channelId !== currentChannelSource.id) return;
+  channelUploadItems = Array.isArray(data.items) ? data.items : [];
+  channelUploadError = '';
+  if (page === 'subscriptions') renderCurrentPage();
+};
+window.rushChannelUploadsError = data => {
+  if (!currentChannelSource || !data || data.channelId !== currentChannelSource.id) return;
+  channelUploadError = data.message || 'Channel videos could not be loaded.';
+  channelUploadItems = [];
+  if (page === 'subscriptions') renderCurrentPage();
+};
+document.addEventListener('click', event => {
+  if (event.target.closest('#layoutBackdrop')) {
+    setSidebar(false);
+    return;
+  }
+  if (event.target.matches('[data-dialog-backdrop]')) {
+    hideDialog();
+    return;
+  }
+  const button = event.target.closest('button');
+  if (!button) return;
+  if (button.hasAttribute('data-view-all-subscriptions')) {
+    currentChannelSource = null;
+    channelUploadItems = [];
+    channelUploadError = '';
+    renderCurrentPage();
+    return;
+  }
+  if (button.hasAttribute('data-retry-channel')) {
+    if (currentChannelSource && window.RushNative) {
+      channelUploadError = '';
+      channelUploadItems = [];
+      renderCurrentPage();
+      RushNative.loadChannelUploads(currentChannelSource.id, currentChannelSource.name);
+    }
+  }
+});
+window.rushVideoPreparation = () => {
+  const status = $('#videoPlaybackStatus');
+  if (status) status.textContent = 'Preparing video…';
+};
+window.rushVideoBuffering = buffering => {
+  const status = $('#videoPlaybackStatus');
+  if (status) status.textContent = buffering ? 'Buffering video…' : 'Playing';
+};
+window.rushVideoBufferingError = message => {
+  const status = $('#videoPlaybackStatus');
+  if (status) status.textContent = message || 'Playback was interrupted.';
+};
+window.rushAppForeground = function(force = false) {
+  if (!window.RushNative) return;
+  if (page === 'home' || page === 'explore' || page === 'tv') {
+    if (force) loadFeed('forYou');
+  } else if (page === 'subscriptions') {
+    if (force) loadFeed('following');
+  }
+};
