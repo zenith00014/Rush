@@ -207,7 +207,7 @@ class RushWebBridge(
             append("|hidden=").append(profile.notInterestedIds.sorted().joinToString("|"))
             append("|blocked=").append(profile.blockedCreators.sorted().joinToString("|"))
         }
-        val cacheKey = "rush_video_feed_v1_${feedMode}_${Integer.toHexString(signature.hashCode())}"
+        val cacheKey = "rush_video_feed_v2_${feedMode}_${Integer.toHexString(signature.hashCode())}"
         if (!activeHomeFeedRequests.add(cacheKey)) return
 
         activity.lifecycleScope.launch {
@@ -287,6 +287,7 @@ class RushWebBridge(
                             .put("channelId", item.channelId.ifBlank { source?.id.orEmpty() })
                             .put("sourceId", source?.id.orEmpty())
                             .put("sourceName", source?.name ?: query)
+                            .put("topicTags", JSONArray(tags))
                         val old = hits[item.videoId]
                         if (old == null || score > old.score) {
                             hits[item.videoId] = RushDiscoveryEngine.FeedHit(candidate, score)
