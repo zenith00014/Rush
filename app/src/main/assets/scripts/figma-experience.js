@@ -801,6 +801,11 @@ document.addEventListener('click', event => {
   if (button.hasAttribute('data-open-notifications')) { openPopover('notifications'); return; }
   if (button.hasAttribute('data-open-profile')) { openPopover('profile'); return; }
   if (button.hasAttribute('data-open-settings')) { routeTo('settings'); return; }
+  if (button.hasAttribute('data-create-playlist-with-video')) {
+    createPlaylistWithVideo = true;
+    showDialog(renderCreateDialog());
+    return;
+  }
   if (button.hasAttribute('data-create-playlist')) { showDialog(renderCreateDialog()); return; }
   if (button.hasAttribute('data-close-dialog')) { hideDialog(); return; }
   if (button.hasAttribute('data-dialog-backdrop') && event.target === button) { hideDialog(); return; }
@@ -961,7 +966,10 @@ document.addEventListener('submit', event => {
     event.preventDefault();
     const name = $('#playlistName')?.value.trim() || '';
     if (name && window.RushNative) {
-      RushNative.createLibraryPlaylist(name);
+      const video = createPlaylistWithVideo ? pendingPlaylistVideo : null;
+      RushNative.createLibraryPlaylist(name, video?.id || '', video?.title || '', video?.creator || '', video?.thumbnail || '');
+      createPlaylistWithVideo = false;
+      pendingPlaylistVideo = null;
       hideDialog();
       page = 'playlists';
       history.replaceState(null, '', '#playlists');
@@ -1138,6 +1146,7 @@ document.addEventListener('click', event => {
 });
 
 let pendingPlaylistVideo = null;
+let createPlaylistWithVideo = false;
 function renderAddToPlaylistDialog(video) {
   pendingPlaylistVideo = video;
   const playlists = libraryData.playlists || [];
@@ -1148,7 +1157,7 @@ function renderAddToPlaylistDialog(video) {
       '">' + escapeHtml(item.name) + '</button>').join('') :
       '<div class="empty-state"><strong>No playlists yet</strong><p>Create a playlist first, then save this video to it.</p></div>') +
     '<div class="dialog-actions"><button type="button" class="action-chip" data-close-dialog>Cancel</button>' +
-    '<button type="button" class="primary-action" data-create-playlist>Create playlist</button></div></section></div>';
+    '<button type="button" class="primary-action" data-create-playlist-with-video>Create playlist</button></div></section></div>';
 }
 function selectChannelFromSidebar(link) {
   const source = (prefs.sources || []).find(item => item.kind === 'channel' && item.id === link.dataset.openChannel);
