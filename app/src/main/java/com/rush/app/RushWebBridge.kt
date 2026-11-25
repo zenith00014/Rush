@@ -1845,9 +1845,21 @@ class RushWebBridge(
     }
 
     @JavascriptInterface
-    fun createLibraryPlaylist(name: String) {
+    fun createLibraryPlaylist(
+        name: String,
+        videoId: String,
+        title: String,
+        creator: String,
+        thumbnail: String
+    ) {
         val prefs = activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)
-        runCatching { PlaylistStore.create(prefs, name.take(80)) }
+        val cleanId = videoId.trim().take(256)
+        runCatching {
+            if (cleanId.isNotBlank()) {
+                LocalLibrary.rememberItem(prefs, cleanId, title, creator, false, thumbnail, cleanId)
+            }
+            PlaylistStore.create(prefs, name.take(80), cleanId.ifBlank { null })
+        }
             .onSuccess { publish("rushLibraryData", LocalLibrary.load(prefs).toString()) }
             .onFailure { publish("rushLibraryError", JSONObject().put("message", it.message ?: "Could not create the playlist.").toString()) }
     }
