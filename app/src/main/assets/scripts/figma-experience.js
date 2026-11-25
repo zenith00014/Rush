@@ -658,6 +658,11 @@ window.rushVideoFeedResults = data => {
   if (payload.mode && payload.mode === 'following' && page !== 'subscriptions') return;
   if (payload.mode && payload.mode !== 'following' && page === 'subscriptions') return;
   feedData = { videos: Array.isArray(payload.videos) ? payload.videos : [] };
+  if (activeTopicFilter) {
+    topicFilterResults = feedData.videos.filter(item =>
+      Array.isArray(item.topicTags) && item.topicTags.some(tag =>
+        String(tag).toLowerCase() === activeTopicFilter.toLowerCase()));
+  }
   feedLoading = false;
   feedError = '';
   renderFeed();
@@ -677,12 +682,8 @@ window.rushHomeFeedError = error => {
 window.rushVideoSearchResults = items => {
   const values = Array.isArray(items) ? items : [];
   if (topicFilterQuery !== null) {
-    topicFilterResults = values;
     topicFilterQuery = null;
     topicFilterPending = false;
-    topicFilterError = '';
-    if (page === 'home' || page === 'explore' || page === 'tv') renderFeed();
-    return;
   }
   if (shortsRequestPurpose === 'shorts') {
     shortsRequestPurpose = '';
@@ -701,9 +702,6 @@ window.rushVideoSearchError = error => {
   if (topicFilterQuery !== null) {
     topicFilterQuery = null;
     topicFilterPending = false;
-    topicFilterError = message;
-    if (page === 'home' || page === 'explore' || page === 'tv') renderFeed();
-    return;
   }
   if (shortsRequestPurpose === 'shorts') {
     shortsRequestPurpose = '';
@@ -818,18 +816,15 @@ document.addEventListener('click', event => {
   if (button.hasAttribute('data-topic-filter')) {
     const topic = button.dataset.topicFilter || '';
     activeTopicFilter = topic;
-    topicFilterResults = [];
+    topicFilterResults = topic ? feedData.videos.filter(item =>
+      Array.isArray(item.topicTags) && item.topicTags.some(tag =>
+        String(tag).toLowerCase() === topic.toLowerCase())) : [];
     topicFilterError = '';
-    topicFilterPending = false;
+    topicFilterPending = Boolean(topic && feedLoading);
     topicFilterQuery = null;
     document.querySelectorAll('[data-topic-filter]').forEach(item =>
       item.setAttribute('aria-pressed', String(item === button)));
-    if (topic && window.RushNative) {
-      topicFilterQuery = topic;
-      topicFilterPending = true;
-      renderFeed();
-      RushNative.searchVideos(topic);
-    } else renderFeed();
+    renderFeed();
     return;
   }
   if (button.hasAttribute('data-search-mode')) {
@@ -1093,8 +1088,8 @@ renderVideoShelf = function(title, items, short = false, limit = 10) {
 };
 renderFeedState = function() {
   if (activeTopicFilter && topicFilterPending) {
-    return '<div class="loading-state" role="status"><strong>Finding ' + escapeHtml(activeTopicFilter) +
-      ' videos</strong><p>Searching videos for this topic.</p></div>';
+    return '<div class="loading-state" role="status"><strong>Loading ' + escapeHtml(activeTopicFilter) +
+      ' videos</strong><p>Filtering your recommendations.</p></div>';
   }
   if (activeTopicFilter && topicFilterError) {
     return '<div class="error-state" role="alert"><strong>Topic search failed</strong><p>' +
