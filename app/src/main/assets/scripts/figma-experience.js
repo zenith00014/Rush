@@ -60,6 +60,11 @@ let feedLoading = false;
 let feedError = '';
 let searchLoading = false;
 let searchError = '';
+let activeTopicFilter = '';
+let topicFilterQuery = null;
+let topicFilterResults = [];
+let topicFilterPending = false;
+let topicFilterError = '';
 let shortsLoading = false;
 let shortcutsExpanded = false;
 let sidebarExpanded = true;
@@ -94,7 +99,7 @@ function renderNav() {
   const groups = [
     ['main', ''],
     ['you', 'You'],
-    ['library', 'Subscriptions and playlists'],
+    ['library', 'Playlists and collections'],
     ['subscriptions', 'Subscriptions']
   ];
   const root = $('#nav');
@@ -196,6 +201,8 @@ function videoCard(video, options = {}) {
     '</div></div><details class="video-menu"><summary class="video-more" aria-label="More options">' + icon('more') +
     '</summary><div class="video-menu-panel"><button data-save-video="' + id + '" data-title="' + title +
     '" data-creator="' + creator + '" data-thumbnail="' + escapeHtml(thumbnail) + '">Save to Watch Later</button>' +
+    '<button data-add-video-playlist data-video-id="' + id + '" data-title="' + title + '" data-creator="' + creator +
+    '" data-thumbnail="' + escapeHtml(thumbnail) + '">Add to playlist</button>' +
     '<button data-not-interested="' + id + '" data-creator="' + creator + '">Not interested</button>' +
     '<button data-dont-recommend="' + id + '" data-creator="' + creator + '">Don’t recommend channel</button></div></details></div></article>';
 }
@@ -212,8 +219,9 @@ function renderVideoGrid(items, limit = 24) {
 function renderTopics() {
   const topics = (prefs.topics || []).slice(0, 32);
   return '<div class="topic-toolbar"><div class="topic-row" role="group" aria-label="Your topics">' +
-    topics.map((topic, index) => '<button class="topic-chip" data-topic-filter="' + escapeHtml(topic) +
-    '" aria-pressed="' + (index === 0 ? 'true' : 'false') + '">' + escapeHtml(topic) + '</button>').join('') +
+    '<button class="topic-chip" data-topic-filter="" aria-pressed="' + (!activeTopicFilter) + '">All</button>' +
+    topics.map(topic => '<button class="topic-chip" data-topic-filter="' + escapeHtml(topic) +
+    '" aria-pressed="' + (activeTopicFilter === topic) + '">' + escapeHtml(topic) + '</button>').join('') +
     '</div><button class="topic-settings" data-edit-topics aria-label="Edit topics">' + icon('settings') + '</button></div>';
 }
 function renderFeedState() {
@@ -363,7 +371,10 @@ function renderWatchPage() {
     '<button class="action-chip ' + (saved ? 'active' : '') + '" data-toggle-watch-later>' +
     (saved ? 'Saved' : 'Watch Later') + '</button>' +
     '<button class="action-chip" data-video-quality>Quality</button><button class="action-chip" data-video-captions>Captions</button>' +
-    '<button class="action-chip" data-video-fullscreen>Full screen</button></div>' +
+    '<button class="action-chip" data-video-fullscreen>Full screen</button>' +
+    '<button class="action-chip" data-add-video-playlist data-video-id="' + escapeHtml(currentVideo.id) +
+    '" data-title="' + escapeHtml(currentVideo.title) + '" data-creator="' + channelName +
+    '" data-thumbnail="' + escapeHtml(currentVideo.thumbnail) + '">Save to playlist</button></div>' +
     '<p class="video-subtitle" id="videoPlaybackStatus" aria-live="polite">Video ready to play.</p></section>' +
     '<section class="feed-section watch-more"><div class="section-head"><h2>Up next</h2></div>' +
     (upNextLoading ? '<div class="loading-state">Loading related videos.</div>' : recommendations || '<div class="empty-state">No related videos found.</div>') +
@@ -458,6 +469,8 @@ function hideDialog() {
   if (root) root.replaceChildren();
 }
 function startSearch(query) {
+  topicFilterQuery = null;
+  topicFilterPending = false;
   const value = String(query || '').trim();
   if (!value) return;
   searchQuery = value.slice(0, 200);
@@ -525,6 +538,9 @@ function playVideo(video) {
   renderCurrentPage();
   if (window.RushNative) {
     RushNative.playVideo(currentVideo.id, currentVideo.title, currentVideo.creator, currentVideo.thumbnail);
+    upNextLoading = true;
+    upNext = [];
+    renderCurrentPage();
     RushNative.loadUpNext(currentVideo.id, currentVideo.title, currentVideo.creator);
   }
 }
@@ -612,7 +628,7 @@ function handleFollow(video) {
 }
 function getVideoFromButton(button) {
   return {
-    id: button.dataset.playVideo || button.dataset.saveVideo || currentVideo.id,
+    id: button.dataset.playVideo || button.dataset.saveVideo || button.dataset.videoId || currentVideo.id,
     title: button.dataset.title || currentVideo.title,
     creator: button.dataset.creator || currentVideo.creator,
     thumbnail: button.dataset.thumbnail || currentVideo.thumbnail,
@@ -660,6 +676,14 @@ window.rushHomeFeedError = error => {
 };
 window.rushVideoSearchResults = items => {
   const values = Array.isArray(items) ? items : [];
+  if (topicFilterQuery !== null) {
+    topicFilterResults = values;
+    topicFilterQuery = null;
+    topicFilterPending = false;
+    topicFilterError = '';
+    if (page === 'home' || page === 'explore' || page === 'tv') renderFeed();
+    return;
+  }
   if (shortsRequestPurpose === 'shorts') {
     shortsRequestPurpose = '';
     shortsData = values;
@@ -674,6 +698,13 @@ window.rushVideoSearchResults = items => {
 };
 window.rushVideoSearchError = error => {
   const message = error && error.message ? error.message : 'Video search failed.';
+  if (topicFilterQuery !== null) {
+    topicFilterQuery = null;
+    topicFilterPending = false;
+    topicFilterError = message;
+    if (page === 'home' || page === 'explore' || page === 'tv') renderFeed();
+    return;
+  }
   if (shortsRequestPurpose === 'shorts') {
     shortsRequestPurpose = '';
     shortsLoading = false;
@@ -781,9 +812,20 @@ document.addEventListener('click', event => {
   if (button.hasAttribute('data-save-topics')) { saveTopics(); return; }
   if (button.hasAttribute('data-topic-filter')) {
     const topic = button.dataset.topicFilter || '';
+    activeTopicFilter = topic;
+    topicFilterResults = [];
+    topicFilterError = '';
+    topicFilterPending = false;
+    topicFilterQuery = null;
     document.querySelectorAll('[data-topic-filter]').forEach(item =>
       item.setAttribute('aria-pressed', String(item === button)));
-    startSearch(topic); return;
+    if (topic && window.RushNative) {
+      topicFilterQuery = topic;
+      topicFilterPending = true;
+      renderFeed();
+      RushNative.searchVideos(topic);
+    } else renderFeed();
+    return;
   }
   if (button.hasAttribute('data-search-mode')) {
     searchMode = button.dataset.searchMode;
@@ -792,6 +834,23 @@ document.addEventListener('click', event => {
   }
   if (button.hasAttribute('data-play-video')) { playVideo(getVideoFromButton(button)); return; }
   if (button.hasAttribute('data-save-video')) { toggleWatchLater(getVideoFromButton(button)); button.closest('.video-menu')?.removeAttribute('open'); return; }
+  if (button.hasAttribute('data-add-video-playlist')) {
+    showDialog(renderAddToPlaylistDialog(getVideoFromButton(button)));
+    button.closest('.video-menu')?.removeAttribute('open');
+    return;
+  }
+  if (button.hasAttribute('data-add-to-playlist')) {
+    const video = pendingPlaylistVideo;
+    if (video && window.RushNative) {
+      RushNative.addLibraryItemToPlaylist(button.dataset.addToPlaylist, video.id, video.title, video.creator, false, video.thumbnail || '');
+      hideDialog();
+    }
+    return;
+  }
+  if (button.hasAttribute('data-remove-playlist-item')) {
+    if (window.RushNative) RushNative.removeLibraryItemFromPlaylist(button.dataset.playlistId, button.dataset.videoId);
+    return;
+  }
   if (button.hasAttribute('data-not-interested')) {
     if (window.RushNative) RushNative.setRecommendationFeedback(button.dataset.notInterested, button.dataset.creator || '', 'notInterested');
     button.closest('.video-card')?.remove(); return;
@@ -1063,3 +1122,41 @@ document.addEventListener('click', event => {
     renderFeed();
   }
 });
+
+let pendingPlaylistVideo = null;
+function renderAddToPlaylistDialog(video) {
+  pendingPlaylistVideo = video;
+  const playlists = libraryData.playlists || [];
+  return '<div class="dialog-backdrop" data-dialog-backdrop><section class="dialog" role="dialog" aria-modal="true" aria-labelledby="addToPlaylistTitle">' +
+    '<header class="dialog-head"><h2 id="addToPlaylistTitle">Save to playlist</h2><button type="button" class="icon-button" data-close-dialog aria-label="Close">' +
+    icon('close') + '</button></header><p class="dialog-copy">' + escapeHtml(video.title || 'Selected video') + '</p>' +
+    (playlists.length ? playlists.map(item => '<button class="popover-action" data-add-to-playlist="' + escapeHtml(item.id) +
+      '">' + escapeHtml(item.name) + '</button>').join('') :
+      '<div class="empty-state"><strong>No playlists yet</strong><p>Create a playlist first, then save this video to it.</p></div>') +
+    '<div class="dialog-actions"><button type="button" class="action-chip" data-close-dialog>Cancel</button>' +
+    '<button type="button" class="primary-action" data-create-playlist>Create playlist</button></div></section></div>';
+}
+function selectChannelFromSidebar(link) {
+  const source = (prefs.sources || []).find(item => item.kind === 'channel' && item.id === link.dataset.openChannel);
+  if (!source) return;
+  currentChannelSource = source;
+  channelUploadItems = [];
+  channelUploadError = '';
+  if (page !== 'subscriptions') routeTo('subscriptions');
+  else renderCurrentPage();
+  if (window.RushNative) RushNative.loadChannelUploads(source.id, source.name);
+}
+document.addEventListener('click', event => {
+  const link = event.target.closest('a[data-open-channel]');
+  if (link) {
+    event.preventDefault();
+    selectChannelFromSidebar(link);
+    return;
+  }
+  const navLink = event.target.closest('a[data-nav-route="subscriptions"]');
+  if (navLink) {
+    currentChannelSource = null;
+    channelUploadItems = [];
+    channelUploadError = '';
+  }
+}, true);
