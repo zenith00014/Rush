@@ -283,7 +283,7 @@ function renderSearchResults() {
   return videos.join('') || (searchQuery ?
     '<div class="empty-state"><strong>No videos found</strong><p>Try another search phrase.</p></div>' : '');
 }
-function renderLibraryItem(id, actionLabel = 'Play') {
+function renderLibraryItem(id, actionLabel = 'Play', playlistId = '') {
   const item = libraryData.items && libraryData.items[id];
   if (!item) return '';
   const thumb = safeImage(item.thumbnail);
@@ -293,7 +293,8 @@ function renderLibraryItem(id, actionLabel = 'Play') {
     '<div class="library-row-copy"><strong>' + escapeHtml(item.title || 'Untitled video') +
     '</strong><span>' + escapeHtml(item.creator || 'YouTube') + '</span></div>' +
     '<div class="library-row-actions"><button class="action-chip" data-play-library="' + escapeHtml(id) + '">' +
-    actionLabel + '</button></div></article>';
+    actionLabel + '</button>' + (playlistId ? '<button class="action-chip" data-remove-playlist-item data-playlist-id="' +
+    escapeHtml(playlistId) + '" data-video-id="' + escapeHtml(id) + '">Remove</button>' : '') + '</div></article>';
 }
 function renderLibraryPage() {
   const list = page === 'history' ? libraryData.history :
@@ -306,7 +307,7 @@ function renderLibraryPage() {
         '</h3><p class="video-subtitle">' + (playlist.items || []).length + ' videos</p>' +
         '<div class="page-heading-actions"><button class="action-chip" data-play-playlist="' + escapeHtml(playlist.id) +
         '">Play all</button><button class="action-chip" data-delete-playlist="' + escapeHtml(playlist.id) +
-        '">Delete</button></div>' + (playlist.items || []).map(id => renderLibraryItem(id)).join('') + '</section>').join('') :
+        '">Delete</button></div>' + (playlist.items || []).map(id => renderLibraryItem(id, 'Play', playlist.id)).join('') + '</section>').join('') :
         '<div class="empty-state"><strong>No playlists yet</strong><p>Create a playlist to collect videos.</p>' +
         '<button class="primary-action" data-create-playlist>Create playlist</button></div>');
   }
@@ -525,6 +526,8 @@ function loadLibrary() {
 }
 function playVideo(video) {
   if (!video || !video.id) return;
+  upNextLoading = true;
+  upNext = [];
   currentVideo = {
     id: String(video.id),
     title: String(video.title || 'Video'),
@@ -538,9 +541,6 @@ function playVideo(video) {
   renderCurrentPage();
   if (window.RushNative) {
     RushNative.playVideo(currentVideo.id, currentVideo.title, currentVideo.creator, currentVideo.thumbnail);
-    upNextLoading = true;
-    upNext = [];
-    renderCurrentPage();
     RushNative.loadUpNext(currentVideo.id, currentVideo.title, currentVideo.creator);
   }
 }
@@ -1061,9 +1061,9 @@ window.rushVideoBufferingError = message => {
 window.rushAppForeground = function(force = false) {
   if (!window.RushNative) return;
   if (page === 'home' || page === 'explore' || page === 'tv') {
-    if (force) loadFeed('forYou');
+    loadFeed('forYou');
   } else if (page === 'subscriptions') {
-    if (force) loadFeed('following');
+    loadFeed('following');
   }
 };
 
@@ -1084,13 +1084,27 @@ renderVideoShelf = function(title, items, short = false, limit = 10) {
     content + '</div></section>';
 };
 renderFeedState = function() {
+  if (activeTopicFilter && topicFilterPending) {
+    return '<div class="loading-state" role="status"><strong>Finding ' + escapeHtml(activeTopicFilter) +
+      ' videos</strong><p>Searching videos for this topic.</p></div>';
+  }
+  if (activeTopicFilter && topicFilterError) {
+    return '<div class="error-state" role="alert"><strong>Topic search failed</strong><p>' +
+      escapeHtml(topicFilterError) + '</p><button class="inline-action" data-topic-filter="' +
+      escapeHtml(activeTopicFilter) + '">Try again</button></div>';
+  }
   if (feedLoading && !feedData.videos.length) return '<div class="loading-state" role="status"><strong>Loading videos</strong><p>Refreshing your recommendations.</p></div>' +
     '<div class="video-grid">' + Array.from({ length: 3 }, () =>
       '<div class="video-card"><div class="video-thumb skeleton-box"></div><div class="video-subtitle">Loading video details</div></div>').join('') + '</div>';
   if (feedError && !feedData.videos.length) return '<div class="error-state" role="alert"><strong>Could not load videos</strong><p>' +
     escapeHtml(feedError) + '</p><button class="inline-action" data-retry-feed>Try again</button></div>';
-  if (!feedData.videos.length) return '<div class="empty-state"><strong>No videos to show yet</strong><p>Choose a few topics or follow a channel to build your feed.</p><button class="inline-action" data-edit-topics>Choose topics</button></div>';
-  const videos = feedData.videos;
+  const videos = activeTopicFilter ? topicFilterResults : feedData.videos;
+  if (!videos.length) return '<div class="empty-state"><strong>' +
+    (activeTopicFilter ? 'No ' + escapeHtml(activeTopicFilter) + ' videos found' : 'No videos to show yet') +
+    '</strong><p>' + (activeTopicFilter ? 'Try another topic or clear the filter.' :
+      'Choose a few topics or follow a channel to build your feed.') + '</p>' +
+    (activeTopicFilter ? '<button class="inline-action" data-topic-filter="">Show all videos</button>' :
+      '<button class="inline-action" data-edit-topics>Choose topics</button>') + '</div>';
   const missed = renderVideoShelf('In Case You Missed', videos.slice(0, 5), false, 5);
   const mainFeed = videos.slice(5, 13);
   const suggestions = videos.slice(13, suggestionsExpanded ? 25 : 19);
@@ -1101,7 +1115,7 @@ renderFeedState = function() {
     '</button></div></div><div class="video-grid">' + suggestions.map(item => videoCard(item)).join('') + '</div></section>';
   return missed + (mainFeed.length ? '<section class="feed-section"><div class="section-head"><h2>Videos for you</h2></div>' +
     renderVideoGrid(mainFeed) + '</section>' : '') + suggestionsSection +
-    renderVideoShelf('Shorts', shortsData, true, 10);
+    renderVideoShelf('Shorts', activeTopicFilter ? [] : shortsData, true, 10);
 };
 document.addEventListener('click', event => {
   const button = event.target.closest('button');
