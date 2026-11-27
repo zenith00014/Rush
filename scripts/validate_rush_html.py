@@ -125,7 +125,7 @@ def main():
     quality_tests = quality_test_path.read_text(encoding="utf-8")
     download_function = bridge.split("fun downloadMedia(", 1)[1].split("fun loadDownloads(", 1)[0]
     mobile_js = js[js.find("const rushOriginalGo=go;"):]
-    mobile_card = mobile_js.split("function mobileVideoCard", 1)[1].split("function mobileMusicCard", 1)[0]
+    mobile_card = js.split("function mobileVideoCard", 1)[1].split("function mobileMusicCard", 1)[0]
     if "RushDiscoveryEngine.scoreFeed" not in bridge or "RushDiscoveryEngine.rankSearch" not in bridge:
         fail("Native bridge is not integrated with shared feed and search ranking")
     if "fun forYouChannels" not in prefs:
