@@ -2003,7 +2003,11 @@ document.addEventListener('click',e=>{
 document.addEventListener('submit',e=>{
  if(e.target.id==='mobileSearchForm'){e.preventDefault();runUnifiedSearch();return}
  if(e.target.id==='topicAddForm'){e.preventDefault();const input=$('#topicInput'),value=input&&input.value.trim();if(value&&window.RushNative){RushNative.addFeedTopic(value);input.value=''}return}
- if(e.target.id==='mobileMusicForm'){e.preventDefault();const q=$('#musicQuery')?.value.trim();if(q&&window.RushNative)RushNative.searchMusic(q);return}
+ if(e.target.id==='mobileMusicForm'){
+  e.preventDefault();const q=$('#musicQuery')?.value.trim();
+  if(q&&window.RushNative){showSkeleton($('#musicResults'),3);const status=$('#musicStatus');if(status)status.textContent='Searching music…';RushNative.searchMusic(q)}
+  return
+ }
 },true);
 document.addEventListener('change',e=>{
  if(e.target&&e.target.id==='autoplayToggle'){autoplayEnabled=!!e.target.checked;if(window.RushNative)RushNative.setAutoplayEnabled(autoplayEnabled);return}
@@ -2053,7 +2057,13 @@ window.rushPlaybackBufferingState=data=>{
 };
 window.rushAutoplayState=data=>{autoplayEnabled=!!data.enabled;const input=$('#autoplayToggle');if(input)input.checked=autoplayEnabled};
 window.rushSleepTimerState=data=>{const status=$('#sleepTimerStatus');if(status)status.textContent=data.message||'';mobileToast(data.message||'Sleep timer updated.')};
-window.rushVideoRatingState=data=>{if(page==='videos'&&mobileCurrentVideo&&mobileCurrentVideo.id===data.id){const root=$('#v');if(root)root.innerHTML=renderVideoPage()}};
+window.rushVideoRatingState=data=>{
+ if(page==='videos'&&mobileCurrentVideo&&mobileCurrentVideo.id===data.id){
+  const root=$('#v');if(root)root.innerHTML=renderVideoPage();mobileSyncPlayer()
+ }
+ if(page==='library'&&window.RushNative)RushNative.loadLibrary();
+ if(page==='home'&&window.RushNative)RushNative.refreshHomeFeed(homeTab==='fo'?'following':'forYou')
+};
 window.rushLibraryData=data=>{libraryData=data||libraryData;if(page==='library')renderLibraryContent()};
 window.rushLibraryError=error=>mobileToast(error.message||'Library action failed.');
 window.rushDownloadsData=data=>{downloadData=data||downloadData;if(page==='library'&&libraryView==='downloads')renderLibraryContent()};
