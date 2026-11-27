@@ -13,6 +13,7 @@
 - Removed the Home page title/kicker and redundant creator-strip heading/discover button.
 - Simplified Home to a creator rail followed by one horizontal category/filter row; moved Topics into that row.
 - Changed Home's secondary content layout to a single vertical feed column to match the supplied YouTube reference more closely.
+- Replaced always-visible Save/Queue/Download button rows with a compact accessible More actions disclosure menu.
 - Tightened mini-player geometry and replaced its text arrow with the shared SVG icon.
 - Retained the existing native Media3 player and requestAnimationFrame-coalesced geometry update on nested WebView scroll/resize.
 - Added validator assertions for the header, Library profile routing, and Home layout contracts.
@@ -27,6 +28,7 @@
 - Verify bottom-navigation selection always matches the displayed route, including watch/player and Library subviews.
 
 ### High
+- Verify the More actions menu opens/closes correctly and remains inside the viewport on narrow screens.
 - Refine Home card hierarchy, title/metadata density, thumbnail radius/aspect ratio, and overflow actions against the reference screenshots.
 - Fix Search's duplicate clear affordance if reproduced; compact search/filter layout and verify keyboard/submit/clear states.
 - Fix Subscriptions empty/loading/error states and remove duplicate error messaging.
