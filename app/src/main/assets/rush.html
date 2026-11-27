@@ -1364,7 +1364,11 @@ window.rushQueuePlayback=state=>{const status=$('#libraryStatus');if(status)stat
 window.rushOpenDownloads=()=>{libraryView='downloads';if(page==='library'){renderLibraryContent();if(window.RushNative)RushNative.loadDownloads()}else location.hash='#library'};
 window.rushFeedPreferencesError=error=>{const t=$('#topicStatus');if(t)t.textContent=error.message||'Could not save preferences.'};
 window.rushCurrentPlayback=updateCurrentPlayback;
-window.rushHomeFeedResults=renderFeedResults;
+window.rushHomeFeedResults=data=>{
+ homeFeedCache=data||{videos:[],music:[],news:[]};
+ if(page==='home'||page==='subs')renderFeedResults(homeFeedCache);
+ else if(page==='videos'&&mediaState.isVideo&&autoplayEnabled)queueRecommendations(mediaState.mediaId||mobileCurrentVideo&&mobileCurrentVideo.id);
+};
 window.rushChannelSearchResults=items=>{renderChannels(items);if(page==='search'){unifiedData.channels=items;renderSearchResults()}};
 window.rushPlaylistSearchResults=items=>{unifiedData.playlists=items||[];renderSearchResults()};
 window.rushPlaylistSearchError=error=>{const s=$('#unifiedStatus');if(s)s.textContent=error.message||'Playlist search failed.'};
@@ -1749,7 +1753,9 @@ function mobileAvatar(item){
 }
 function mobileVideoCard(item,index=0,compact=false){
  const thumb=mobileThumb(item),id=String(item&&item.id||''),title=String(item&&item.title||'Untitled video'),creator=String(item&&(item.artist||item.creator)||'YouTube');
- const data=' data-video-id="'+esc(id)+'" data-title="'+esc(title)+'" data-creator="'+esc(creator)+'" data-thumbnail="'+esc(thumb)+'"';
+ const sourceId=String(item&&(item.sourceId||item.channelId)||''),sourceName=String(item&&(item.sourceName||item.artist||item.creator)||creator);
+ const description=String(item&&item.description||'');
+ const data=' data-video-id="'+esc(id)+'" data-title="'+esc(title)+'" data-creator="'+esc(creator)+'" data-thumbnail="'+esc(thumb)+'" data-source-id="'+esc(sourceId)+'" data-source-name="'+esc(sourceName)+'" data-description="'+esc(description)+'"';
  return '<article class="yt-video-card"><button class="yt-thumb"'+data+' aria-label="Play '+esc(title)+'">'+(thumb?'<img src="'+esc(thumb)+'" alt="" loading="lazy" decoding="async" onerror="this.hidden=true">':'')+(item&&item.duration?'<span class="yt-duration">'+esc(item.duration)+'</span>':'')+'</button><div class="yt-video-info">'+mobileAvatar(item)+'<div class="yt-video-copy"><button class="yt-video-title"'+data+'>'+esc(title)+'</button><span class="yt-video-meta">'+esc(creator)+(item&&item.duration?' · '+esc(item.duration):'')+'</span></div><button class="yt-more" type="button" data-mobile-more="video"'+data+' aria-label="More video actions">⋮</button></div>'+(!compact?'<div class="yt-card-actions"><button class="chip" data-save-item data-id="'+esc(id)+'" data-title="'+esc(title)+'" data-creator="'+esc(creator)+'" data-music="false" data-thumbnail="'+esc(thumb)+'">Save</button><button class="chip" data-queue-item data-id="'+esc(id)+'" data-title="'+esc(title)+'" data-creator="'+esc(creator)+'" data-music="false" data-thumbnail="'+esc(thumb)+'">Queue</button></div>':'')+'</article>';
 }
 function mobileMusicCard(item){
@@ -1917,12 +1923,16 @@ function mobileCopy(text){
  let ok=false;try{ok=document.execCommand('copy')}catch(e){}input.remove();mobileToast(ok?'Link copied':'Could not copy link');
 }
 function queueRecommendations(currentId){
- if(!window.RushNative||!autoplayEnabled)return;
+ if(!window.RushNative||!autoplayEnabled)return false;
  const pool=(homeFeedCache.videos||[]).concat(unifiedData.videos||[]);
- const seen=new Set([currentId]);
- const items=pool.filter(item=>item&&item.id&&!seen.has(item.id)&&!seen.has(String(item.id))&&seen.add(String(item.id)))
-  .slice(0,3).map(item=>({id:item.id,title:item.title||'',creator:item.artist||item.creator||'',thumbnail:mobileThumb(item)}));
- if(items.length)RushNative.queueVideos(JSON.stringify(items));
+ const seen=new Set([String(currentId||'')]);
+ const items=pool.filter(item=>{
+  const id=String(item&&item.id||'');
+  if(!id||seen.has(id))return false;
+  seen.add(id);return true;
+ }).slice(0,3).map(item=>({id:item.id,title:item.title||'',creator:item.artist||item.creator||'',thumbnail:mobileThumb(item)}));
+ if(items.length){RushNative.queueVideos(JSON.stringify(items));return true}
+ return false;
 }
 function updateMobileMini(){
  const mini=$('#mini');if(!mini)return;
@@ -1969,7 +1979,7 @@ $('#nav').innerHTML='<i class="pill"></i>'+mobileNav.map(([key,label,icon])=>'<a
 document.addEventListener('click',e=>{
  const target=e.target.closest('button,a');if(!target)return;
  if(target.hasAttribute('data-video-id')){
-  mobileCurrentVideo={id:target.dataset.videoId,title:target.dataset.title||'Video',artist:target.dataset.creator||'YouTube',creator:target.dataset.creator||'YouTube',thumbnail:target.dataset.thumbnail||''};
+  mobileCurrentVideo={id:target.dataset.videoId,title:target.dataset.title||'Video',artist:target.dataset.creator||'YouTube',creator:target.dataset.creator||'YouTube',thumbnail:target.dataset.thumbnail||'',sourceId:target.dataset.sourceId||'',sourceName:target.dataset.sourceName||target.dataset.creator||'YouTube',description:target.dataset.description||''};
   if(page==='videos'){$('#v').innerHTML=R.videos();mobileSyncPlayer()}else location.hash='#videos';
  }
  if(target.hasAttribute('data-play-library-item')){
@@ -2056,7 +2066,13 @@ window.rushMusicHistory=items=>{const root=$('#musicRecent');if(root)root.innerH
 window.rushVideoPlaybackState=state=>{
  const status=$('#videoPlaybackStatus');
  if(status){status.textContent=state.state==='playing'?'Starting video…':state.message||state.state;status.hidden=false}
- if(state.state==='playing'&&window.RushNative){RushNative.loadCurrentPlayback();queueRecommendations(mobileCurrentVideo&&mobileCurrentVideo.id||mediaState.mediaId)}
+ if(state.state==='playing'&&window.RushNative){
+  RushNative.loadCurrentPlayback();
+  const currentId=mobileCurrentVideo&&mobileCurrentVideo.id||mediaState.mediaId;
+  if(autoplayEnabled&&!queueRecommendations(currentId)){
+   RushNative.loadHomeFeed(homeFeedCache.mode==='following'?'following':'forYou');
+  }
+ }
  if(state.state==='error'){
   if(status)status.innerHTML=esc(state.message||'Could not play this video.')+' <button class="chip" data-video-retry>Retry</button>';
   mobileToast(state.message||'Video playback failed.');
