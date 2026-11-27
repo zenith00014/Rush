@@ -197,8 +197,8 @@ def main():
         fail("Player transport controls must start disabled before the first track is loaded")
     if "window._rushLyrics=[]" not in js or "root.replaceChildren()" not in js:
         fail("A new lyrics request must clear the previous track's lyrics")
-    if "getElementById('videoPlayerHost')" in activity or 'getElementById("videoPlayerHost")' in activity:
-        fail("Native video must not retain the removed fixed WebView player slot")
+    if "getElementById('videoPlayerHost')" not in activity:
+        fail("Native video positioning must follow the watch screen player host")
     if "nativeVideoView?.visibility=android.view.View.GONE" not in activity:
         fail("Exiting native fullscreen must collapse the video surface cleanly")
     if "RushNative.updateVideoPosition()" not in js or "nativeVideoPositionPending" in js:
