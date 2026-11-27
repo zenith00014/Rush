@@ -746,7 +746,22 @@ button{min-height:42px;min-width:42px}.btn,.ib,.chip{border:0;border-radius:24px
  @keyframes yt-shimmer{to{background-position-x:-220%}}
 }
 @media(prefers-reduced-motion:reduce){.yt-skeleton-thumb,.yt-skeleton-copy i{animation:none!important;background:#292929}}
-</style></head>
+
+@media(max-width:899px){
+ .nav a{min-height:56px}
+ .yt-icon-action,.yt-topic-entry input,.yt-topic-entry button,.yt-subscribe,.yt-player-tools .chip,
+ .yt-engagement .chip,.yt-card-actions .chip,.yt-topic-actions .chip,.yt-sleep-options .chip,
+ .yt-library-actions .chip,.yt-back,.yt-filter-row .yt-filter,.yt-topic-rail .yt-filter,
+ .yt-refresh-wide,.yt-manage-topics,.yt-view-all,.yt-text-action,.yt-playlist-create input,
+ .yt-playlist-create .btn,.yt-more-options summary{min-height:48px}
+ .yt-icon-action{width:48px;min-width:48px;height:48px}
+ .yt-more{width:48px;min-width:48px;height:48px;min-height:48px}
+ .yt-topic-remove{width:48px;min-width:48px;height:48px}
+ .yt-topic-entry input{height:48px}
+ .yt-playlist-create input{height:48px}
+ .yt-back{padding:0 16px}
+ #mini .ib{min-width:48px;min-height:48px}
+}</style></head>
 <body>
 <div class="app">
 
@@ -1758,7 +1773,7 @@ function skeletonCards(count=3){
  return Array.from({length:count},()=>'<article class="yt-skeleton-card" aria-hidden="true"><div class="yt-skeleton-thumb"></div><div class="yt-skeleton-row"><div class="yt-skeleton-avatar"></div><div class="yt-skeleton-copy"><i></i><i></i><i></i></div></div></article>').join('');
 }
 function showSkeleton(root,count=3){
- if(root)root.innerHTML='<div class="yt-skeleton-list" aria-label="Loading content">'+skeletonCards(count)+'</div>';
+ if(root)root.innerHTML='<div class="yt-skeleton-list" role="status" aria-live="polite" aria-label="Loading content">'+skeletonCards(count)+'</div>';
 }
 function markSearchFinished(key){
  if(unifiedPendingKeys.has(key)){unifiedPendingKeys.delete(key);unifiedPending=Math.max(0,unifiedPending-1)}
