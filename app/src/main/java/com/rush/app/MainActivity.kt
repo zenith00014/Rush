@@ -119,6 +119,7 @@ class MainActivity:ComponentActivity(){
     controllerAutoShow=true
     setShowSubtitleButton(true)
     setKeepContentOnPlayerReset(true)
+    setShowBuffering(androidx.media3.ui.PlayerView.SHOW_BUFFERING_WHEN_PLAYING)
     setBackgroundColor(android.graphics.Color.BLACK)
     elevation=resources.displayMetrics.density*8
    }.also { nativeVideoView=it }
