@@ -71,7 +71,7 @@ class RushWebBridge(
     fun completeLocalProfile(displayName: String, topicsJson: String) {
         val prefs = activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)
         try {
-            FeedPreferences.saveTopics(prefs, topicsJson)
+            FeedPreferences.saveOnboardingTopics(prefs, topicsJson)
             prefs.edit()
                 .putString("rush_profile_display_name", displayName.trim().take(40))
                 .putBoolean("rush_profile_setup_complete", true)
