@@ -26,8 +26,10 @@ class FeedPreferencesTest {
     fun everyFollowedChannelCanSupplyForYouWithoutSeparateOptIn() {
         FeedPreferences.follow(prefs, "channel", "UC00000000001", "First channel", productive = false)
         FeedPreferences.follow(prefs, "channel", "UC00000000002", "Second channel", productive = true)
-        FeedPreferences.follow(prefs, "artist", "artist-1", "An artist")
-        FeedPreferences.follow(prefs, "news", "publisher-1", "A publisher")
+        runCatching { FeedPreferences.follow(prefs, "artist", "artist-1", "An artist") }
+            .onSuccess { throw AssertionError("Non-channel follows must be rejected") }
+        runCatching { FeedPreferences.follow(prefs, "news", "publisher-1", "A publisher") }
+            .onSuccess { throw AssertionError("Non-channel follows must be rejected") }
         val channels = FeedPreferences.forYouChannels(FeedPreferences.sources(prefs))
         assertEquals(listOf("UC00000000001", "UC00000000002"), channels.map { it.id })
         assertTrue(channels.all { it.kind == "channel" })
@@ -35,8 +37,9 @@ class FeedPreferencesTest {
 
     @Test
     fun selectedTopicsComeFromApprovedCatalog() {
-        val selected = FeedPreferences.saveTopics(prefs, """["Science","Memes","Technology"]""")
-        assertEquals(listOf("Science", "Memes", "Technology"), selected)
+        val selected = FeedPreferences.saveTopics(prefs, """["Science","Shorts","Technology"]""")
+        assertEquals(listOf("Science", "Technology"), selected)
         assertTrue(FeedPreferences.topicCatalog.containsAll(selected))
+        assertTrue("Shorts" !in FeedPreferences.topicCatalog)
     }
 }

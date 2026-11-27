@@ -150,235 +150,109 @@ class RushWebBridge(
     fun loadHomeFeed(mode: String) {
         val prefs = activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)
         activity.lifecycleScope.launch {
-            val sources = FeedPreferences.sources(prefs)
+            val sources = FeedPreferences.forYouChannels(FeedPreferences.sources(prefs))
             val profile = discoveryProfile(prefs)
             val following = mode.equals("following", true)
             val feedMode = if (following) "following" else "forYou"
+            if (following && sources.isEmpty()) {
+                publish("rushHomeFeedResults", JSONObject()
+                    .put("mode", feedMode)
+                    .put("videos", JSONArray())
+                    .put("message", "Follow YouTube channels in Subscriptions to build this feed.")
+                    .toString())
+                return@launch
+            }
+
+            val queries = if (following) {
+                sources.map { it.name }
+            } else {
+                (profile.topics.take(4) + sources.take(3).map { it.name }).distinct().take(7)
+            }
+            publish("rushHomeFeedLoading", JSONObject().put("mode", feedMode).toString())
+
             val cacheSignature = profile.topics.joinToString("|") + "|" +
-                sources.joinToString("|") { "${it.kind}:${it.id}:${it.name}" }
-            val cacheKey = "rush_home_feed_v4_${feedMode}_${Integer.toHexString(cacheSignature.hashCode())}"
-            val cachedPayload = prefs.getString(cacheKey, null)?.let {
+                sources.joinToString("|") { it.id + ":" + it.name }
+            val cacheKey = "rush_youtube_feed_v1_" + feedMode + "_" +
+                Integer.toHexString(cacheSignature.hashCode())
+            val cached = prefs.getString(cacheKey, null)?.let {
                 runCatching { JSONObject(it) }.getOrNull()
             }
-            val cachedAt = cachedPayload?.optLong("fetchedAt", 0L) ?: 0L
-            val cacheAge = System.currentTimeMillis() - cachedAt
-            val cacheIsFresh = cachedPayload != null && cachedAt > 0L &&
-                cacheAge in 0..HOME_FEED_CACHE_TTL_MS
-
-            if (cachedPayload != null) {
-                val cachedForUi = JSONObject(cachedPayload.toString())
-                if (!cacheIsFresh) cachedForUi.put("message", "Showing saved picks while Rush refreshes…")
-                publish("rushHomeFeedResults", cachedForUi.toString())
-
-                if (cacheIsFresh) {
-                    val cachedNewsArray = cachedPayload.optJSONArray("news") ?: JSONArray()
-                    val cachedNews = (0 until cachedNewsArray.length()).mapNotNull {
-                        cachedNewsArray.optJSONObject(it)
-                    }
-                    if (cachedNews.take(12).any { it.optString("thumbnail").isBlank() }) {
-                        val enrichedNews = enrichNewsThumbnails(cachedNews, prefs, 12)
-                        if (enrichedNews.any { it.optString("thumbnail").isNotBlank() }) {
-                            cachedPayload.put("news", JSONArray(enrichedNews))
-                            prefs.edit().putString(cacheKey, cachedPayload.toString()).apply()
-                            publish("rushHomeFeedResults", cachedPayload.toString())
-                        }
-                    }
-                    return@launch
-                }
-            } else {
-                publish("rushHomeFeedLoading", JSONObject().put("mode", feedMode).toString())
+            val cachedAt = cached?.optLong("fetchedAt", 0L) ?: 0L
+            if (cached != null && cachedAt > 0L &&
+                System.currentTimeMillis() - cachedAt in 0..HOME_FEED_CACHE_TTL_MS
+            ) {
+                publish("rushHomeFeedResults", cached.toString())
+                return@launch
             }
-
-            val channelSources = FeedPreferences.forYouChannels(sources).take(4)
-            val artistSources = sources.filter { it.kind == "artist" }.take(3)
-            val newsQueries = if (following) {
-                sources.filter { it.kind == "news" }.take(4).map { it.name }
-            } else {
-                (profile.topics.take(2) + sources.filter { it.kind == "news" }.take(2).map { it.name })
-                    .distinct().take(3)
-            }
-
-            val videoHits = LinkedHashMap<String, RushDiscoveryEngine.FeedHit>()
-            val videoPayloads = LinkedHashMap<String, JSONObject>()
-            val musicHits = LinkedHashMap<String, RushDiscoveryEngine.FeedHit>()
-            val musicPayloads = LinkedHashMap<String, JSONObject>()
-            val newsHits = LinkedHashMap<String, RushDiscoveryEngine.FeedHit>()
-            val newsPayloads = LinkedHashMap<String, JSONObject>()
 
             try {
-                val fetched = withContext(Dispatchers.IO) {
+                val found = withContext(Dispatchers.IO) {
                     coroutineScope {
-                        val networkSlots = Semaphore(5)
-                        // Start news requests first so the first useful cards can appear
-                        // while YouTube results are still being gathered.
-                        val newsJobs = newsQueries.map { query ->
+                        val slots = Semaphore(4)
+                        queries.map { query ->
                             async {
-                                query to runCatching { networkSlots.withPermit { requestNews(query) } }
-                                    .getOrDefault(JSONArray())
-                            }
-                        }
-                        val videoJobs = channelSources.map { source ->
-                            async {
-                                source to runCatching {
-                                    networkSlots.withPermit { LiveYouTubeSearch.search(source.name, music = false) }
+                                runCatching {
+                                    slots.withPermit { LiveYouTubeSearch.search(query) }
                                 }.getOrDefault(emptyList())
                             }
-                        }
-                        val musicJobs = artistSources.map { source ->
-                            async {
-                                source to runCatching {
-                                    networkSlots.withPermit { LiveYouTubeSearch.search(source.name, music = true) }
-                                }.getOrDefault(emptyList())
-                            }
-                        }
-
-                        val newsResults = newsJobs.awaitAll()
-                        val earlyImageJob = if (cachedPayload == null) {
-                            val earlyHits = LinkedHashMap<String, RushDiscoveryEngine.FeedHit>()
-                            val earlyPayloads = LinkedHashMap<String, JSONObject>()
-                            newsResults.forEach { (_, items) ->
-                                for (index in 0 until items.length()) {
-                                    val article = items.optJSONObject(index) ?: continue
-                                    val publisher = article.optString("source")
-                                    val followed = sources.any { source ->
-                                        source.kind == "news" &&
-                                            (publisher.contains(source.name, true) || source.name.contains(publisher, true))
-                                    }
-                                    val candidate = newsCandidate(article, followed)
-                                    val score = RushDiscoveryEngine.scoreFeed(candidate, profile)
-                                    val key = article.optString("url")
-                                    val previous = earlyHits[key]
-                                    if (key.isNotBlank() && (previous == null || score > previous.score)) {
-                                        earlyHits[key] = RushDiscoveryEngine.FeedHit(candidate, score)
-                                        earlyPayloads[key] = article
-                                    }
-                                }
-                            }
-                            val earlyNews = RushDiscoveryEngine.diversifyFeed(earlyHits.values.toList(), 8, 2)
-                                .mapNotNull { earlyPayloads[it.candidate.id] }
-                            if (earlyNews.isNotEmpty()) {
-                                publish("rushHomeFeedResults", JSONObject()
-                                    .put("mode", feedMode)
-                                    .put("videos", JSONArray())
-                                    .put("music", JSONArray())
-                                    .put("news", JSONArray(earlyNews))
-                                    .put("message", "Loading video and music picks…")
-                                    .toString())
-                                async(Dispatchers.IO) { enrichNewsThumbnails(earlyNews, prefs, 8) }
-                            } else null
-                        } else null
-
-                        val videoResults = videoJobs.awaitAll()
-                        val musicResults = musicJobs.awaitAll()
-                        earlyImageJob?.await()
-                        Triple(videoResults, musicResults, newsResults)
+                        }.awaitAll().flatten()
                     }
                 }
-
-                fetched.first.forEach { (source, results) ->
-                    results.filter {
-                        it.videoId.isNotBlank() &&
-                            (it.creator.equals(source.name, true) || it.creator.contains(source.name, true))
-                    }.forEach { item ->
-                        val candidate = RushDiscoveryEngine.Candidate(
-                            id = item.videoId, kind = RushDiscoveryEngine.Kind.VIDEO,
-                            title = item.title, creator = item.creator, summary = item.description,
-                            sourceFollowed = true, durationSeconds = parseDurationSeconds(item.duration),
-                            topicTags = profile.topics.filter { topic ->
-                                (item.title + " " + item.description).contains(topic, true)
-                            }.toSet()
-                        )
-                        val score = RushDiscoveryEngine.scoreFeed(candidate, profile)
-                        val json = JSONObject().put("id", item.videoId).put("title", item.title)
-                            .put("artist", item.creator).put("duration", item.duration)
-                            .put("thumbnail", item.thumbnailUrl)
-                            .put("sourceId", source.id).put("sourceName", source.name)
-                        val previous = videoHits[item.videoId]
-                        if (previous == null || score > previous.score) {
-                            videoHits[item.videoId] = RushDiscoveryEngine.FeedHit(candidate, score)
-                            videoPayloads[item.videoId] = json
+                val candidates = found
+                    .filter { it.videoId.matches(Regex("[A-Za-z0-9_-]{11}")) }
+                    .filterNot { LiveYouTubeSearch.isShortForm(it) }
+                    .distinctBy { it.videoId }
+                val unique = if (following) {
+                    candidates.filter { item ->
+                        sources.any { source ->
+                            item.creator.isNotBlank() && (
+                                item.creator.equals(source.name, true) ||
+                                    item.creator.contains(source.name, true) ||
+                                    source.name.contains(item.creator, true)
+                            )
                         }
                     }
-                }
-
-                fetched.second.forEach { (_, results) ->
-                    results.filter { it.videoId.isNotBlank() }.forEach { item ->
-                        val candidate = RushDiscoveryEngine.Candidate(
-                            id = item.videoId, kind = RushDiscoveryEngine.Kind.MUSIC,
-                            title = item.title, creator = item.creator, sourceFollowed = true,
-                            durationSeconds = parseDurationSeconds(item.duration)
-                        )
-                        val score = RushDiscoveryEngine.scoreFeed(candidate, profile)
-                        val json = JSONObject().put("id", item.videoId).put("title", item.title)
-                            .put("artist", item.creator).put("duration", item.duration)
-                            .put("thumbnail", item.thumbnailUrl)
-                        val previous = musicHits[item.videoId]
-                        if (previous == null || score > previous.score) {
-                            musicHits[item.videoId] = RushDiscoveryEngine.FeedHit(candidate, score)
-                            musicPayloads[item.videoId] = json
-                        }
+                } else candidates
+                val ranked = rankYouTubeSearch(
+                    queries.joinToString(" "),
+                    unique,
+                    RushDiscoveryEngine.Kind.VIDEO
+                ).take(36)
+                val videos = JSONArray().apply {
+                    ranked.forEach { item ->
+                        put(JSONObject()
+                            .put("id", item.videoId)
+                            .put("title", item.title)
+                            .put("artist", item.creator)
+                            .put("creator", item.creator)
+                            .put("duration", item.duration)
+                            .put("thumbnail", thumbnailFor(item.videoId, item.thumbnailUrl)))
                     }
                 }
-
-                fetched.third.forEach { (_, items) ->
-                    for (index in 0 until items.length()) {
-                        val article = items.optJSONObject(index) ?: continue
-                        val publisher = article.optString("source")
-                        val followed = sources.any { source ->
-                            source.kind == "news" &&
-                                (publisher.contains(source.name, true) || source.name.contains(publisher, true))
-                        }
-                        val candidate = newsCandidate(article, followed)
-                        val score = RushDiscoveryEngine.scoreFeed(candidate, profile)
-                        val key = article.optString("url")
-                        val previous = newsHits[key]
-                        if (key.isNotBlank() && (previous == null || score > previous.score)) {
-                            newsHits[key] = RushDiscoveryEngine.FeedHit(candidate, score)
-                            newsPayloads[key] = article
-                        }
-                    }
+                val message = when {
+                    ranked.isNotEmpty() -> ""
+                    following -> "No recent non-Shorts videos were found from your followed channels."
+                    else -> "No videos were found. Try another topic or search YouTube."
                 }
+                val payload = JSONObject()
+                    .put("mode", feedMode)
+                    .put("videos", videos)
+                    .put("message", message)
+                    .put("fetchedAt", System.currentTimeMillis())
+                prefs.edit().putString(cacheKey, payload.toString()).apply()
+                publish("rushHomeFeedResults", payload.toString())
             } catch (cancelled: kotlinx.coroutines.CancellationException) {
                 throw cancelled
-            } catch (_: Exception) { }
-
-            val videos = RushDiscoveryEngine.diversifyFeed(videoHits.values.toList(), 24, 2)
-                .mapNotNull { videoPayloads[it.candidate.id] }
-            val music = RushDiscoveryEngine.diversifyFeed(musicHits.values.toList(), 15, 3)
-                .mapNotNull { musicPayloads[it.candidate.id] }
-            val news = RushDiscoveryEngine.diversifyFeed(newsHits.values.toList(), 16, 3)
-                .mapNotNull { newsPayloads[it.candidate.id] }
-            val payload = JSONObject()
-                .put("mode", feedMode)
-                .put("videos", JSONArray(videos))
-                .put("music", JSONArray(music))
-                .put("news", JSONArray(news))
-                .put("fetchedAt", System.currentTimeMillis())
-                .put("message", when {
-                    following && sources.isEmpty() ->
-                        "Follow YouTube channels, news publishers or musicians in Search to build this feed."
-                    following && videos.isEmpty() && music.isEmpty() && news.isEmpty() ->
-                        "No recent items were found from your followed sources."
-                    !following && videos.isEmpty() && music.isEmpty() && news.isEmpty() ->
-                        "No suggestions were found just now. Follow sources or broaden your selected interests."
-                    else -> ""
-                })
-
-            // Paint the feed immediately with images already included in the RSS response.
-            prefs.edit().putString(cacheKey, payload.toString()).apply()
-            publish("rushHomeFeedResults", payload.toString())
-
-            // Resolve publisher page images after first paint, then update the feed in place.
-            if (news.isNotEmpty()) {
-                val enrichedNews = enrichNewsThumbnails(news, prefs, 12)
-                if (enrichedNews.any { it.optString("thumbnail").isNotBlank() }) {
-                    payload.put("news", JSONArray(enrichedNews))
-                    prefs.edit().putString(cacheKey, payload.toString()).apply()
-                    publish("rushHomeFeedResults", payload.toString())
-                }
+            } catch (error: Exception) {
+                publish("rushHomeFeedResults", JSONObject()
+                    .put("mode", feedMode)
+                    .put("videos", JSONArray())
+                    .put("message", playbackErrorMessage(error, "Could not load YouTube videos right now."))
+                    .toString())
             }
         }
     }
+
     @JavascriptInterface
     fun loadMusicSuggestions() {
         val prefs = activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)
@@ -597,6 +471,29 @@ class RushWebBridge(
     }
 
     @JavascriptInterface
+    fun enterPictureInPicture() {
+        activity.lifecycleScope.launch {
+            runCatching {
+                val controller = getController()
+                val item = controller.currentMediaItem
+                    ?: throw java.io.IOException("Play a video before opening Picture-in-Picture.")
+                val audioOnly = item.mediaMetadata.extras
+                    ?.getBoolean(PlaybackMetadata.AUDIO_ONLY, false) == true
+                if (audioOnly) throw java.io.IOException("Picture-in-Picture is available for videos.")
+                activity.runOnUiThread {
+                    activity.showNativeVideo(controller, fullscreen = true)
+                    activity.window.decorView.post { activity.enterPlayerPip() }
+                }
+            }.onFailure { error ->
+                publish("rushVideoPlaybackState", JSONObject()
+                    .put("state", "error")
+                    .put("message", error.message ?: "Could not enter Picture-in-Picture.")
+                    .toString())
+            }
+        }
+    }
+
+    @JavascriptInterface
     fun setVideoFullscreen(enabled: Boolean) {
         activity.setNativeVideoFullscreen(enabled)
     }
@@ -729,7 +626,9 @@ class RushWebBridge(
         activity.lifecycleScope.launch {
             try {
                 val results = withContext(Dispatchers.IO) {
-                    val raw = LiveYouTubeSearch.search(term, music = false).filter { it.videoId.isNotBlank() }
+                    val raw = LiveYouTubeSearch.search(term, music = false)
+                        .filter { it.videoId.isNotBlank() }
+                        .filterNot { LiveYouTubeSearch.isShortForm(it) }
                     rankYouTubeSearch(term, raw, RushDiscoveryEngine.Kind.VIDEO).take(30)
                 }
                 val payload = JSONArray().apply {
@@ -749,6 +648,21 @@ class RushWebBridge(
 
     @JavascriptInterface
     fun playVideo(videoId: String, title: String, creator: String, thumbnail: String) {
+        playVideoInternal(videoId, title, creator, thumbnail, enterPip = false)
+    }
+
+    @JavascriptInterface
+    fun playVideoInPictureInPicture(videoId: String, title: String, creator: String, thumbnail: String) {
+        playVideoInternal(videoId, title, creator, thumbnail, enterPip = true)
+    }
+
+    private fun playVideoInternal(
+        videoId: String,
+        title: String,
+        creator: String,
+        thumbnail: String,
+        enterPip: Boolean
+    ) {
         if (!videoId.matches(Regex("[A-Za-z0-9_-]{11}"))) return
         activity.lifecycleScope.launch {
             publish("rushVideoPlaybackState", JSONObject().put("state", "loading").put("title", title).toString())
@@ -778,7 +692,10 @@ class RushWebBridge(
                 controller.prepare()
                 controller.play()
                 LocalLibrary.rememberPlayback(prefs, videoId, title, creator, false, thumbnail, videoId)
-                activity.runOnUiThread { activity.showNativeVideo(controller, fullscreen = true) }
+                activity.runOnUiThread {
+                    activity.showNativeVideo(controller, fullscreen = true)
+                    if (enterPip) activity.window.decorView.post { activity.enterPlayerPip() }
+                }
                 publish("rushVideoPlaybackState", JSONObject().put("state", "playing")
                     .put("title", title).put("creator", creator).put("captionTracks", subtitleConfigs.size).toString())
             } catch (error: Exception) {
@@ -1220,6 +1137,7 @@ class RushWebBridge(
                 val videos = withContext(Dispatchers.IO) {
                     LiveYouTubeSearch.browseVideoPlaylist(cleanId)
                         .filter { it.videoId.matches(Regex("[A-Za-z0-9_-]{11}")) }
+                        .filterNot { LiveYouTubeSearch.isShortForm(it) }
                         .take(100)
                 }
                 val payload = JSONArray().apply {
@@ -1478,6 +1396,10 @@ class RushWebBridge(
                     val title = entry.optString("title").take(300)
                     val creator = entry.optString("creator").take(200)
                     val isMusic = entry.optBoolean("music")
+                    if (isMusic) {
+                        skipped++
+                        continue
+                    }
                     val localPath = entry.optString("localPath")
                     val localFile = java.io.File(localPath)
                     val sourceId = entry.optString("sourceId").ifBlank { id }
