@@ -34,10 +34,25 @@ class FeedPreferencesTest {
     }
 
     @Test
-    fun selectedTopicsAcceptUserDefinedPhrases() {
-        val selected = FeedPreferences.saveTopics(prefs, """["Science","Memes","Technology"]""")
-        assertEquals(listOf("Science", "Memes", "Technology"), selected)
-        assertTrue(selected.contains("Memes"))
+    fun onboardingCanSaveTheDefaultLocalInterestSelection() {
+        val defaults = FeedPreferences.defaultTopics
+        val selected = FeedPreferences.saveTopics(prefs, org.json.JSONArray(defaults).toString())
+
+        assertEquals(defaults, selected)
+    }
+
+    @Test
+    fun selectedTopicsAcceptExistingAndUserDefinedPhrases() {
+        val selected = FeedPreferences.saveTopics(
+            prefs,
+            """["Science","Culture","Language","Urban sketching","Machine learning"]"""
+        )
+
+        assertEquals(
+            listOf("Science", "Culture", "Language", "Urban sketching", "AI and machine learning"),
+            selected
+        )
+        assertTrue(selected.contains("Urban sketching"))
     }
 
     @Test
