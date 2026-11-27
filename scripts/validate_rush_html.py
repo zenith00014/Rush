@@ -187,7 +187,7 @@ def main():
         "Library profile action routes to profile": "b.dataset.mobileRoute==='profile'" in js,
         "Library page does not duplicate top-bar actions": "yt-home-actions" not in js[js.index("function renderLibraryPage()"):js.index("function renderLibraryContent()")],
         "Home uses a creator rail and one category row": "home-topic-filter" in js and "data-tab=\"fo\"" not in js[js.index("function renderHome()"):js.index("function renderExplorePage()")],
-        "media actions are grouped behind an accessible overflow menu": 'return \'<details class="result-more"><summary aria-label="More actions"\'' in js and ".result-more[open] .result-actions" in html,
+                "media actions are grouped behind an accessible overflow menu": "function mediaActions(x,isMusic)" in js and '<details class="result-more">' in js and ".result-more[open] .result-actions" in html,
         "empty feed message is not duplicated in status and empty state": "if(status)status.textContent=count?" in js,
         "Home feed uses a single vertical column on mobile": ".home-page .home-bento{grid-template-columns:minmax(0,1fr);gap:14px}" in html,
         "top-bar uses the actual Rush lightning launcher mark": 'viewBox="0 0 48 48"' in html and 'M28 5 10 26h11l-2 17 19-24H27z' in html,
