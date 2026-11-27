@@ -428,6 +428,22 @@ html,body{background:var(--paper);color:var(--ink)}
  .yt-player-option-row label{display:flex;align-items:center;gap:9px;color:#eee;font:13px Arial}
  .yt-player-option-row input{accent-color:#f02f68}
 }</style>
+<style id="rush-mobile-header">
+.mobile-topbar{position:relative;z-index:5;flex:none;min-height:58px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:calc(env(safe-area-inset-top,0px) + 6px) 16px 8px;background:var(--paper);border-bottom:1px solid var(--border)}
+.mobile-brand{display:inline-flex;align-items:center;gap:9px;min-height:44px;font:800 23px/1 var(--f);letter-spacing:-.045em}
+.mobile-brand-mark{width:30px;height:30px;display:grid;place-items:center;border-radius:9px;background:var(--sp);color:#101216}
+.mobile-brand-mark svg{width:17px;height:17px;fill:currentColor}
+.mobile-top-actions{display:flex;align-items:center;gap:8px}
+.mobile-top-actions .ib{width:44px;height:44px;min-width:44px;min-height:44px;border-radius:50%!important;background:var(--paper2);border:1px solid var(--border);box-shadow:none}
+.mobile-top-actions [hidden]{display:none!important}
+.home-page .creator-strip{padding-top:12px}
+.home-page .home-priority-note{display:none}
+.home-page .home-feed-status{padding-top:2px!important}
+.mini{grid-template-columns:48px minmax(0,1fr) 40px 40px!important;gap:8px!important;padding:9px!important;bottom:calc(var(--nav) + var(--sa) + 12px)!important}
+.mini .rule{grid-column:1/-1;height:4px!important;margin-top:2px}
+.mini .ib{width:40px!important;height:40px!important;min-width:40px!important;min-height:40px!important;border-radius:50%!important}
+@media(min-width:900px){.mobile-topbar{display:none!important}}
+</style>
 <style id="rush-desktop-reference">
 @media(min-width:900px){
   .app{width:100%;max-width:none;height:100dvh;display:block;overflow:hidden;padding:0;background:#0f0f0f;color:#f1f1f1;border:0}
@@ -819,12 +835,13 @@ button{min-height:42px;min-width:42px}.btn,.ib,.chip{border:0;border-radius:24px
   </main>
 </div>
 <div class="yt-sheet-scrim" id="mobileSheetScrim"></div><section class="yt-action-sheet" id="mobileActionSheet" aria-label="Video actions" aria-hidden="true"></section>
+<header class="mobile-topbar" aria-label="Rush"><a class="mobile-brand" href="#home" aria-label="Rush home"><span class="mobile-brand-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3.8v16.4L20 12z"/></svg></span><span>Rush</span></a><div class="mobile-top-actions"><button class="ib" id="mobileNotifications" type="button" aria-label="Notifications" title="Notifications"><svg class="ic" viewBox="0 0 24 24" focusable="false" aria-hidden="true"><path d="M18 8a6 6 0 00-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg></button><button class="ib" id="mobileLibraryProfile" type="button" data-mobile-route="profile" aria-label="Settings and profile" title="Settings and profile" hidden><svg class="ic" viewBox="0 0 24 24" focusable="false" aria-hidden="true"><path d="M12 8.5a3.5 3.5 0 100 7 3.5 3.5 0 000-7zM19.4 15a1.7 1.7 0 00.3 1.9l.1.1-1.7 2.9-.2-.1a1.7 1.7 0 00-1.9.3l-.1.1h-3.4l-.1-.2a1.7 1.7 0 00-1.9-.3l-.2.1-2.9-1.7.1-.2a1.7 1.7 0 00-.3-1.9l-.1-.1v-3.4l.2-.1a1.7 1.7 0 00.3-1.9l-.1-.2 1.7-2.9.2.1a1.7 1.7 0 001.9-.3l.1-.1h3.4l.1.2a1.7 1.7 0 001.9.3l.2-.1 2.9 1.7-.1.2a1.7 1.7 0 00.3 1.9l.1.1z"/></svg></button></div></header>
 <main id="sc"><div id="v"></div></main>
   <section class="mini" id="mini" aria-label="Now playing" inert>
     <div class="a" id="ma"><img alt="" hidden><div id="videoMiniHost" class="video-mini-host" aria-label="Mini video player"></div></div>
     <div><b id="mt"></b><span id="ms"></span></div>
     <button class="ib p" id="mp" data-act="toggle" aria-label="Play or pause"></button>
-    <button class="ib" data-act="open" aria-label="Open player">↗</button>
+    <button class="ib" data-act="open" aria-label="Open player"><svg class="ic" viewBox="0 0 24 24" focusable="false" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
     <div class="rule"></div>
   </section>
   <nav class="nav" id="nav" aria-label="Primary"></nav>
@@ -933,7 +950,7 @@ function homeCreatorStrip(){
 }
 function renderHome(){
  const filters=['All','Videos','Music','News'];
- return '<div class="home-page">'+pageTop('Home','useful picks, not endless scroll')+'<div id="creatorStrip">'+homeCreatorStrip()+'</div>'+
+ return '<div class="home-page"><div id="creatorStrip">'+homeCreatorStrip()+'</div>'+
  '<div class="seg" role="tablist"><i></i><button role="tab" data-tab="fy" aria-selected="'+(homeTab==='fy')+'">For you</button><button role="tab" data-tab="fo" aria-selected="'+(homeTab==='fo')+'">Following</button></div>'+
  '<div class="home-tools"><div class="home-categories" role="group" aria-label="Filter home feed">'+filters.map(label=>'<button class="home-filter" data-home-filter="'+label+'" aria-pressed="'+(homeFilter===label)+'">'+label+'</button>').join('')+'</div>'+
  '<div class="feed-actions"><button class="chip" data-open-topics>YOUR TOPICS</button><button class="chip" data-open-search>FIND CHANNELS & SOURCES</button></div></div>'+
@@ -1282,6 +1299,7 @@ function refreshCurrentPage(){
 document.addEventListener('input',e=>{if(e.target&&e.target.id==='topicQuery')updateTopicOptions()});
 document.addEventListener('click',e=>{
  const b=e.target.closest('button');if(!b)return;
+ if(b.id==='mobileNotifications'){mobileToast('Notifications are not available yet.');return}
  if(b.id==='profileShortcut'){location.hash='#profile';return}
  if(b.id==='topicsShortcut'||b.hasAttribute('data-open-topics')){location.hash='#topics';return}
  if(b.dataset.libraryView){
@@ -2003,6 +2021,7 @@ function updateMobileMini(){
 function updateMobileNavigation(){
  const app=document.querySelector('.app');if(!app)return;
  app.classList.toggle('video-detail',page==='videos');
+ const libraryProfile=$('#mobileLibraryProfile');if(libraryProfile)libraryProfile.hidden=page!=='library';
  document.querySelectorAll('#nav a').forEach(a=>a.dataset.k===page?a.setAttribute('aria-current','page'):a.removeAttribute('aria-current'));
  navPosition();
 }
