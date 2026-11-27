@@ -134,6 +134,10 @@ class RushPlaybackService : MediaSessionService() {
                 reason: Int
             ) {
                 val mediaId = mediaItem?.mediaId.orEmpty()
+                if (sleepAfterCurrent && activeMediaId != null && activeMediaId != mediaId) {
+                    sleepAfterCurrent = false
+                    player.pause()
+                }
                 if (activeMediaId != mediaId) {
                     activeMediaId = mediaId
                     recoveryAttempts.clear()
