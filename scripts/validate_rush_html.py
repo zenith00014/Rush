@@ -143,7 +143,7 @@ def main():
         "lyrics are inside player": 'id="playerLyricsPanel"' in html and 'id="lyricsPanel"' not in html,
         "mobile UI hides full top header": ".app .top{display:none!important}" in html and "#sc{padding-top:0!important}" in html,
         "mobile Explore and News routes removed": "delete R.explore;delete R.news;" in js,
-        "home feed has topic-derived sources": "topicQueries" in bridge and '" explained"' in bridge,
+        "home feed has topic-derived sources": "topicQueries" in bridge and '"$topic explained"' in bridge,
         "feed preference API supports custom topics and snoozing": "fun addFeedTopic(" in bridge and "fun snoozeFeedTopic(" in bridge and "snoozedTopics" in prefs,
         "playback feedback influences recommendation profile": "fun rateVideo(" in bridge and "likedTerms" in engine and "dislikedTerms" in engine,
         "Media3 emits real buffering state": "rushPlaybackBufferingState" in bridge and "setShowBuffering" in activity,
