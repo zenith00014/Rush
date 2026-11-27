@@ -117,6 +117,15 @@ def main():
         fail("Missing shared discovery engine or feed preferences")
     engine = engine_path.read_text(encoding="utf-8")
     prefs = prefs_path.read_text(encoding="utf-8")
+    playback_engine_path = ROOT / "app/src/main/java/com/rush/app/RushPlaybackEngine.kt"
+    quality_test_path = ROOT / "app/src/test/java/com/rush/app/RushPlaybackEngineTest.kt"
+    if not playback_engine_path.is_file() or not quality_test_path.is_file():
+        fail("Video quality resolver or its unit tests are missing")
+    playback_engine = playback_engine_path.read_text(encoding="utf-8")
+    quality_tests = quality_test_path.read_text(encoding="utf-8")
+    download_function = bridge.split("fun downloadMedia(", 1)[1].split("fun loadDownloads(", 1)[0]
+    mobile_js = js[js.find("const rushOriginalGo=go;"):]
+    mobile_card = mobile_js.split("function mobileVideoCard", 1)[1].split("function mobileMusicCard", 1)[0]
     if "RushDiscoveryEngine.scoreFeed" not in bridge or "RushDiscoveryEngine.rankSearch" not in bridge:
         fail("Native bridge is not integrated with shared feed and search ranking")
     if "fun forYouChannels" not in prefs:
@@ -148,6 +157,13 @@ def main():
         "playback feedback influences recommendation profile": "fun rateVideo(" in bridge and "likedTerms" in engine and "dislikedTerms" in engine,
         "Media3 emits real buffering state": "rushPlaybackBufferingState" in bridge and "setShowBuffering" in activity,
         "skeletons exist with reduced-motion fallback": "yt-skeleton-thumb" in html and "prefers-reduced-motion:reduce" in html,
+        "local profile and onboarding are device-only": "fun getLocalProfile()" in bridge and "fun completeLocalProfile(" in bridge and "rush_profile_setup_complete" in bridge and "No sign-in, email, password or cloud sync is used." in html,
+        "first-run onboarding and local profile routes are wired": "R.onboarding=renderOnboardingPage" in js and "R.profile=renderProfilePage" in js and "location.replace('#onboarding')" in js,
+        "every mobile video card offers a download action": 'data-download-media' in mobile_card,
+        "video watch page offers a download action": "data-download-media" in js[js.rfind("function renderVideoPage"):],
+        "Ultra HD and 8K quality caps are selectable": "4K Ultra HD" in html and "[4320,'8K']" in js and "data-video-quality" in js,
+        "download shelf shows quality and progress with safe actions": "yt-download-progress" in html and "item.quality" in js and "data-cancel-download" in js and "data-resume-download" in js,
+        "buffer indicator animates and respects reduced motion": "is-buffering::before" in html and "rush-buffer-spin" in html and "prefers-reduced-motion:reduce" in html,
         "responsive media row grid": "grid-template-columns:64px minmax(0,1fr) auto!important" in html,
         "explicit video resume button": "data-video-resume" in html and "RushNative.showCurrentVideo()" in js,
         "inline video remains anchored when navigating tabs": "if(!mediaState.isVideo)RushNative.hideVideo();else RushNative.updateVideoPosition();" in js,
@@ -158,6 +174,23 @@ def main():
         "library uses library icon": "library:'M4 4h13v16H4z" in js and "['library','Library','follow']" not in js,
         "edge-to-edge root uses dark surface": "setBackgroundColor(android.graphics.Color.rgb(11,16,20))" in activity,
     }
+    if "preferDash = false" not in download_function or "allowDashFallback = false" not in download_function:
+        fail("Offline video downloads must resolve a direct playable stream, not a DASH/HLS manifest")
+    if "selectVideoHeight" not in playback_engine or "Ultra HD" not in html:
+        fail("High-quality selection must fall back to available downloadable formats")
+    if "setMaxVideoSize(Int.MAX_VALUE, qualityCap)" not in service:
+        fail("Saved quality cap is not applied when Media3 starts")
+    if "completedController() ?: return@launch" not in bridge:
+        fail("Changing a saved quality preference must not start an idle playback service")
+    if "RushNative.getLocalProfile()" not in js or "RushNative.completeLocalProfile(" not in js:
+        fail("Local profile UI is not connected to its on-device bridge methods")
+    if mobile_js.count("window.rushVideoSearchError=") != 1:
+        fail("Mobile video search must have exactly one error callback so loading state is cleared")
+    if "quality cap" not in html.lower() or "directly downloadable" not in html:
+        fail("Quality UI must explain that actual offline quality depends on available source formats")
+    if "selectVideoHeight" not in quality_tests or "ultraHdCapUsesHighestDirectFormat" not in quality_tests:
+        fail("Video quality selection must include a unit test for high-quality source fallback")
+
     for contract, valid in ui_contracts.items():
         if not valid:
             fail(f"UI contract failed: {contract}")
