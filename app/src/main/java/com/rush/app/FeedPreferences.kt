@@ -34,7 +34,7 @@ object FeedPreferences {
         "Gardening", "Home improvement", "Music", "Music production", "Classical music",
         "Hip-hop", "K-pop", "Film analysis", "Anime", "Manga", "Podcasts", "Documentaries",
         "Vlogs", "Comedy", "Memes", "Viral clips", "Celebrity gossip", "Pranks",
-        "Internet drama", "Rage bait", "Reality TV", "Shorts", "ASMR", "Luxury",
+        "Internet drama", "Rage bait", "Reality TV", "ASMR", "Luxury",
         "Shopping", "Product reviews", "Relationships", "Parenting", "Lifestyle",
         "Meditation", "Self-improvement", "Romance", "Horror", "Internet culture",
         "Streaming", "Live streams", "Board games", "Collecting", "Crafts"
