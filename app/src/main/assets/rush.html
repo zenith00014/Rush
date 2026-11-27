@@ -404,9 +404,175 @@ html,body{background:var(--paper);color:var(--ink)}
 #sc{padding-bottom:calc(var(--nav) + var(--sa) + 22px)!important}
 .btn,.ib,.chip{border-radius:999px!important}
 @media(max-width:360px){.creator-strip-row{gap:10px}.creator-bubble{flex-basis:56px}.creator-avatar{width:48px;height:48px}.explore-topics{gap:7px}.explore-topic{min-height:68px;padding:10px}}
-</style></head>
+</style>
+<style id="rush-desktop-reference">
+@media(min-width:900px){
+  .app{width:100%;max-width:none;height:100dvh;display:block;overflow:hidden;padding:0;background:#0f0f0f;color:#f1f1f1;border:0}
+  .app::before{display:none}
+  .top,.tk,#sc,.mini,.nav{display:none!important}
+  .desktop-app{display:block!important}
+}
+.desktop-app{display:none;position:absolute;inset:0;z-index:20;background:#0f0f0f;color:#f1f1f1;font:14px/1.45 Arial,Helvetica,sans-serif}
+.d-topbar{position:absolute;z-index:5;top:0;left:0;right:0;height:58px;display:flex;align-items:center;gap:22px;padding:0 28px;background:#0f0f0f;border-bottom:1px solid #242424}
+.d-icon{width:38px;height:38px;display:grid;place-items:center;color:#ddd;border-radius:50%;font-size:19px}
+.d-icon:hover{background:#272727}
+.d-brand{display:flex;align-items:center;gap:8px;min-width:180px;color:#f1f1f1;text-decoration:none;font-size:22px;font-weight:700;letter-spacing:-1px}
+.d-brand-mark{width:24px;height:17px;display:grid;place-items:center;border-radius:5px;background:#f02f68;color:white;font-size:11px}
+.d-search-form{height:38px;width:min(48vw,580px);display:flex;margin:0 auto 0 60px;border:1px solid #303030;border-radius:22px;overflow:hidden;background:#121212}
+.d-search-form input{flex:1;min-width:0;border:0;outline:0;background:transparent;color:#f1f1f1;padding:0 17px;font-size:14px}
+.d-search-form button{width:64px;border-left:1px solid #303030;background:#222;color:#ddd;font-size:17px}
+.d-search-form button:hover{background:#303030}
+.d-top-actions{display:flex;align-items:center;gap:9px;margin-left:auto}
+.d-avatar-me{width:31px;height:31px;display:grid;place-items:center;border:2px solid #343434;border-radius:50%;background:#253c75;color:#fff;font-size:12px;font-weight:700}
+.d-sidebar{position:absolute;z-index:4;left:0;top:58px;bottom:0;width:178px;overflow:auto;padding:10px 9px 20px;background:#0f0f0f;transition:width .2s}
+.d-nav-item{min-height:40px;display:flex;align-items:center;gap:15px;padding:0 12px;margin:2px 0;color:#e8e8e8;border-radius:8px;text-decoration:none;white-space:nowrap}
+.d-nav-item:hover{background:#272727}
+.d-nav-item.active{background:#302327;color:#ff4a83}
+.d-nav-ico{width:19px;display:inline-flex;align-items:center;justify-content:center;color:currentColor;font-size:17px}
+.d-nav-label{overflow:hidden;text-overflow:ellipsis}
+.d-nav-divider{height:1px;margin:10px 8px;background:#333}
+.d-sidebar-note{padding:8px 12px;color:#858585;font-size:11px;line-height:1.5}
+.d-main{position:absolute;left:178px;right:0;top:58px;bottom:0;overflow:auto;background:#0f0f0f;scrollbar-color:#454545 transparent;transition:left .2s}
+.d-category-row{position:sticky;z-index:3;top:0;min-height:54px;display:flex;align-items:center;gap:8px;padding:8px 18px;background:rgba(15,15,15,.97);border-bottom:1px solid #242424;overflow-x:auto;scrollbar-width:none}
+.d-category-row::-webkit-scrollbar{display:none}
+.d-category{flex:none;min-height:32px;padding:0 13px;border-radius:8px;background:#272727;color:#eee;font-size:12px;white-space:nowrap}
+.d-category:hover{background:#3b3b3b}
+.d-category[aria-pressed=true]{background:#f2f2f2;color:#191919;font-weight:700}
+.d-page{padding:20px 18px 70px;max-width:1720px;margin:0 auto}
+.d-page-title{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:4px 0 18px}
+.d-page-title h1{font-size:25px;font-weight:700;letter-spacing:-.5px}
+.d-page-title small{color:#aaa;font-size:12px}
+.d-section-title{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 14px;font-size:19px;font-weight:700}
+.d-section-title button{color:#aaa;font-size:12px}
+.d-missed{margin:2px 0 25px;padding:17px 16px 19px;border-radius:13px;background:#202124}
+.d-missed-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:13px}
+.d-missed-head h2{font-size:16px;font-weight:700}
+.d-missed-row{display:flex;gap:15px;overflow-x:auto;padding-bottom:3px;scrollbar-width:thin;scrollbar-color:#555 transparent}
+.d-missed-card{flex:0 0 210px;min-width:0}
+.d-missed-card .d-thumb{border-radius:9px}
+.d-missed-card .d-card-title{font-size:12px}
+.d-video-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:27px 17px}
+.d-card{min-width:0}
+.d-thumb{position:relative;display:block;width:100%;aspect-ratio:16/9;padding:0;overflow:hidden;border-radius:11px;background:#252525;text-align:left}
+.d-thumb img{width:100%;height:100%;display:block;object-fit:cover;transition:transform .25s}
+.d-card:hover .d-thumb img{transform:scale(1.025)}
+.d-duration{position:absolute;right:7px;bottom:7px;padding:2px 5px;border-radius:3px;background:rgba(0,0,0,.82);color:white;font-size:11px;font-weight:700}
+.d-card-line{display:flex;gap:10px;align-items:flex-start;margin-top:10px}
+.d-channel-avatar{width:34px;height:34px;flex:none;display:grid;place-items:center;border-radius:50%;background:#303c55;color:white;font-size:12px;font-weight:700}
+.d-card-copy{flex:1;min-width:0}
+.d-card-title{display:block;max-height:2.8em;overflow:hidden;color:#f1f1f1;text-align:left;font-size:14px;font-weight:600;line-height:1.4}
+.d-card-sub{display:block;margin-top:4px;color:#aaa;font-size:12px;line-height:1.45}
+.d-card-menu{width:28px;height:30px;flex:none;color:#aaa;font-size:18px}
+.d-card-actions{display:flex;gap:7px;margin:7px 0 0 44px;opacity:.78}
+.d-action{min-height:26px;padding:0 9px;border-radius:15px;background:#272727;color:#ddd;font-size:10px}
+.d-action:hover{background:#3b3b3b}
+.d-caught-up{margin:30px 0 0;padding:21px;border-top:1px solid #2b2b2b;color:#999;text-align:center;font-size:13px}
+.d-shelf{margin:26px 0}
+.d-shelf .d-video-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+.d-filter-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0 20px}
+.d-filter{min-height:31px;padding:0 12px;border:1px solid #363636;border-radius:7px;color:#ddd;font-size:12px}
+.d-filter[aria-pressed=true]{background:#eee;color:#171717}
+.d-explore-tabs{display:flex;gap:22px;align-items:center;margin:10px 0 17px;padding-bottom:11px;border-bottom:1px solid #303030;color:#aaa;font-size:13px}
+.d-explore-tabs button[aria-pressed=true]{color:#fff;border-bottom:2px solid #f02f68;padding-bottom:10px;margin-bottom:-12px}
+.d-watch-layout{display:grid;grid-template-columns:minmax(0,2.05fr) minmax(285px,.92fr);gap:20px;align-items:start}
+.d-watch-player{position:relative;width:100%;aspect-ratio:16/9;overflow:hidden;border-radius:11px;background:#242424}
+.d-watch-player iframe{width:100%;height:100%;border:0}
+.d-watch-placeholder{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:#ddd;background:linear-gradient(135deg,#171717,#313131)}
+.d-watch-placeholder img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.38}
+.d-watch-placeholder b,.d-watch-placeholder span{position:relative;z-index:1}
+.d-watch-placeholder b{font-size:20px}
+.d-watch-title{margin:13px 0 10px;font-size:19px;line-height:1.35;font-weight:700}
+.d-watch-channel{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:13px}
+.d-watch-channel-copy{flex:1;min-width:150px}
+.d-watch-channel-copy b{display:block;font-size:14px}
+.d-watch-channel-copy span{color:#aaa;font-size:11px}
+.d-subscribe{min-height:34px;padding:0 15px;border-radius:18px;background:#f02f68;color:white;font-size:12px;font-weight:700}
+.d-watch-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.d-watch-pill{min-height:34px;padding:0 12px;border-radius:18px;background:#272727;color:#eee;font-size:12px}
+.d-watch-description{margin-top:14px;padding:14px;border-radius:11px;background:#202124;color:#ddd;font-size:13px;line-height:1.6}
+.d-watch-description small{display:block;margin-top:7px;color:#aaa}
+.d-comments{margin-top:25px}
+.d-comments h3{margin:0 0 15px;font-size:17px}
+.d-comment{display:flex;gap:10px;margin:14px 0;color:#ddd;font-size:13px}
+.d-comment b{display:block;margin-bottom:4px;font-size:12px}
+.d-watch-side{min-width:0}
+.d-watch-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin-bottom:13px;border:1px solid #333;border-radius:20px;overflow:hidden}
+.d-watch-tabs button{min-height:35px;color:#bbb;font-size:11px}
+.d-watch-tabs button[aria-pressed=true]{background:#eee;color:#171717;font-weight:700}
+.d-side-heading{margin:12px 0;font-size:13px;font-weight:700;color:#eee}
+.d-related{display:grid;grid-template-columns:43% minmax(0,1fr);gap:9px;margin:12px 0;align-items:start}
+.d-related .d-thumb{border-radius:7px}
+.d-related-copy{min-width:0}
+.d-related-copy b{display:block;max-height:2.8em;overflow:hidden;font-size:12px;line-height:1.4}
+.d-related-copy span{display:block;margin-top:4px;color:#aaa;font-size:10px;line-height:1.35}
+.d-panel-message{padding:18px;border-radius:9px;background:#1b1b1b;color:#aaa;font-size:12px;line-height:1.6}
+.d-search-form-page{display:flex;max-width:720px;margin:8px 0 18px}
+.d-search-form-page input{flex:1;min-width:0;height:40px;padding:0 14px;border:1px solid #383838;border-radius:7px 0 0 7px;outline:0;background:#121212;color:#eee}
+.d-search-form-page button{height:40px;padding:0 19px;border-radius:0 7px 7px 0;background:#303030;color:#eee}
+.d-library-item{display:grid;grid-template-columns:140px minmax(0,1fr) auto;gap:14px;align-items:center;padding:13px 0;border-bottom:1px solid #303030}
+.d-library-item img{width:140px;aspect-ratio:16/9;object-fit:cover;border-radius:8px;background:#252525}
+.d-library-item b{display:block;font-size:14px}
+.d-library-item span{display:block;margin-top:5px;color:#aaa;font-size:11px}
+.d-library-actions{display:flex;gap:7px;flex-wrap:wrap}
+.d-topic-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
+.d-topic{min-height:37px;padding:0 12px;border:1px solid #3b3b3b;border-radius:7px;color:#ddd;text-align:left;font-size:12px}
+.d-topic[aria-pressed=true]{background:#f2f2f2;color:#171717}
+.d-empty{padding:24px;border:1px solid #333;border-radius:10px;color:#aaa}
+.d-sidebar-collapsed .d-sidebar{width:72px}
+.d-sidebar-collapsed .d-main{left:72px}
+.d-sidebar-collapsed .d-nav-item{justify-content:center;padding:0}
+.d-sidebar-collapsed .d-nav-label,.d-sidebar-collapsed .d-sidebar-note{display:none}
+.d-sidebar-collapsed .d-nav-divider{margin-inline:12px}
+@media(min-width:1450px){
+ .d-video-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+ .d-shelf .d-video-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+}
+@media(min-width:1800px){.d-video-grid{grid-template-columns:repeat(5,minmax(0,1fr))}}
+@media(max-width:1150px){
+ .d-topbar{padding-inline:16px;gap:12px}
+ .d-brand{min-width:130px}
+ .d-search-form{margin-left:12px;width:min(44vw,500px)}
+ .d-watch-layout{grid-template-columns:minmax(0,1.55fr) minmax(250px,.9fr);gap:14px}
+}
+@media(max-width:980px){.d-video-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.d-watch-layout{grid-template-columns:1fr}.d-watch-side{margin-top:20px}}
+</style>
+</head>
 <body>
 <div class="app">
+
+<div class="desktop-app" id="desktopApp" aria-label="Rush desktop experience">
+  <header class="d-topbar">
+    <button class="d-icon" type="button" data-desk-collapse aria-label="Toggle navigation">☰</button>
+    <a class="d-brand" href="#home" aria-label="Rush home"><span class="d-brand-mark">▶</span><span>Rush</span></a>
+    <form class="d-search-form" id="desktopSearchForm" role="search">
+      <input id="desktopSearchInput" type="search" placeholder="Search" aria-label="Search Rush">
+      <button type="submit" aria-label="Search">⌕</button>
+    </form>
+    <div class="d-top-actions">
+      <button class="d-icon" type="button" aria-label="Notifications" title="Notifications">♧</button>
+      <button class="d-icon" type="button" data-desk-topics aria-label="Personalise Rush" title="Personalise Rush">⚙</button>
+      <button class="d-icon" type="button" data-desk-topics aria-label="Account"> <span class="d-avatar-me">R</span> </button>
+    </div>
+  </header>
+  <aside class="d-sidebar" id="desktopSidebar" aria-label="Primary navigation">
+    <a class="d-nav-item" href="#home" data-desk-route="home"><span class="d-nav-ico">⌂</span><span class="d-nav-label">Home</span></a>
+    <a class="d-nav-item" href="#explore" data-desk-route="explore"><span class="d-nav-ico">◎</span><span class="d-nav-label">Explore</span></a>
+    <a class="d-nav-item" href="#videos" data-desk-route="videos"><span class="d-nav-ico">▣</span><span class="d-nav-label">TV Mode</span></a>
+    <div class="d-nav-divider"></div>
+    <a class="d-nav-item" href="#library" data-desk-route="library" data-desk-library="history"><span class="d-nav-ico">◷</span><span class="d-nav-label">History</span></a>
+    <a class="d-nav-item" href="#library" data-desk-route="library" data-desk-library="saved"><span class="d-nav-ico">◴</span><span class="d-nav-label">Watch Later</span></a>
+    <a class="d-nav-item" href="#library" data-desk-route="library" data-desk-library="saved"><span class="d-nav-ico">♧</span><span class="d-nav-label">Liked Videos</span></a>
+    <a class="d-nav-item" href="#library" data-desk-route="library" data-desk-library="playlists"><span class="d-nav-ico">☷</span><span class="d-nav-label">Playlists</span></a>
+    <a class="d-nav-item" href="#library" data-desk-route="library" data-desk-library="playlists"><span class="d-nav-ico">▦</span><span class="d-nav-label">Collections</span></a>
+    <a class="d-nav-item" href="#subs" data-desk-route="subs"><span class="d-nav-ico">▤</span><span class="d-nav-label">Subscriptions</span></a>
+    <div class="d-nav-divider"></div>
+    <p class="d-sidebar-note">Rush keeps recommendations useful and lets search stay broad.</p>
+  </aside>
+  <main class="d-main" id="desktopMain">
+    <div class="d-category-row" id="desktopCategories"></div>
+    <div class="d-page" id="desktopPage"></div>
+  </main>
+</div>
 <header class="top">
     <div class="wm" aria-label="Rush">rush<i></i></div>
     <div>
@@ -588,7 +754,7 @@ function renderTopicsPage(){
  '<div class="feed-actions"><button class="btn k" data-save-topics>SAVE INTERESTS</button></div>'+
  '<h2>Followed sources</h2><p class="meta pad">Follow any channel, publisher or musician. Followed YouTube channels can all supply For You candidates; productive and informative items rank higher.</p><div id="followedSources"></div>';
 }
-const R={home:renderHome,explore:renderExplorePage,subs:renderSubsPage,videos:renderVideoPage,music:renderMusicPage,player:renderPlayerPage,news:renderNewsPage,search:renderSearchPage,topics:renderTopicsPage,library:renderLibraryPage};
+const R={home:renderHome,explore:renderExplorePage,subs:renderSubsPage,videos:renderVideoPage,music:renderMusicPage,player:renderPlayerPage,news:renderNewsPage,search:renderSearchPage,topics:renderTopicsPage,library:renderLibraryPage,watch:()=>renderVideoPage()};
 
 let libraryView='saved',libraryData={saved:[],history:[],queue:[],playlists:[],items:{}},downloadData={items:[],count:0,bytes:0};
 function renderLibraryPage(){
@@ -1050,6 +1216,283 @@ setInterval(()=>{
  });
 },350);
 setInterval(()=>{if(page==='player'&&window.RushNative&&mediaState.hasItem&&mediaState.isMusic)renderPlayerProgress(RushNative.musicPosition(),RushNative.musicDuration())},1000);
+
+/* Desktop YouTube-style Rush layout. Native feed, search, library and playback
+   callbacks remain the source of truth; this layer only changes presentation. */
+let desktopCurrentVideo=null,desktopWatchTab='suggestions',desktopCategory='All',desktopLastPage='';
+const desktopFallbackVideos=[
+ {id:'aircAruvnKk',title:'But what is a neural network?',artist:'3Blue1Brown',creator:'3Blue1Brown',duration:'19:13',views:'4.8M views',age:'5 years ago',topic:'Science',thumbnail:'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=900&q=84'},
+ {id:'',title:'The hidden mathematics behind everyday life',artist:'Domain of Science',creator:'Domain of Science',duration:'14:28',views:'1.2M views',age:'3 months ago',topic:'Education',thumbnail:'https://images.unsplash.com/photo-1509228468518-180dd4864904?auto=format&fit=crop&w=900&q=84'},
+ {id:'',title:'How the internet actually works',artist:'Fireship',creator:'Fireship',duration:'12:07',views:'820K views',age:'2 weeks ago',topic:'Technology',thumbnail:'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=900&q=84'},
+ {id:'',title:'A practical guide to visual design systems',artist:'Juxtopposed',creator:'Juxtopposed',duration:'18:42',views:'430K views',age:'1 month ago',topic:'Design',thumbnail:'https://images.unsplash.com/photo-1558655146-d09347e92766?auto=format&fit=crop&w=900&q=84'},
+ {id:'',title:'What makes a great scientific explanation?',artist:'Veritasium',creator:'Veritasium',duration:'22:16',views:'2.1M views',age:'6 months ago',topic:'Science',thumbnail:'https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&w=900&q=84'},
+ {id:'',title:'A short history of the modern web',artist:'Computerphile',creator:'Computerphile',duration:'16:09',views:'670K views',age:'4 months ago',topic:'History',thumbnail:'https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=900&q=84'}
+];
+const desktopFallbackMusic=[
+ {id:'demo-track-1',title:'Weightless',artist:'Marconi Union',duration:'8:09',thumbnail:'https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&w=800&q=82'},
+ {id:'demo-track-2',title:'Experience',artist:'Ludovico Einaudi',duration:'5:15',thumbnail:'https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=800&q=82'}
+];
+const desktopCategoryNames=['All','Subscriptions','Music','Tech','Design','Science','Education','History','Engineering','Economics','Documentaries','News'];
+function isDesktopRush(){return window.matchMedia('(min-width:900px)').matches}
+function desktopVideos(){
+ const items=(homeFeedCache&&homeFeedCache.videos)||[];
+ return items.length?items:desktopFallbackVideos;
+}
+function desktopMusic(){
+ const items=(homeFeedCache&&homeFeedCache.music)||[];
+ return items.length?items:desktopFallbackMusic;
+}
+function desktopNews(){
+ return (homeFeedCache&&homeFeedCache.news)||[];
+}
+function desktopThumb(item,index){
+ return safeUrl(item&&item.thumbnail)||desktopFallbackVideos[(index||0)%desktopFallbackVideos.length].thumbnail;
+}
+function desktopDuration(item){return String(item&&item.duration||'12:07')}
+function desktopAvatar(item){
+ const name=String((item&&(item.artist||item.creator))||'Rush');
+ return esc(name.trim().split(/\s+/).slice(0,2).map(v=>v[0]||'').join('').toUpperCase()||'R');
+}
+function desktopActionButtons(item,isMusic){
+ const id=esc(item&&item.id||''),title=esc(item&&item.title||''),creator=esc(item&&(item.artist||item.creator)||''),thumb=esc(safeUrl(item&&item.thumbnail));
+ return '<div class="d-card-actions"><button class="d-action" data-save-item data-id="'+id+'" data-title="'+title+'" data-creator="'+creator+'" data-music="'+isMusic+'" data-thumbnail="'+thumb+'">Save</button><button class="d-action" data-queue-item data-id="'+id+'" data-title="'+title+'" data-creator="'+creator+'" data-music="'+isMusic+'" data-thumbnail="'+thumb+'">Queue</button></div>';
+}
+function desktopVideoCard(item,index,compact){
+ const thumb=desktopThumb(item,index),id=String(item&&item.id||''),title=String(item&&item.title||'Video'),creator=String(item&&(item.artist||item.creator)||'YouTube');
+ const views=String(item&&item.views||'New upload'),age=String(item&&item.age||item&&item.publishedText||'Recommended for you');
+ return '<article class="d-card '+(compact?'d-missed-card':'')+'"><button class="d-thumb" data-desk-watch data-id="'+esc(id)+'" data-title="'+esc(title)+'" data-creator="'+esc(creator)+'" data-thumb="'+esc(thumb)+'" aria-label="Watch '+esc(title)+'"><img src="'+esc(thumb)+'" alt="" loading="lazy" decoding="async" onerror="this.hidden=true"><span class="d-duration">'+esc(desktopDuration(item))+'</span></button><div class="d-card-line"><span class="d-channel-avatar">'+desktopAvatar(item)+'</span><div class="d-card-copy"><button class="d-card-title" data-desk-watch data-id="'+esc(id)+'" data-title="'+esc(title)+'" data-creator="'+esc(creator)+'" data-thumb="'+esc(thumb)+'">'+esc(title)+'</button><span class="d-card-sub">'+esc(creator)+'</span><span class="d-card-sub">'+esc(views)+' · '+esc(age)+'</span></div><button class="d-card-menu" aria-label="More actions">⋮</button></div>'+desktopActionButtons(item,false)+'</article>';
+}
+function desktopMusicCard(item,index){
+ const thumb=desktopThumb(item,index),id=esc(item&&item.id||''),title=esc(item&&item.title||'Track'),artist=esc(item&&(item.artist||item.creator)||'Unknown artist');
+ return '<article class="d-card"><button class="d-thumb" data-track="'+id+'" data-title="'+title+'" data-artist="'+artist+'" data-thumbnail="'+esc(thumb)+'"><img src="'+esc(thumb)+'" alt="" loading="lazy"><span class="d-duration">'+esc(desktopDuration(item))+'</span></button><div class="d-card-line"><span class="d-channel-avatar">♫</span><div class="d-card-copy"><b class="d-card-title">'+title+'</b><span class="d-card-sub">'+artist+'</span><span class="d-card-sub">Picked for your listening taste</span></div></div>'+desktopActionButtons(item,true)+'</article>';
+}
+function desktopNewsCard(item,index){
+ const title=String(item&&item.title||'News update'),source=String(item&&(item.source||item.publisher||item.creator)||'Publisher');
+ const thumb=desktopThumb(item,index);
+ return '<article class="d-card"><button class="d-thumb" data-news-url="'+esc(item&&item.url||'')+'"><img src="'+esc(thumb)+'" alt="" loading="lazy"><span class="d-duration">NEWS</span></button><div class="d-card-line"><span class="d-channel-avatar">N</span><div class="d-card-copy"><b class="d-card-title">'+esc(title)+'</b><span class="d-card-sub">'+esc(source)+'</span><span class="d-card-sub">'+esc(item&&item.publishedText||'Context-first reporting')+'</span></div></div></article>';
+}
+function desktopVideoSet(){
+ let items=desktopVideos();
+ if(desktopCategory!=='All'){
+  const term=desktopCategory.toLowerCase();
+  items=items.filter(item=>(String(item.title||'')+' '+String(item.artist||item.creator||'')+' '+String(item.topic||'')+' '+String((item.topicTags||[]).join(' '))).toLowerCase().includes(term));
+ }
+ return items;
+}
+function desktopHomePage(){
+ if(desktopCategory==='Music')return desktopMusicPage();
+ if(desktopCategory==='News')return desktopNewsPage();
+ const all=desktopVideoSet();
+ const missed=all.slice(0,4),rest=all.length>4?all.slice(4):all;
+ return '<div class="d-page-title"><h1>Home</h1><small>Useful picks, ranked around your interests</small></div>'+
+ '<section class="d-missed"><div class="d-missed-head"><h2>In Case You Missed</h2><button aria-label="Dismiss section" data-desk-dismiss>×</button></div><div class="d-missed-row">'+missed.map((item,i)=>desktopVideoCard(item,i,true)).join('')+'</div></section>'+
+ '<div class="d-section-title"><span>Recommended for you</span><small>For You · Based on your topics and watch history</small></div>'+
+ (rest.length?'<div class="d-video-grid">'+rest.map((item,i)=>desktopVideoCard(item,i+4,false)).join('')+'</div>':'<div class="d-empty">No videos match this topic yet. Choose another category to keep exploring.</div>')+
+ '<div class="d-caught-up">You’re caught up. Rush adds more recommendations when there is useful new content.</div>'+
+ (desktopMusic().length?'<section class="d-shelf"><div class="d-section-title"><span>Music</span><button data-desk-category="Music">View all</button></div><div class="d-video-grid">'+desktopMusic().slice(0,4).map(desktopMusicCard).join('')+'</div></section>':'')+
+ (desktopNews().length?'<section class="d-shelf"><div class="d-section-title"><span>News</span><button data-desk-category="News">View all</button></div><div class="d-video-grid">'+desktopNews().slice(0,4).map(desktopNewsCard).join('')+'</div></section>':'');
+}
+function desktopExplorePage(){
+ const items=desktopVideos();
+ return '<div class="d-page-title"><h1>Explore</h1><small>Discover useful content by topic</small></div>'+
+ '<div class="d-explore-tabs"><button aria-pressed="true">Now</button><button>Science</button><button>Technology</button><button>Design</button><button>Education</button><button>History</button><button>Business</button></div>'+
+ '<div class="d-video-grid">'+items.map((item,i)=>desktopVideoCard(item,i,false)).join('')+'</div>';
+}
+function desktopSubscriptionsPage(){
+ const items=desktopVideos();
+ return '<div class="d-page-title"><h1>Subscriptions</h1><small>Latest from creators you follow</small></div>'+
+ '<div class="d-filter-row"><button class="d-filter" aria-pressed="true">All</button><button class="d-filter">Videos</button><button class="d-filter">Music</button><button class="d-filter">News</button><button class="d-filter">Newest</button><button class="d-filter">Oldest</button></div>'+
+ '<div class="d-video-grid">'+items.map((item,i)=>desktopVideoCard(item,i,false)).join('')+'</div>';
+}
+function desktopMusicPage(){
+ const items=desktopMusic();
+ return '<div class="d-page-title"><h1>Music</h1><small>Suggestions based on followed musicians and listening history</small></div>'+
+ '<div class="d-video-grid">'+items.map(desktopMusicCard).join('')+'</div>';
+}
+function desktopNewsPage(){
+ const items=desktopNews();
+ return '<div class="d-page-title"><h1>News</h1><small>Context-first reporting from selected topics and publishers</small></div>'+
+ (items.length?'<div class="d-video-grid">'+items.map(desktopNewsCard).join('')+'</div>':'<div class="d-empty">News recommendations appear here when Rush has loaded publisher results.</div>');
+}
+function desktopSearchPage(){
+ const groups={videos:unifiedData.videos||[],music:unifiedData.music||[],news:unifiedData.news||[],channels:unifiedData.channels||[],playlists:unifiedData.playlists||[]};
+ const names={videos:'Videos',music:'Music',news:'News',channels:'YouTube channels',playlists:'Public YouTube playlists'};
+ const active=['all','videos','music','news','channels','playlists'];
+ const filters=active.map(key=>'<button class="d-filter" data-desk-search-filter="'+key+'" aria-pressed="'+(unifiedMode===key)+'">'+(key==='all'?'All':names[key]||key)+'</button>').join('');
+ const total=Object.values(groups).reduce((sum,items)=>sum+items.length,0);
+ let content='';
+ if(unifiedMode==='all'||unifiedMode==='videos')content+='<section class="d-shelf"><div class="d-section-title">Videos · '+groups.videos.length+'</div><div class="d-video-grid">'+groups.videos.map((item,i)=>desktopVideoCard(item,i,false)).join('')+'</div></section>';
+ if(unifiedMode==='all'||unifiedMode==='music')content+='<section class="d-shelf"><div class="d-section-title">Music · '+groups.music.length+'</div><div class="d-video-grid">'+groups.music.map(desktopMusicCard).join('')+'</div></section>';
+ if(unifiedMode==='all'||unifiedMode==='news')content+='<section class="d-shelf"><div class="d-section-title">News · '+groups.news.length+'</div><div class="d-video-grid">'+groups.news.map(desktopNewsCard).join('')+'</div></section>';
+ if(unifiedMode==='all'||unifiedMode==='channels')content+='<section class="d-shelf"><div class="d-section-title">YouTube channels · '+groups.channels.length+'</div><div class="d-video-grid">'+groups.channels.map((item,i)=>'<article class="d-card"><div class="d-card-line"><span class="d-channel-avatar">'+desktopAvatar(item)+'</span><div class="d-card-copy"><b>'+esc(item.name||'Channel')+'</b><span class="d-card-sub">'+esc(item.subscribers||'YouTube channel')+'</span></div></div>'+sourceButton('channel',item.id,item.name,'FOLLOW')+'</article>').join('')+'</div></section>';
+ if(unifiedMode==='all'||unifiedMode==='playlists')content+='<section class="d-shelf"><div class="d-section-title">Public playlists · '+groups.playlists.length+'</div>'+groups.playlists.map(playlistRow).join('')+'</section>';
+ return '<div class="d-page-title"><h1>Search</h1><small>Search is broad and is not restricted by feed preferences</small></div>'+
+ '<form class="d-search-form-page" id="desktopSearchPageForm"><input id="desktopSearchPageInput" type="search" placeholder="Search videos, music, news, channels or playlists" value="'+esc(unifiedQuery||'')+'"><button>Search</button></form>'+
+ '<div class="d-filter-row">'+filters+'</div><p class="d-card-sub">'+total+' results · All content remains searchable</p>'+content;
+}
+function desktopLibraryPage(){
+ const current=libraryView||'saved';
+ const ids=current==='history'?libraryData.history:current==='playlists'?[]:current==='queue'?libraryData.queue:current==='downloads'?[]:libraryData.saved;
+ const labels={saved:'Watch Later',history:'History',playlists:'Playlists',queue:'Queue',downloads:'Downloads'};
+ const tabs=[['saved','Watch Later'],['history','History'],['playlists','Playlists'],['queue','Queue'],['downloads','Downloads']];
+ let content='';
+ if(current==='playlists'){
+  const playlists=libraryData.playlists||[];
+  content=playlists.length?playlists.map(p=>'<div class="d-library-item"><div></div><div><b>'+esc(p.name||'Playlist')+'</b><span>'+esc(p.count||'')+' items</span></div><div class="d-library-actions"><button class="d-action" data-play-playlist data-playlist-id="'+esc(p.id)+'">Play</button></div></div>').join(''):'<div class="d-empty">Your playlists will appear here when you create one.</div>';
+ }else if(current==='downloads'){
+  const items=downloadData.items||[];
+  content=items.length?items.map(item=>'<div class="d-library-item"><img src="'+esc(safeUrl(item.thumbnail))+'" alt=""><div><b>'+esc(item.title||'Download')+'</b><span>'+esc(item.creator||'')+' · '+esc(item.state||'Offline')+'</span></div><div class="d-library-actions"><button class="d-action" data-play-downloaded data-download-id="'+esc(item.id)+'">Play</button></div></div>').join(''):'<div class="d-empty">No offline downloads yet.</div>';
+ }else{
+  content=ids&&ids.length?ids.map(id=>{
+   const item=libraryData.items&&libraryData.items[id];if(!item)return '';
+   const thumb=safeUrl(item.thumbnail)||desktopFallbackVideos[0].thumbnail;
+   return '<div class="d-library-item"><img src="'+esc(thumb)+'" alt=""><div><b>'+esc(item.title||'Saved media')+'</b><span>'+esc(item.creator||'YouTube')+' · '+(item.music?'Music':'Video')+'</span></div><div class="d-library-actions"><button class="d-action" data-play-library-item data-id="'+esc(id)+'">Play</button><button class="d-action" data-unsave-item data-id="'+esc(id)+'">Remove</button></div></div>';
+  }).join(''):'<div class="d-empty">No items here yet. Save a video or track to build this list.</div>';
+ }
+ return '<div class="d-page-title"><h1>'+labels[current]+'</h1><small>Your library is stored on this device</small></div>'+
+ '<div class="d-filter-row">'+tabs.map(([key,label])=>'<button class="d-filter" data-desk-library="'+key+'" aria-pressed="'+(current===key)+'">'+label+'</button>').join('')+'</div>'+content;
+}
+function desktopTopicsPage(){
+ const selected=new Set(selectedTopics());
+ return '<div class="d-page-title"><h1>Personalise Rush</h1><small>Your on-device interests shape recommendations</small></div>'+
+ '<p class="d-card-sub" style="margin-bottom:16px">Choose the subjects you want to see more often. Search remains open to every subject.</p>'+
+ '<div class="d-topic-grid">'+TOPICS.map(topic=>'<button class="d-topic" data-desk-topic="'+esc(topic)+'" aria-pressed="'+selected.has(topic)+'">'+esc(topic)+'</button>').join('')+'</div>'+
+ '<p class="d-card-sub" style="margin-top:18px">Your followed sources and watch history are also used to rank videos.</p>';
+}
+function desktopVideoPage(){
+ return '<div class="d-page-title"><h1>TV Mode</h1><small>Search and play videos in the Rush player</small></div>'+
+ '<form class="d-search-form-page" id="desktopVideoSearchForm"><input id="desktopVideoSearchInput" type="search" placeholder="Search videos, creators and topics"><button>Search videos</button></form>'+
+ '<div class="d-video-grid">'+desktopVideos().map((item,i)=>desktopVideoCard(item,i,false)).join('')+'</div>';
+}
+function desktopPlayerPage(){
+ return '<div class="d-page-title"><h1>Music player</h1><small>Current listening session</small></div>'+
+ '<div class="d-empty">'+(mediaState.hasItem?'<b>'+esc(mediaState.title||'Now playing')+'</b><p>'+esc(mediaState.artist||'')+'</p><p>'+(mediaState.isPlaying?'Playing':'Paused')+'</p>':'Choose a track from Music to start listening.')+'</div>';
+}
+function desktopWatchPage(){
+ const item=desktopCurrentVideo||desktopVideos()[0]||desktopFallbackVideos[0];
+ const id=String(item.id||'');
+ const valid=/^[A-Za-z0-9_-]{11}$/.test(id);
+ const thumb=desktopThumb(item,0);
+ const player=valid?'<iframe src="https://www.youtube-nocookie.com/embed/'+encodeURIComponent(id)+'?rel=0&modestbranding=1" title="'+esc(item.title||'Video')+'" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>':'<div class="d-watch-placeholder"><img src="'+esc(thumb)+'" alt=""><b>Video preview</b><span>Open Rush on your device to play this item.</span></div>';
+ const related=desktopVideos().filter(x=>String(x.id||'')!==id).slice(0,8);
+ let right='';
+ if(desktopWatchTab==='suggestions')right='<div class="d-side-heading">Related videos</div>'+related.map((video,i)=>'<article class="d-related"><button class="d-thumb" data-desk-watch data-id="'+esc(video.id||'')+'" data-title="'+esc(video.title||'')+'" data-creator="'+esc(video.artist||video.creator||'')+'" data-thumb="'+esc(desktopThumb(video,i))+'"><img src="'+esc(desktopThumb(video,i))+'" alt=""><span class="d-duration">'+esc(desktopDuration(video))+'</span></button><div class="d-related-copy"><b>'+esc(video.title||'Video')+'</b><span>'+esc(video.artist||video.creator||'YouTube')+'</span><span>'+esc(video.views||'Recommended')+'</span></div></article>').join('');
+ if(desktopWatchTab==='transcripts')right='<div class="d-side-heading">Transcript</div><div class="d-panel-message">Transcript text is shown when the video source provides captions. Open the Rush player to use available captions.</div>';
+ if(desktopWatchTab==='live')right='<div class="d-side-heading">Live chat</div><div class="d-panel-message">Live chat is not available for this video source.</div>';
+ return '<div class="d-watch-layout"><section><div class="d-watch-player">'+player+'</div>'+
+ '<h1 class="d-watch-title">'+esc(item.title||'Video')+'</h1>'+
+ '<div class="d-watch-channel"><span class="d-channel-avatar">'+desktopAvatar(item)+'</span><div class="d-watch-channel-copy"><b>'+esc(item.artist||item.creator||'YouTube')+'</b><span>Video creator</span></div><button class="d-subscribe">Subscribe</button>'+
+ '<div class="d-watch-actions"><button class="d-watch-pill" data-save-item data-id="'+esc(item.id||'')+'" data-title="'+esc(item.title||'')+'" data-creator="'+esc(item.artist||item.creator||'')+'" data-music="false" data-thumbnail="'+esc(thumb)+'">♡ Save</button><button class="d-watch-pill" data-queue-item data-id="'+esc(item.id||'')+'" data-title="'+esc(item.title||'')+'" data-creator="'+esc(item.artist||item.creator||'')+'" data-music="false" data-thumbnail="'+esc(thumb)+'">Queue</button><button class="d-watch-pill">↗ Share</button></div></div>'+
+ '<div class="d-watch-description">'+esc(item.views||'Recommended for you')+' · '+esc(item.age||'')+'<br>'+esc(item.description||'Useful content selected from your topics and followed creators.')+'<small>Recommendations prioritise usefulness and relevance, not watch time.</small></div>'+
+ '<div class="d-comments"><h3>Comments</h3><div class="d-comment"><span class="d-channel-avatar">R</span><div><b>Rush community</b>Comments are available when the connected video source supplies them.</div></div></div></section>'+
+ '<aside class="d-watch-side"><div class="d-watch-tabs"><button data-watch-tab="suggestions" aria-pressed="'+(desktopWatchTab==='suggestions')+'">Suggestions</button><button data-watch-tab="transcripts" aria-pressed="'+(desktopWatchTab==='transcripts')+'">Transcripts</button><button data-watch-tab="live" aria-pressed="'+(desktopWatchTab==='live')+'">Live Chat</button></div>'+right+'</aside></div>';
+}
+function desktopCategoriesHtml(){
+ return desktopCategoryNames.map(label=>{
+  const pressed=(desktopCategory===label)||(label==='All'&&desktopCategory==='All');
+  return '<button class="d-category" data-desk-category="'+label+'" aria-pressed="'+pressed+'">'+label+'</button>';
+ }).join('');
+}
+function renderDesktopPage(){
+ const app=document.getElementById('desktopApp'),root=document.getElementById('desktopPage'),cats=document.getElementById('desktopCategories');
+ if(!app||!root||!isDesktopRush())return;
+ if(desktopLastPage!==page){const main=document.getElementById('desktopMain');if(main)main.scrollTop=0;desktopLastPage=page}
+ if(cats){const show=['home','explore','subs'].includes(page);cats.style.display=show?'flex':'none';cats.innerHTML=show?desktopCategoriesHtml():''}
+ const renderers={home:desktopHomePage,explore:desktopExplorePage,subs:desktopSubscriptionsPage,videos:desktopVideoPage,music:desktopMusicPage,player:desktopPlayerPage,news:desktopNewsPage,search:desktopSearchPage,topics:desktopTopicsPage,library:desktopLibraryPage,watch:desktopWatchPage};
+ root.innerHTML=(renderers[page]||desktopHomePage)();
+ app.classList.toggle('d-sidebar-collapsed',!!app.dataset.collapsed);
+ app.querySelectorAll('[data-desk-route]').forEach(link=>link.classList.toggle('active',link.dataset.deskRoute===(page==='watch'?'videos':page)));
+}
+function desktopSearch(query){
+ const term=String(query||'').trim();if(!term)return;
+ if(page==='search'){
+  const hidden=document.getElementById('q');if(hidden)hidden.value=term;
+  unifiedQuery=term;runUnifiedSearch();renderDesktopPage();
+ }else{pendingSearchQuery=term;location.hash='#search'}
+}
+document.getElementById('desktopSearchForm')?.addEventListener('submit',e=>{
+ e.preventDefault();desktopSearch(document.getElementById('desktopSearchInput')?.value);
+});
+document.getElementById('desktopApp')?.addEventListener('submit',e=>{
+ if(e.target.id==='desktopSearchPageForm'){
+  e.preventDefault();desktopSearch(document.getElementById('desktopSearchPageInput')?.value);
+ }
+ if(e.target.id==='desktopVideoSearchForm'){
+  e.preventDefault();const q=document.getElementById('desktopVideoSearchInput')?.value.trim();
+  if(q&&window.RushNative)RushNative.searchVideos(q);
+ }
+},true);
+document.getElementById('desktopApp')?.addEventListener('click',e=>{
+ const b=e.target.closest('button,a');if(!b)return;
+ if(b.hasAttribute('data-desk-collapse')){
+  e.preventDefault();const app=document.getElementById('desktopApp');app.dataset.collapsed=app.dataset.collapsed==='1'?'0':'1';app.classList.toggle('d-sidebar-collapsed',app.dataset.collapsed==='1');return;
+ }
+ if(b.hasAttribute('data-desk-topics')){e.preventDefault();location.hash='#topics';return}
+ if(b.dataset.deskLibrary){
+  e.preventDefault();libraryView=b.dataset.deskLibrary;
+  if(page==='library'){renderDesktopPage();if(window.RushNative){RushNative.loadLibrary();if(libraryView==='downloads')RushNative.loadDownloads()}}
+  else location.hash='#library';
+  return;
+ }
+ if(b.dataset.deskCategory){
+  e.preventDefault();const category=b.dataset.deskCategory;
+  if(category==='Subscriptions'){location.hash='#subs';return}
+  desktopCategory=category;
+  homeFilter=category==='Music'||category==='News'?category:'All';
+  if(category==='Music'||category==='News'){location.hash='#home'}
+  renderDesktopPage();return;
+ }
+ if(b.dataset.deskSearchFilter){
+  e.preventDefault();unifiedMode=b.dataset.deskSearchFilter;renderDesktopPage();return;
+ }
+ if(b.dataset.deskTopic){
+  e.preventDefault();const topic=b.dataset.deskTopic;
+  const topics=[...selectedTopics()];const next=topics.includes(topic)?topics.filter(x=>x!==topic):topics.concat(topic);
+  prefs.topics=next;
+  if(window.RushNative)RushNative.saveFeedTopics(JSON.stringify(next));
+  renderDesktopPage();return;
+ }
+ if(b.dataset.watchTab){
+  e.preventDefault();desktopWatchTab=b.dataset.watchTab;renderDesktopPage();return;
+ }
+ if(b.hasAttribute('data-desk-dismiss')){
+  const shelf=b.closest('.d-missed');if(shelf)shelf.remove();return;
+ }
+ if(b.hasAttribute('data-desk-watch')){
+  e.preventDefault();desktopCurrentVideo={id:b.dataset.id||'',title:b.dataset.title||'Video',artist:b.dataset.creator||'YouTube',creator:b.dataset.creator||'YouTube',thumbnail:b.dataset.thumb||''};
+  desktopWatchTab='suggestions';location.hash='#watch';
+  if(window.RushNative&&desktopCurrentVideo.id)RushNative.playVideo(desktopCurrentVideo.id,desktopCurrentVideo.title,desktopCurrentVideo.creator,desktopCurrentVideo.thumbnail);
+  return;
+ }
+ if(b.hasAttribute('data-desk-video-search')){
+  e.preventDefault();const q=document.getElementById('desktopVideoSearchInput')?.value.trim();if(q&&window.RushNative)RushNative.searchVideos(q);return;
+ }
+},true);
+const rushGoOriginal=go;
+go=function(){rushGoOriginal();if(isDesktopRush()){renderDesktopPage();if(page==='watch'&&window.RushNative&&mediaState.isVideo)RushNative.showCurrentVideo()}};
+const rushRenderFeedOriginal=renderFeedResults;
+renderFeedResults=function(data){rushRenderFeedOriginal(data);if(isDesktopRush())renderDesktopPage()};
+window.rushHomeFeedResults=renderFeedResults;
+const rushRenderSearchOriginal=renderSearchResults;
+renderSearchResults=function(){rushRenderSearchOriginal();if(isDesktopRush())renderDesktopPage()};
+window.rushVideoSearchResults=(items=>{
+ const previous=window.rushVideoSearchResults;
+ return function(values){if(typeof previous==='function')previous(values);if(isDesktopRush())renderDesktopPage()};
+})(window.rushVideoSearchResults);
+const rushCurrentPlaybackOriginal=window.rushCurrentPlayback;
+window.rushCurrentPlayback=function(data){if(typeof rushCurrentPlaybackOriginal==='function')rushCurrentPlaybackOriginal(data);if(isDesktopRush())renderDesktopPage()};
+const rushLibraryDataOriginal=window.rushLibraryData;
+window.rushLibraryData=function(data){if(typeof rushLibraryDataOriginal==='function')rushLibraryDataOriginal(data);if(isDesktopRush())renderDesktopPage()};
+const rushDownloadsDataOriginal=window.rushDownloadsData;
+window.rushDownloadsData=function(data){if(typeof rushDownloadsDataOriginal==='function')rushDownloadsDataOriginal(data);if(isDesktopRush())renderDesktopPage()};
+const rushVideoPlaybackOriginal=window.rushVideoPlaybackState;
+window.rushVideoPlaybackState=function(state){
+ if(typeof rushVideoPlaybackOriginal==='function')rushVideoPlaybackOriginal(state);
+ if(isDesktopRush())renderDesktopPage();
+ if(page==='watch'&&state&&state.state==='playing'&&window.RushNative)RushNative.showCurrentVideo();
+};
+window.addEventListener('resize',()=>{if(isDesktopRush())renderDesktopPage()});
+
 window.addEventListener('hashchange',go);
 window.addEventListener('resize',()=>{navPosition();indicator()});
 loadPrefs();
