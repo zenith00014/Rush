@@ -1,0 +1,127 @@
+# Rush Android Agent-Skills Audit
+
+**Audit date:** 2026-11-27  
+**Target branch:** `redesign/productive-mobile-ui`  
+**Project profile:** Kotlin 2.0.21, AGP 8.9.2, Gradle 8.11.1, Android SDK 36, Media3 1.9.2. The primary mobile UI is an HTML/CSS/JavaScript WebView backed by Kotlin/Media3. The source tree also contains Compose player and legacy screen code.
+
+This audit applies the relevant engineering rules from each supplied repository. Third-party skill files themselves were not copied into the app; the resulting implementation changes and applicability decisions are recorded here.
+
+## 1. Google Android Skills — `android/skills`
+
+Source: https://github.com/android/skills
+
+**Applied**
+- Media3 playlist preloading: configure a five-second preload for the next playlist item; recommendations are queued in a bounded batch so the player has a next item to preload.
+- Shorter startup/rebuffer thresholds: two seconds for initial playback and after rebuffer, while retaining a longer rolling buffer for unstable connections.
+- Real player buffering feedback: enable Media3 `PlayerView` buffering UI and publish Media3 buffering state to the WebView.
+- Feed and search skeleton placeholders use an animated shimmer with a reduced-motion fallback.
+- Existing edge-to-edge insets and `adjustResize` behavior were retained; search explicitly focuses its input and requests the keyboard.
+- Static ANR review: feed scoring and diversification now run on `Dispatchers.Default`; network search remains on `Dispatchers.IO`.
+
+**Not completed on source inspection alone**
+- No Perfetto trace, Android Studio Profiler capture, or physical-device network measurement was available in this workflow. Buffering improvements therefore need device verification under Wi-Fi and cellular conditions.
+
+Relevant official references:
+- https://developer.android.com/reference/androidx/media3/exoplayer/ExoPlayer
+- https://developer.android.com/reference/androidx/media3/ui/PlayerView
+- https://developer.android.com/reference/androidx/media3/exoplayer/DefaultLoadControl
+
+## 2. JetBrains Kotlin Agent Skills — `Kotlin/kotlin-agent-skills`
+
+Source: https://github.com/Kotlin/kotlin-agent-skills
+
+**Applied**
+- Preserved structured concurrency and rethrows `CancellationException` from coroutine-backed bridge and Compose operations.
+- Avoided moving the project to a new build system during a targeted Android app update.
+
+**Not applicable**
+- The Kotlin Toolchain skill explicitly targets Kotlin Toolchain/Amper projects; Rush is an existing Gradle Android project.
+- Kotlin/Native build-performance guidance is for iOS/KMP native targets; Rush is not a Kotlin/Native build.
+- The AGP 9 migration skill is for KMP/AGP 9 compatibility. Rush currently uses AGP 8.9.2 and is not being migrated to AGP 9 in this task.
+
+## 3. Awesome Kotlin Android Agent Skills — `almasumdev/awesome-kotlin-android-agent-skills`
+
+Source: https://github.com/almasumdev/awesome-kotlin-android-agent-skills
+
+**Applied**
+- Corrected coroutine cancellation handling in feed search, playback, search, downloads, and Compose routines.
+- Kept I/O on `Dispatchers.IO`; moved CPU-heavy candidate scoring/ranking to `Dispatchers.Default`.
+- Added stale-while-revalidate feed behavior: cached recommendations render immediately while the refresh runs; cached results are retained if refresh returns no items.
+- Added unit tests for freeform topic normalization, topic preference/snooze behavior, like/dislike ranking, and show-more topic ranking.
+- Enabled Gradle parallelism, build caching, and Kotlin incremental compilation.
+
+**Adapted**
+- The project already has native SharedPreferences, a local media library, Media3's stream cache, and a WebView presentation layer. A broad Room/Retrofit/Hilt/feature-module migration would be a separate architectural project, so those recommendations were not mechanically imposed here.
+
+## 4. Awesome Android Agent Skills — `new-silvermoon/awesome-android-agent-skills`
+
+Source: https://github.com/new-silvermoon/awesome-android-agent-skills
+
+**Applied**
+- Coroutine cancellation is rethrown rather than converted into ordinary error UI.
+- Interactive mobile controls were raised to 48dp minimum hit areas where practical.
+- Search inputs, selected filters, action states, empty states, retry actions, and loading announcements have explicit labels/states.
+- Existing Android unit tests were extended for the new feed-preference and ranking behavior.
+
+## 5. Android Skills Catalog — `javiercamarenatriguero/android-skills`
+
+Source: https://github.com/javiercamarenatriguero/android-skills
+
+**Applied**
+- Used scoped coroutine handling and explicit cancellation propagation.
+- Added behavior-focused tests around feed personalization and preferences.
+- Retained idiomatic Kotlin naming and null-safe handling in new logic.
+
+**Not applied wholesale**
+- The supplied MVI/Compose screen foundation is not a fit for the existing WebView-first presentation and would introduce a second, competing UI architecture.
+
+## 6. Compose Kotlin Agent Skills — `haidrrrry/compose-kotlin-agent-skills`
+
+Source: https://github.com/haidrrrry/compose-kotlin-agent-skills
+
+**Applied where Compose code exists**
+- Kept network work off the main thread and made cancellation explicit.
+- Added a Compose `CircularProgressIndicator` over the legacy Compose video player while buffering; the embedded `PlayerView` also displays its own buffer indicator.
+
+**Not applicable to the main feed**
+- The current redesigned feed is HTML/CSS/JavaScript in a WebView, not a Compose `LazyColumn`. Paging 3 and Compose recomposition-specific migration were not added to the WebView feed.
+
+## 7. Modern Jetpack Compose Skills — `anhvt52/jetpack-compose-skills`
+
+Source: https://github.com/anhvt52/jetpack-compose-skills
+
+**Applied where relevant**
+- Reviewed Kotlin null-safety and coroutine patterns.
+- Preserved state and loading/error behavior in existing Compose player code.
+- Added visible buffering progress to the Compose player path.
+
+**Not applicable**
+- Compose-only lazy-list keys, Material 3 navigation, and recomposition metrics do not govern the WebView-based mobile navigation/feed. The WebView UI instead uses accessible labels, ARIA states, semantic loading announcements, and responsive CSS.
+
+## 8. Performance Compose Skills — `santimattius/performance-compose-skills`
+
+Source: https://github.com/santimattius/performance-compose-skills
+
+**Applied where relevant**
+- Kept feed scoring off the main/UI thread.
+- Added buffer state feedback without continuously rebuilding the feed.
+- Kept the Media3 `PlayerView` as the native video surface rather than drawing video frames through Compose.
+
+**Not measured**
+- Compose recomposition tracing and Macrobenchmark require a running device/emulator and a profileable/release build. Those measurements were not available here.
+
+## Behavior changes covered by this update
+
+- For You feed candidates are now searched from selected topics, not only followed channels.
+- Topic entry accepts user phrases, maps known aliases locally, and preserves unmatched phrases as custom topics.
+- Topics support **Show more**, **Don’t show**, removal, and a one-day snooze with automatic expiry.
+- Like/dislike feedback affects recommendation scoring; liked videos appear in the Library's Liked shelf.
+- The video screen exposes autoplay, next, speed, quality, captions, and sleep-timer controls.
+- Search has recent-search history and loading skeletons; the feed and music search also show loading states.
+- The mobile interface removes Explore and News routes, the top header, and the creator strip.
+
+**Topic Assist note:** The phrase-to-topic helper is deterministic and runs locally using aliases and the topic vocabulary. It is not a remote generative-AI model.
+
+## Verification status
+
+The repository workflow validates the WebView/bridge contract, runs Android lint, runs unit tests, assembles the debug APK, and uploads the APK artifact. Final verification is considered complete only when the workflow for the latest code commit passes. Device-only PiP, soft-keyboard, TalkBack, and real-network buffering checks remain separate physical-device acceptance tests.
