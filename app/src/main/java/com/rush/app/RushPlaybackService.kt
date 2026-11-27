@@ -10,6 +10,8 @@ import androidx.media3.datasource.cache.SimpleCache
 import androidx.media3.database.StandaloneDatabaseProvider
 import java.io.File
 import java.io.IOException
+import android.os.Handler
+import android.os.Looper
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import kotlinx.coroutines.CoroutineScope
@@ -39,6 +41,35 @@ class RushPlaybackService : MediaSessionService() {
     private val recoveryAttempts = mutableMapOf<String, Int>()
     private var recoveryInProgress: String? = null
     private var activeMediaId: String? = null
+    private val sleepTimerHandler = Handler(Looper.getMainLooper())
+    private var sleepTimerRunnable: Runnable? = null
+    private var sleepAfterCurrent = false
+
+    fun setAutoplayEnabled(enabled: Boolean) {
+        getSharedPreferences("rush_prefs", MODE_PRIVATE).edit()
+            .putBoolean("autoplay_video", enabled).apply()
+        (mediaSession?.player as? ExoPlayer)?.pauseAtEndOfMediaItems = !enabled
+    }
+
+    fun setSleepTimer(minutes: Int): String {
+        sleepTimerRunnable?.let(sleepTimerHandler::removeCallbacks)
+        sleepTimerRunnable = null
+        sleepAfterCurrent = false
+        if (minutes == -1) {
+            sleepAfterCurrent = true
+            return "Sleep timer will stop after this video or track."
+        }
+        if (minutes == 0) return "Sleep timer cancelled."
+        require(minutes in 1..480) { "Choose a timer between 1 and 480 minutes." }
+        val task = Runnable {
+            mediaSession?.player?.pause()
+            sleepTimerRunnable = null
+            sleepAfterCurrent = false
+        }
+        sleepTimerRunnable = task
+        sleepTimerHandler.postDelayed(task, minutes * 60_000L)
+        return "Playback will stop in $minutes minutes."
+    }
 
     override fun onCreate() {
         super.onCreate()
@@ -95,6 +126,8 @@ class RushPlaybackService : MediaSessionService() {
             .setLoadControl(loadControl)
             .setWakeMode(androidx.media3.common.C.WAKE_MODE_LOCAL)
             .build()
+        player.pauseAtEndOfMediaItems = !getSharedPreferences("rush_prefs", MODE_PRIVATE)
+            .getBoolean("autoplay_video", true)
         player.addListener(object : androidx.media3.common.Player.Listener {
             override fun onMediaItemTransition(
                 mediaItem: androidx.media3.common.MediaItem?,
@@ -128,6 +161,11 @@ class RushPlaybackService : MediaSessionService() {
             }
 
             override fun onPlaybackStateChanged(playbackState: Int) {
+                if (playbackState == androidx.media3.common.Player.STATE_ENDED && sleepAfterCurrent) {
+                    sleepAfterCurrent = false
+                    player.pause()
+                    return
+                }
                 if (playbackState == androidx.media3.common.Player.STATE_READY) {
                     val mediaId = player.currentMediaItem?.mediaId.orEmpty()
                     recoveryAttempts.remove(mediaId)
@@ -342,6 +380,9 @@ class RushPlaybackService : MediaSessionService() {
             }
         }
         serviceScope.cancel()
+        sleepTimerRunnable?.let(sleepTimerHandler::removeCallbacks)
+        sleepTimerRunnable = null
+        sleepAfterCurrent = false
         mediaSession?.let { session ->
             session.player.release()
             session.release()
