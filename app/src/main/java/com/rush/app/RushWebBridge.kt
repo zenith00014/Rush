@@ -118,6 +118,8 @@ class RushWebBridge(
             .put("title", title.take(300))
             .put("creator", creator.take(200))
             .put("updatedAt", System.currentTimeMillis()))
+        if (rating == 1) LocalLibrary.like(prefs, cleanId, title, creator, "")
+        else LocalLibrary.unlike(prefs, cleanId)
         while (feedback.length() > 300) {
             val oldest = feedback.keys().asSequence().minByOrNull { feedback.optJSONObject(it)?.optLong("updatedAt", 0L) ?: 0L } ?: break
             feedback.remove(oldest)
