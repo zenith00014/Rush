@@ -44,6 +44,7 @@ class RushWebBridge(
 ) {
     @Volatile private var controllerFuture: com.google.common.util.concurrent.ListenableFuture<MediaController>? = null
     private var captionListener: androidx.media3.common.Player.Listener? = null
+    private var playbackSyncListener: androidx.media3.common.Player.Listener? = null
 
 
     @JavascriptInterface
@@ -1992,15 +1993,40 @@ class RushWebBridge(
                 MediaController.Builder(activity, token).buildAsync().also { controllerFuture = it }
             }
         }
-        return withContext(Dispatchers.IO) { future.get() }
+        val controller = withContext(Dispatchers.IO) { future.get() }
+        withContext(Dispatchers.Main.immediate) {
+            if (playbackSyncListener == null) {
+                val listener = object : androidx.media3.common.Player.Listener {
+                    override fun onMediaItemTransition(
+                        mediaItem: MediaItem?,
+                        reason: Int
+                    ) {
+                        loadCurrentPlayback()
+                    }
+
+                    override fun onIsPlayingChanged(isPlaying: Boolean) {
+                        loadCurrentPlayback()
+                    }
+                }
+                playbackSyncListener = listener
+                controller.addListener(listener)
+            }
+        }
+        return controller
     }
 
     fun release() {
         controllerFuture?.let { future ->
-            if (future.isDone) runCatching { future.get().let { player -> captionListener?.let(player::removeListener) } }
+            if (future.isDone) runCatching {
+                future.get().let { player ->
+                    captionListener?.let(player::removeListener)
+                    playbackSyncListener?.let(player::removeListener)
+                }
+            }
             MediaController.releaseFuture(future)
         }
         captionListener = null
+        playbackSyncListener = null
         controllerFuture = null
     }
 
