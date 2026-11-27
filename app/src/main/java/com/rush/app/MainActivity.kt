@@ -48,6 +48,7 @@ private fun androidx.media3.ui.PlayerView.prepareForPlayback(
  controllerAutoShow=true
  setResizeMode(androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_FIT)
  setKeepContentOnPlayerReset(true)
+ setShowBuffering(androidx.media3.ui.PlayerView.SHOW_BUFFERING_WHEN_PLAYING)
  setShowFastForwardButton(true)
  setShowRewindButton(true)
  setShowPreviousButton(true)
@@ -1386,7 +1387,14 @@ private fun RushPlayer(item:Pick,light:Boolean,back:()->Unit,queue:List<Pick>,on
    if(!audio&&controller?.currentMediaItem!=null&&android.os.Build.VERSION.SDK_INT>=26)TextButton(onClick={(context.activityOrNull() as? MainActivity)?.enterPlayerPip()}){Text("Picture-in-Picture",color=magenta)}
   }
   Spacer(Modifier.height(8.dp))
-  androidx.compose.ui.viewinterop.AndroidView(factory={ctx->androidx.media3.ui.PlayerView(ctx).prepareForPlayback(controller,isPlaying&&!audio)},update={it.prepareForPlayback(controller,isPlaying&&!audio)},modifier=Modifier.fillMaxWidth().height(videoPlayerHeight))
+  Box(Modifier.fillMaxWidth().height(videoPlayerHeight)) {
+   androidx.compose.ui.viewinterop.AndroidView(factory={ctx->androidx.media3.ui.PlayerView(ctx).prepareForPlayback(controller,isPlaying&&!audio)},update={it.prepareForPlayback(controller,isPlaying&&!audio)},modifier=Modifier.fillMaxSize())
+   if(isBuffering) CircularProgressIndicator(
+    modifier=Modifier.align(Alignment.Center).size(42.dp),
+    color=magenta,
+    strokeWidth=3.dp
+   )
+  }
   Text(if(isBuffering)"Buffering…" else recoveryMessage?:status,color=muted,fontSize=11.sp)
   Text(playingTitle,color=ink,fontSize=22.sp,fontWeight=FontWeight.Bold);Text(playingCreator,color=muted)
   if(!localFileAvailable) {
