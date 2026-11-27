@@ -196,3 +196,19 @@ The repository workflow validates the WebView/bridge contract, runs Android lint
 **Static-versus-dynamic SVG handling**
 - The top bar and drawer are literal HTML, so their icons are now inline SVG elements directly in the markup. Dynamic cards, rows and action sheets use the shared `ic(name)` SVG helper from the app script.
 - Validation checks the static HTML and dynamic helper separately so JavaScript expressions cannot accidentally be emitted as visible raw text in static markup.
+
+
+## Build regression follow-up — strict versus onboarding topic validation
+
+The failed CI run on commit `27ef0cf35ef2892013eda9a4cc186bbd8fdea8bf` passed WebView validation and Android Lint, but failed one unit test: `LocalLibraryTest.topicSelectionIsValidatedAndLegacyProductivityFlagDoesNotGateForYou`. That test requires normal topic editing to reject unknown values.
+
+The earlier first-run fix had made the shared `saveTopics` method accept arbitrary user phrases. That made profile onboarding work in principle but weakened the regular topic-editor contract.
+
+**Correction**
+- Restored strict catalog validation for `FeedPreferences.saveTopics`; unknown values are rejected and aliases must resolve to a catalog/default topic.
+- Added a separate `saveOnboardingTopics` method. It accepts built-in catalog/default topics and custom topics already stored locally, but rejects arbitrary unsaved phrases.
+- Updated `RushWebBridge.completeLocalProfile` to call the onboarding-specific method before it marks setup complete.
+- Added tests for default interests, Culture/Language defaults, a previously saved custom interest, alias normalization, regular-editor rejection, and onboarding rejection of unsaved custom phrases.
+- Updated WebView validation so future CI checks both API paths and their intended contracts.
+
+The CI run after these corrections is the verification gate. No APK is considered ready until Android lint, all unit tests, APK output verification and artifact upload complete successfully.
