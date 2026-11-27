@@ -91,6 +91,22 @@ class RushWebBridge(
     }
 
     @JavascriptInterface
+    fun getAutoplayEnabled(): Boolean =
+        activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)
+            .getBoolean("autoplay_video", true)
+
+    @JavascriptInterface
+    fun getVideoRating(id: String): Int {
+        val cleanId = id.trim().take(256)
+        if (cleanId.isBlank()) return 0
+        val prefs = activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)
+        return runCatching {
+            JSONObject(prefs.getString("rush_video_feedback", "{}") ?: "{}")
+                .optJSONObject(cleanId)?.optInt("rating", 0) ?: 0
+        }.getOrDefault(0)
+    }
+
+    @JavascriptInterface
     fun rateVideo(id: String, title: String, creator: String, rating: Int) {
         val cleanId = id.trim().take(256)
         if (cleanId.isBlank() || rating !in setOf(-1, 1)) return
