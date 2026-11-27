@@ -148,7 +148,7 @@ def main():
         "playback feedback influences recommendation profile": "fun rateVideo(" in bridge and "likedTerms" in discovery and "dislikedTerms" in discovery,
         "Media3 emits real buffering state": "rushPlaybackBufferingState" in bridge and "setShowBuffering" in activity,
         "skeletons exist with reduced-motion fallback": "yt-skeleton-thumb" in html and "prefers-reduced-motion:reduce" in html,
-        "        "responsive media row grid": "grid-template-columns:64px minmax(0,1fr) auto!important" in html,
+        "responsive media row grid": "grid-template-columns:64px minmax(0,1fr) auto!important" in html,
         "explicit video resume button": "data-video-resume" in html and "RushNative.showCurrentVideo()" in js,
         "inline video remains anchored when navigating tabs": "if(!mediaState.isVideo)RushNative.hideVideo();else RushNative.updateVideoPosition();" in js,
         "obsolete productive-channel copy removed": "selected productive channels" not in html and "productive channel selection" not in html,
