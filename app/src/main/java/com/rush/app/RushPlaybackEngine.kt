@@ -24,6 +24,14 @@ import java.util.concurrent.ConcurrentHashMap
 data class ResolvedMedia(val url: String, val extension: String, val mimeType: String, val qualityLabel: String, val subtitles: List<ResolvedSubtitle> = emptyList())
 data class ResolvedSubtitle(val url: String, val languageTag: String, val label: String, val mimeType: String)
 
+/** Picks the best direct stream at or below the requested cap; uses the lowest source format if none fit. */
+internal fun selectVideoHeight(availableHeights: List<Int>, maxHeight: Int?): Int? {
+    val heights = availableHeights.filter { it > 0 }.distinct()
+    if (heights.isEmpty()) return null
+    if (maxHeight == null) return heights.maxOrNull()
+    return heights.filter { it <= maxHeight }.maxOrNull() ?: heights.minOrNull()
+}
+
 @androidx.annotation.OptIn(markerClass = [androidx.media3.common.util.UnstableApi::class])
 object RushPlaybackEngine {
     @Volatile private var initialized = false
@@ -143,12 +151,11 @@ object RushPlaybackEngine {
         if (preferMp4 && formatStreams.isEmpty()) {
             throw IOException("MP4 is not available for this video. Choose Original format instead.")
         }
-        val stream = if (maxHeight == null) {
-            formatStreams.maxByOrNull { it.height }
-        } else {
-            formatStreams.filter { it.height == maxHeight }.maxByOrNull { it.bitrate }
-                ?: throw IOException("The selected ${maxHeight}p quality is not available for this video. Choose Auto or another quality.")
-        } ?: throw IOException("No playable video stream was found.")
+        val selectedHeight = selectVideoHeight(formatStreams.map { it.height }, maxHeight)
+            ?: throw IOException("No playable video stream was found.")
+        val stream = formatStreams.filter { it.height == selectedHeight }
+            .maxByOrNull { it.bitrate }
+            ?: throw IOException("No playable video stream was found.")
         if (!stream.isUrl || stream.content.isBlank()) throw IOException("The extractor did not return a direct stream URL.")
         val format = stream.format
         val subtitles = runCatching { mapSubtitles(info) }.getOrDefault(emptyList())
