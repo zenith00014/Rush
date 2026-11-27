@@ -201,8 +201,8 @@ def main():
         fail("Native video must not retain the removed fixed WebView player slot")
     if "nativeVideoView?.visibility=android.view.View.GONE" not in activity:
         fail("Exiting native fullscreen must collapse the video surface cleanly")
-    if "RushNative.updateVideoPosition()" in js or "nativeVideoPositionPending" in js:
-        fail("The obsolete WebView video scroll-position hook must be removed")
+    if "RushNative.updateVideoPosition()" not in js or "nativeVideoPositionPending" in js:
+        fail("The native inline video surface must follow the WebView player host")
 
     with tempfile.NamedTemporaryFile("w", suffix=".js", encoding="utf-8") as handle:
         handle.write(js)
