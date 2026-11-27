@@ -37,6 +37,32 @@ data class YouTubeSearchResult(
 )
 
 object LiveYouTubeSearch {
+    /**
+     * YouTube does not expose a stable Shorts flag through every extractor endpoint.
+     * Rush therefore uses the #Shorts/title marker and a conservative <= 180s duration
+     * rule. This intentionally prefers false positives over showing Shorts.
+     */
+    fun isShortForm(item: YouTubeSearchResult): Boolean {
+        val title = item.title.lowercase(Locale.ROOT)
+        if (Regex("""(^|[\s#])shorts?($|[\s#.,!?;:])""").containsMatchIn(title)) return true
+        val parts = item.duration.trim().split(':')
+        if (parts.size !in 2..3) return false
+        val values = parts.map { it.toLongOrNull() ?: return false }
+        val seconds = if (parts.size == 3) {
+            values[0] * 3600 + values[1] * 60 + values[2]
+        } else {
+            values[0] * 60 + values[1]
+        }
+        return seconds in 1..180
+    }
+
+    private fun filterVideoPage(
+        page: YouTubeSearchPage,
+        music: Boolean,
+        channels: Boolean,
+        playlists: Boolean
+    ): YouTubeSearchPage = if (music || channels || playlists) page
+        else page.copy(items = page.items.filterNot(::isShortForm))
     private val client = RushNetwork.newBuilder()
         .callTimeout(25, TimeUnit.SECONDS)
         .build()
@@ -79,7 +105,7 @@ object LiveYouTubeSearch {
         val primaryContinuation = primary?.continuation ?: extractorPage?.continuation
         if (music || merged.size >= 8) {
             if (merged.isEmpty()) throw IOException("YouTube returned no search results.")
-            return YouTubeSearchPage(merged.values.take(40), primaryContinuation)
+            return filterVideoPage(YouTubeSearchPage(merged.values.take(40), primaryContinuation), music, channels, playlists)
         }
 
         // A sparse filtered search is broadened once; keep the category-specific results first.
@@ -88,7 +114,7 @@ object LiveYouTubeSearch {
         }.getOrNull()
         broad?.items.orEmpty().forEach { merged.putIfAbsent(resultKey(it), it) }
         if (merged.isEmpty()) throw IOException("YouTube returned no search results.")
-        return YouTubeSearchPage(merged.values.take(40), broad?.continuation ?: primaryContinuation)
+        return filterVideoPage(YouTubeSearchPage(merged.values.take(40), broad?.continuation ?: primaryContinuation), music, channels, playlists)
     }
 
     @Throws(IOException::class)
@@ -110,10 +136,10 @@ object LiveYouTubeSearch {
                     page.nextPage?.let { nextCursors += SearchCursor(cursor.extractor, it) }
                 }
             }
-            return YouTubeSearchPage(found.values.take(40), saveCursors(nextCursors))
+            return filterVideoPage(YouTubeSearchPage(found.values.take(40), saveCursors(nextCursors)), music, channels, playlists)
         }
         val body = searchContext(music).put("continuation", continuation)
-        return executeSearch(body, music, channels, playlists)
+        return filterVideoPage(executeSearch(body, music, channels, playlists), music, channels, playlists)
     }
 
     private fun searchWithNewPipe(query: String, filters: List<String>, music: Boolean): YouTubeSearchPage {

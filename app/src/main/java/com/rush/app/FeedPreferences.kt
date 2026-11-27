@@ -59,7 +59,7 @@ object FeedPreferences {
     fun topics(prefs: SharedPreferences): List<String> {
         val stored = runCatching { JSONArray(prefs.getString(TOPICS_KEY, null) ?: "[]") }
             .getOrDefault(JSONArray())
-        val values = (0 until stored.length()).mapNotNull { stored.optString(it).trim().takeIf(String::isNotBlank) }
+        val values = (0 until stored.length()).mapNotNull { stored.optString(it).trim().takeIf { value -> value in topicCatalog } }
         return values.distinct().ifEmpty { defaultTopics }
     }
 
@@ -72,7 +72,7 @@ object FeedPreferences {
                 val kind = item.optString("kind").lowercase(Locale.ROOT)
                 val id = item.optString("id").trim()
                 val name = item.optString("name").trim()
-                if (kind !in setOf("channel", "news", "artist") || id.isBlank() || name.isBlank()) continue
+                if (kind != "channel" || id.isBlank() || name.isBlank()) continue
                 add(FeedSource(kind, id, name, item.optBoolean("productive", false)))
             }
         }
@@ -82,7 +82,7 @@ object FeedPreferences {
         val normalizedKind = kind.trim().lowercase(Locale.ROOT)
         val cleanId = id.trim().take(256)
         val cleanName = name.trim().take(160)
-        require(normalizedKind in setOf("channel", "news", "artist")) { "Unsupported source type." }
+        require(normalizedKind == "channel") { "Rush follows YouTube channels only." }
         require(cleanId.isNotBlank() && cleanName.isNotBlank()) { "A source name and ID are required." }
         val updated = sources(prefs).toMutableList()
         val index = updated.indexOfFirst { it.kind == normalizedKind && it.id == cleanId }

@@ -1,47 +1,41 @@
-# Rush for Android
+# Rush — YouTube Video Client for Android
 
-Rush is an Android media and discovery app built with Kotlin, AndroidX Media3 and a local HTML/CSS/JavaScript interface hosted in an Android WebView. Native Android components handle media playback, downloads, notifications, background playback, immersive video and Picture-in-Picture.
+Rush is an independent Android client focused on YouTube videos. The interface is rebuilt around a familiar video-discovery and watch experience, with a responsive desktop-style sidebar and mobile bottom navigation. Native AndroidX Media3 handles playback, background media controls and Picture-in-Picture.
 
-## Current product scope
+## Product scope
 
-- YouTube video search and playback with native playback controls, captions where available and immersive full-screen viewing
-- YouTube Music search and playback, history, lyrics and taste-based suggestions derived from followed musicians and listening history
-- Source follows for YouTube channels, news publishers and musicians
-- A two-mode Home feed: For You and Following
-- User-selected topics across learning, culture, entertainment and low-focus/viral categories
-- For You recommendations limited to YouTube channels the user explicitly includes in the productive-channel pool
-- News discovery and publisher-aware suggestions using topic relevance, reporting/context signals and followed publishers
-- Broad search across videos, music, news, YouTube channels and public video playlists; playlist tracks can be browsed and queued locally, and recommendation scoring is not applied as a search restriction
-- Public video playlists, local playlists, watch/listening history and offline downloads
-- Media3 background playback, notifications, app-private downloads and Picture-in-Picture
+- YouTube video search and playback with adaptive streams, captions where available and native full-screen controls
+- A video-only Home feed with **For you** and **Following** modes
+- Search and follow YouTube channels; follows are stored locally on this device
+- Browse and queue public YouTube video playlists
+- Watch Later, local playlists, watch history and an up-next queue
+- Offline video downloads, Android media notifications and Picture-in-Picture
+- No Shorts tab, Shorts feed, vertical swipe viewer or dedicated Shorts navigation
+- No Rush-placed display, banner, interstitial or video-ad UI; this project does not include an advertising SDK
 
-Movies and TV are temporarily hidden from the app while a permitted, reliable movie source is evaluated. They are not part of the current build.
+## Shorts filtering
 
-## Recommendation behavior
+YouTube's public extractor responses do not consistently expose a reliable Shorts/non-Shorts field. Rush therefore filters out videos whose title contains a Shorts marker and videos whose reported duration is three minutes or less. This is intentionally conservative and can also hide ordinary short videos. A Shorts item with no duration and no title marker may still pass through if YouTube changes the extractor response.
 
-For You draws from all followed YouTube channels; following is enough to supply candidates. Productive and informative material is ranked higher, rather than requiring a separate channel eligibility flag. Selected topics help rank videos across different subject areas, so productive recommendations are not limited to one discipline. Low-focus topics such as memes, pranks and viral clips remain available in topic selection and unrestricted search, but receive a ranking penalty in recommendation feeds.
+## What is not identical to the official YouTube app
 
-Following collects content from sources the user follows. Music suggestions use followed musicians and recent listening history. News suggestions use selected topics and followed publishers, with contextual/reporting signals prioritized over low-information viral terms. Search remains broader than recommendation feeds and is not filtered by the selected topics or productive-channel pool.
+Rush is not an official Google/YouTube app and does not currently authenticate with a Google account. It cannot perform account-backed actions such as likes/dislikes, comments, live chat, creator uploads, YouTube Premium features, or cloud-synchronised subscriptions, history and playlists. Channel follows, Watch Later, playlists and history in this build are local to the device.
 
-## Discovery and search engine
+“No ads” describes the Rush interface and its lack of an advertising SDK or Rush-inserted ad placements. Rush does not promise to remove a creator's in-video sponsorship, a promotion embedded in the uploaded video, or every advertising behaviour that may be delivered by YouTube's changing playback infrastructure.
 
-Rush uses one shared on-device intelligence layer plus dedicated video, news, music, channel and playlist scorers. Shared signals combine selected interests, follows, local history, freshness, metadata completeness and novelty with a section specialist. The two layers are combined for recommendations. Video and news feeds prioritise useful, informative material; music remains taste-led.
-
-Search is deliberately broader than recommendation feeds. It does not filter by selected topics, followed-source status or productivity classification. Search ranking uses BM25-style lexical relevance, title/source/summary field weights, phrase and prefix matching, typo tolerance and a small spam-quality adjustment. Low-focus and entertainment results remain searchable. See `docs/ALGORITHM_ARCHITECTURE.md` for the scoring model and current limitations.
+This is a substantial YouTube-focused client rebuild, not a claim of one-to-one parity with Google's private application, services, or account APIs.
 
 ## Project layout
 
-- `app/src/main/java/com/rush/app/`: Android application, WebView bridge, local library, playback, downloads, search and preference integration
-- `app/src/test/java/com/rush/app/`: regression tests for local library, playlists, queue and feed preferences
-- `scripts/validate_rush_html.py`: checks the WebView shell, HTML IDs, embedded JavaScript syntax and native bridge method references
-- `app/src/main/java/com/github/libretube/`: LibreTube-derived adaptive playback implementation
-- `app/src/main/assets/`: local WebView application and proof-of-origin helper assets
-- `app/src/main/proto/`: protocol schemas used by the adaptive playback implementation
-- `app/src/main/res/`: Android manifest resources, app label and themes
-- `.github/workflows/`: CI build and APK artifact workflow
-- `LICENSES/` and `THIRD_PARTY_NOTICES.md`: third-party license texts and attribution
+- `app/src/main/java/com/rush/app/`: Android activity, WebView bridge, YouTube extraction, playback, local library and downloads
+- `app/src/main/java/com/github/libretube/`: adaptive streaming implementation adapted from LibreTube/NewPipeExtractor
+- `app/src/main/assets/rush.html`: responsive Rush video interface
+- `app/src/test/java/com/rush/app/`: unit and regression tests, including Shorts filtering
+- `scripts/validate_rush_html.py`: validates the WebView, native bridge, Shorts exclusion and JavaScript syntax
+- `app/src/main/proto/`: protobuf schemas used by the adaptive streaming implementation
+- `LICENSES/` and `THIRD_PARTY_NOTICES.md`: third-party licence texts and attribution
 
-The WebView asset is part of the current application UI and is not safe to delete as an unused prototype. Likewise, the LibreTube-derived player and protobuf files are runtime dependencies, not disposable legacy files.
+The adaptive streaming implementation and protocol sources are runtime dependencies, not unused prototype code.
 
 ## Build locally
 
@@ -54,14 +48,14 @@ gradle --no-daemon :app:testDebugUnitTest :app:assembleDebug
 
 APK output: `app/build/outputs/apk/debug/app-debug.apk`.
 
-## Build on GitHub
+## GitHub Actions
 
-The **Build Rush Android APK** workflow runs on pushes to the supported branches and can also be started manually from GitHub Actions. Download the `rush-debug-apk` artifact from a successful run.
+The **Build Rush Android APK** workflow validates the WebView and native bridge, runs Android lint and unit tests, builds the debug APK, and uploads it as the `rush-debug-apk` artifact.
 
-A successful build verifies compilation and packaging only. It does not verify live YouTube extraction, stream playback, news-source coverage, recommendation relevance, offline download integrity or device-specific behavior; those require testing on physical Android devices.
+A successful build confirms compilation and packaging. It does not by itself verify live YouTube extraction, playback compatibility, download integrity or device-specific PiP behaviour; those need testing on physical Android devices.
 
 ## Compatibility and licensing
 
-YouTube extraction uses unofficial endpoints and NewPipeExtractor, so upstream service changes may affect compatibility. News discovery currently reads public Google News RSS search feeds. Use offline downloads only for content and methods you are permitted to keep offline.
+YouTube extraction uses unofficial extractor endpoints and NewPipeExtractor. YouTube can change those endpoints at any time, which may interrupt search or playback until the extractor is updated. Only download content and use offline playback when you have permission to do so.
 
-The playback implementation adapts LibreTube/NewPipeExtractor code under GPL-3.0-or-later. MP3 conversion uses a community-maintained FFmpegKit-compatible audio package under LGPL-3.0. Read `THIRD_PARTY_NOTICES.md` and the included license texts before distributing builds.
+The adaptive playback implementation is derived from LibreTube/NewPipeExtractor under GPL-3.0-or-later. Read `THIRD_PARTY_NOTICES.md` and the included licence texts before distributing builds.
