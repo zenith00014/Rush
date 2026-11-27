@@ -764,6 +764,22 @@ button{min-height:42px;min-width:42px}.btn,.ib,.chip{border:0;border-radius:24px
 }</style><style id="rush-local-profile-and-buffering">
 .yt-onboarding-page,.yt-profile-page{padding:18px 20px 36px}.yt-onboarding-page .yt-page-heading,.yt-profile-page .yt-page-heading{padding:12px 0 8px}.yt-onboarding-page h1,.yt-profile-page h1{font-size:30px;line-height:1.1}.yt-onboarding-page h2,.yt-profile-page h2{padding:20px 0 12px;font-size:20px}.yt-onboarding-page .yt-page-intro,.yt-profile-page .yt-page-intro{margin:10px 0 18px;color:#aaa;font-size:14px;line-height:1.5}.yt-profile-field{display:flex;flex-direction:column;gap:8px;margin:18px 0;color:#eee;font-size:13px;font-weight:600}.yt-profile-field span{display:inline;color:#aaa;font-weight:400}.yt-profile-field input{width:100%;min-height:48px;padding:0 14px;border:1px solid #444;border-radius:10px;background:#202020;color:#fff;font:16px Arial}.yt-onboarding-topics{display:flex;flex-wrap:wrap;gap:8px;padding:10px 0 16px}.yt-onboarding-topics .yt-filter{min-height:44px;padding:0 13px;border:1px solid #454545;border-radius:20px;background:#242424;color:#eee;font-size:12px}.yt-onboarding-topics .yt-filter[aria-pressed=true]{border-color:#ff315d;background:#3a2029;color:#fff}.yt-profile-card{margin:18px 0;padding:16px;border:1px solid #363636;border-radius:14px;background:#1b1b1b}.yt-profile-actions{display:flex;flex-wrap:wrap;gap:8px}.yt-profile-page .yt-avatar{width:48px;height:48px;display:grid;place-items:center;border-radius:50%;background:#303030;color:#fff;font-weight:700}.yt-video-playback-status.is-buffering{display:flex;align-items:center;gap:9px;min-height:30px}.yt-video-playback-status.is-buffering::before{content:"";width:14px;height:14px;flex:none;border:2px solid #555;border-top-color:#ff315d;border-radius:50%;animation:rush-buffer-spin .8s linear infinite}@keyframes rush-buffer-spin{to{transform:rotate(360deg)}}@media(prefers-reduced-motion:reduce){.yt-video-playback-status.is-buffering::before{animation:none;border-top-color:#ff315d}}
 .yt-download-progress{height:4px;margin:9px 0 3px;overflow:hidden;border-radius:4px;background:#3a3a3a}.yt-download-progress i{display:block;height:100%;border-radius:4px;background:#ff315d;transition:width .2s ease}
+/* Consistent vector iconography and accessible mobile hit targets. */
+.yt-header-icon{width:44px;height:44px;min-width:44px;font-size:0}
+.yt-header-icon .ic{width:21px;height:21px;stroke-width:1.9}
+.yt-profile{width:44px;height:44px;min-width:44px;font-size:14px}
+.yt-icon-action{display:grid;place-items:center;font-size:0}
+.yt-icon-action .ic{width:20px;height:20px;stroke-width:1.9}
+.yt-more .ic{width:18px;height:18px}
+.yt-drawer a,.yt-drawer>button{font-size:0}
+.yt-drawer a>.ic,.yt-drawer>button>.ic{width:20px;height:20px;flex:none;color:#bcbcbc;stroke-width:1.9}
+.yt-drawer-head button{width:44px;height:44px;display:grid;place-items:center;font-size:0}
+.yt-drawer-head button .ic{width:19px;height:19px}
+.yt-action-sheet button>.ic{width:20px;height:20px;flex:none;color:#c9c9c9}
+.yt-history-query>.ic{width:17px;height:17px;flex:none;color:#999}
+.yt-onboarding-page button:focus-visible,.yt-profile-page button:focus-visible,.yt-header-icon:focus-visible,.yt-icon-action:focus-visible,.yt-drawer a:focus-visible,.yt-drawer>button:focus-visible{outline:2px solid #ff315d;outline-offset:2px}
+.yt-onboarding-page form[aria-busy=true] .btn{opacity:.72;cursor:progress}
+.yt-onboarding-page form .btn:disabled{opacity:.72}
 </style></head>
 <body>
 <div class="app">
@@ -802,16 +818,16 @@ button{min-height:42px;min-width:42px}.btn,.ib,.chip{border:0;border-radius:24px
   </main>
 </div>
 <header class="top yt-topbar">
-    <div class="yt-top-left"><button class="yt-header-icon" id="menuShortcut" type="button" aria-label="Open navigation">☰</button><a class="yt-brand" href="#home"><span class="yt-brand-mark">▶</span><b>Rush</b></a></div>
-    <div class="yt-top-actions"><button class="yt-header-icon" id="searchShortcut" data-open-search aria-label="Search all Rush">⌕</button><button class="yt-header-icon" id="notificationsShortcut" type="button" aria-label="Subscriptions">♧</button><button class="yt-profile" id="profileShortcut" type="button" aria-label="Personalise Rush">R</button></div>
+    <div class="yt-top-left"><button class="yt-header-icon" id="menuShortcut" type="button" aria-label="Open navigation">'+ic('menu')+'</button><a class="yt-brand" href="#home"><span class="yt-brand-mark">▶</span><b>Rush</b></a></div>
+    <div class="yt-top-actions"><button class="yt-header-icon" id="searchShortcut" data-open-search aria-label="Search all Rush">'+ic('search')+'</button><button class="yt-header-icon" id="notificationsShortcut" type="button" aria-label="Subscriptions">'+ic('follow')+'</button><button class="yt-profile" id="profileShortcut" type="button" aria-label="Open local profile">R</button></div>
   </header>
 <div class="yt-drawer-scrim" id="mobileDrawerScrim"></div>
 <aside class="yt-drawer" id="mobileDrawer" aria-label="Rush navigation" aria-hidden="true">
- <div class="yt-drawer-head"><span class="yt-brand-mark">▶</span><b>Rush</b><button id="drawerClose" type="button" aria-label="Close menu">×</button></div>
- <a href="#home" data-drawer-route>⌂ <span>Home</span></a><a href="#search" data-drawer-route>⌕ <span>Search</span></a>
+ <div class="yt-drawer-head"><span class="yt-brand-mark">▶</span><b>Rush</b><button id="drawerClose" type="button" aria-label="Close menu">'+ic('close')+'</button></div>
+ <a href="#home" data-drawer-route>'+ic('home')+' <span>Home</span></a><a href="#search" data-drawer-route>'+ic('search')+' <span>Search</span></a>
  <div class="yt-drawer-divider"></div>
- <button data-drawer-library="history">◷ <span>History</span></button><button data-drawer-library="saved">◴ <span>Watch Later</span></button><button data-drawer-library="playlists">☷ <span>Playlists</span></button><button data-drawer-library="downloads">▣ <span>Downloads</span></button>
- <div class="yt-drawer-divider"></div><a href="#subs" data-drawer-route>▤ <span>Subscriptions</span></a><a href="#profile" data-drawer-route>◉ <span>Profile</span></a><a href="#topics" data-drawer-route>⚙ <span>Personalise Rush</span></a>
+ <button data-drawer-library="history">'+ic('clock')+' <span>History</span></button><button data-drawer-library="saved">'+ic('bookmark')+' <span>Watch Later</span></button><button data-drawer-library="playlists">'+ic('queue')+' <span>Playlists</span></button><button data-drawer-library="downloads">'+ic('download')+' <span>Downloads</span></button>
+ <div class="yt-drawer-divider"></div><a href="#subs" data-drawer-route>'+ic('follow')+' <span>Subscriptions</span></a><a href="#profile" data-drawer-route>'+ic('user')+' <span>Profile</span></a><a href="#topics" data-drawer-route>'+ic('settings')+' <span>Personalise Rush</span></a>
 </aside>
 <div class="yt-sheet-scrim" id="mobileSheetScrim"></div><section class="yt-action-sheet" id="mobileActionSheet" aria-label="Video actions" aria-hidden="true"></section>
 <main id="sc"><div id="v"></div></main>
@@ -833,13 +849,27 @@ const IC={
  music:'M9 18V5l11-2v13M9 18a3 3 0 11-6 0 3 3 0 016 0zM20 16a3 3 0 11-6 0 3 3 0 016 0z',
  news:'M4 4h13v16H4zM17 8h3v10a2 2 0 01-2 2M7 8h7M7 12h7M7 16h4',
  explore:'M12 22a10 10 0 110-20 10 10 0 010 20zM15.5 8.5l-2 5-5 2 2-5 5-2z',
+ user:'M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8',
  follow:'M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8M20 8v6M23 11h-6',
  search:'M11 4a7 7 0 100 14 7 7 0 000-14zM20 20l-4-4',
- play:'M7 4l13 8-13 8z', pause:'M7 5h3v14H7zM14 5h3v14h-3z',
- arrow:'M5 12h14M13 6l6 6-6 6', follow:'M12 5v14M5 12h14', library:'M4 4h13v16H4zM7 8h7M7 12h7M7 16h4M19 7v13'
+ menu:'M3 6h18M3 12h18M3 18h18',
+ bell:'M18 8a6 6 0 00-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4',
+ settings:'M12 8.5a3.5 3.5 0 100 7 3.5 3.5 0 000-7zM19.4 15a1.7 1.7 0 00.3 1.9l.1.1-1.7 2.9-.2-.1a1.7 1.7 0 00-1.9.3l-.1.1h-3.4l-.1-.2a1.7 1.7 0 00-1.9-.3l-.2.1-2.9-1.7.1-.2a1.7 1.7 0 00-.3-1.9l-.1-.1v-3.4l.2-.1a1.7 1.7 0 00.3-1.9l-.1-.2 1.7-2.9.2.1a1.7 1.7 0 001.9-.3l.1-.1h3.4l.1.2a1.7 1.7 0 001.9.3l.2-.1 2.9 1.7-.1.2a1.7 1.7 0 00.3 1.9l.1.1z',
+ refresh:'M20 7v5h-5M4 17v-5h5M5.6 9a7 7 0 0112-2L20 12M4 12l2.4 5a7 7 0 0012-2',
+ clock:'M12 22a10 10 0 110-20 10 10 0 010 20zM12 6v6l4 2',
+ bookmark:'M6 3h12v18l-6-4-6 4z',
+ queue:'M4 6h16M4 12h12M4 18h9M18 14l4 4-4 4',
+ download:'M12 3v12M7 10l5 5 5-5M4 19v2h16v-2',
+ share:'M12 16V3M7 8l5-5 5 5M5 13v7h14v-7',
+ close:'M6 6l12 12M18 6L6 18',
+ more:'M12 5h.01M12 12h.01M12 19h.01',
+ play:'M7 4l13 8-13 8z',
+ pause:'M7 5h3v14H7zM14 5h3v14h-3z',
+ arrow:'M5 12h14M13 6l6 6-6 6',
+ library:'M4 4h13v16H4zM7 8h7M7 12h7M7 16h4M19 7v13'
 };
 const FILL=['play','pause'];
-const ic=n=>'<svg class="ic'+(FILL.includes(n)?' f':'')+'" viewBox="0 0 24 24" aria-hidden="true"><path d="'+(IC[n]||IC.arrow)+'"/></svg>';
+const ic=n=>'<svg class="ic'+(FILL.includes(n)?' f':'')+'" viewBox="0 0 24 24" focusable="false" aria-hidden="true"><path d="'+(IC[n]||IC.arrow)+'"/></svg>';
 const PAL=['#FF6B3D','#4D7DFF','#D8FF3F','#35E0E0','#B58CFF','#3DDC84'];
 const TOPICS=['Science','Technology','AI and machine learning','Programming','Cybersecurity','History','Geography','Education','Languages','Literature','Books','Philosophy','Psychology','Mathematics','Space','Engineering','Economics','Business','Startups','Personal finance','Investing','Politics','Current affairs','World news','Environment','Climate','Health','Medicine','Fitness','Sports','Football','Basketball','Cricket','Esports','Gaming','Game development','Design','Art','Photography','Architecture','Fashion','Beauty','Makeup','Cooking','Food','Travel','Cars','Motorcycles','Nature','Wildlife','Pets','Gardening','Home improvement','Music','Music production','Classical music','Hip-hop','K-pop','Film analysis','Anime','Manga','Podcasts','Documentaries','Vlogs','Comedy','Memes','Viral clips','Celebrity gossip','Pranks','Internet drama','Rage bait','Reality TV','ASMR','Luxury','Shopping','Product reviews','Relationships','Parenting','Lifestyle','Meditation','Self-improvement','Romance','Horror','Internet culture','Streaming','Live streams','Board games','Collecting','Crafts'];
 const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -1761,7 +1791,7 @@ function mobileVideoCard(item,index=0,compact=false){
  const sourceId=String(item&&(item.sourceId||item.channelId)||''),sourceName=String(item&&(item.sourceName||item.artist||item.creator)||creator);
  const description=String(item&&item.description||'');
  const data=' data-video-id="'+esc(id)+'" data-title="'+esc(title)+'" data-creator="'+esc(creator)+'" data-thumbnail="'+esc(thumb)+'" data-source-id="'+esc(sourceId)+'" data-source-name="'+esc(sourceName)+'" data-description="'+esc(description)+'"';
- return '<article class="yt-video-card"><button class="yt-thumb"'+data+' aria-label="Play '+esc(title)+'">'+(thumb?'<img src="'+esc(thumb)+'" alt="" loading="lazy" decoding="async" onerror="this.hidden=true">':'')+(item&&item.duration?'<span class="yt-duration">'+esc(item.duration)+'</span>':'')+'</button><div class="yt-video-info">'+mobileAvatar(item)+'<div class="yt-video-copy"><button class="yt-video-title"'+data+'>'+esc(title)+'</button><span class="yt-video-meta">'+esc(creator)+(item&&item.duration?' · '+esc(item.duration):'')+'</span></div><button class="yt-more" type="button" data-mobile-more="video"'+data+' aria-label="More video actions">⋮</button></div>'+(!compact?'<div class="yt-card-actions"><button class="chip" data-save-item data-id="'+esc(id)+'" data-title="'+esc(title)+'" data-creator="'+esc(creator)+'" data-music="false" data-thumbnail="'+esc(thumb)+'">Save</button><button class="chip" data-queue-item data-id="'+esc(id)+'" data-title="'+esc(title)+'" data-creator="'+esc(creator)+'" data-music="false" data-thumbnail="'+esc(thumb)+'">Queue</button><button class="chip" data-download-media data-id="'+esc(id)+'" data-title="'+esc(title)+'" data-creator="'+esc(creator)+'" data-music="false">Download</button></div>':'')+'</article>';
+ return '<article class="yt-video-card"><button class="yt-thumb"'+data+' aria-label="Play '+esc(title)+'">'+(thumb?'<img src="'+esc(thumb)+'" alt="" loading="lazy" decoding="async" onerror="this.hidden=true">':'')+(item&&item.duration?'<span class="yt-duration">'+esc(item.duration)+'</span>':'')+'</button><div class="yt-video-info">'+mobileAvatar(item)+'<div class="yt-video-copy"><button class="yt-video-title"'+data+'>'+esc(title)+'</button><span class="yt-video-meta">'+esc(creator)+(item&&item.duration?' · '+esc(item.duration):'')+'</span></div><button class="yt-more" type="button" data-mobile-more="video"'+data+' aria-label="More video actions">'+ic('more')+'</button></div>'+(!compact?'<div class="yt-card-actions"><button class="chip" data-save-item data-id="'+esc(id)+'" data-title="'+esc(title)+'" data-creator="'+esc(creator)+'" data-music="false" data-thumbnail="'+esc(thumb)+'">Save</button><button class="chip" data-queue-item data-id="'+esc(id)+'" data-title="'+esc(title)+'" data-creator="'+esc(creator)+'" data-music="false" data-thumbnail="'+esc(thumb)+'">Queue</button><button class="chip" data-download-media data-id="'+esc(id)+'" data-title="'+esc(title)+'" data-creator="'+esc(creator)+'" data-music="false">Download</button></div>':'')+'</article>';
 }
 function mobileMusicCard(item){
  const thumb=mobileThumb(item),id=String(item&&item.id||''),title=String(item&&item.title||'Track'),artist=String(item&&(item.artist||item.creator)||'Unknown artist');
@@ -1774,11 +1804,11 @@ function activeTopics(){
 }
 function renderHome(){
  const topics=activeTopics();
- return '<section class="yt-home"><div class="yt-home-topics"><div class="yt-section-head"><div><span class="yt-eyebrow">YOUR TOPICS</span><h2>What matters to you</h2></div><div class="yt-home-actions"><button class="yt-icon-action" data-refresh-feed aria-label="Refresh recommendations" title="Refresh">↻</button><button class="yt-icon-action" data-open-topics aria-label="Manage topics" title="Manage topics">☷</button></div></div><div class="yt-topic-rail">'+(topics.length?topics.slice(0,16).map(t=>'<button class="yt-filter yt-topic-filter" data-home-topic="'+esc(t)+'" aria-pressed="'+(homeTopicFilter===t)+'">'+esc(t)+'</button>').join(''):'<span class="yt-feed-empty">Add topics to shape your feed.</span>')+'<button class="yt-filter" data-open-topics>＋ Manage</button></div></div><div class="yt-filter-row"><button class="yt-filter" data-tab="fy" aria-pressed="'+(homeTab==='fy')+'">For you</button><button class="yt-filter" data-tab="fo" aria-pressed="'+(homeTab==='fo')+'">Following</button><span class="yt-filter-divider"></span><button class="yt-filter" data-home-filter="All" aria-pressed="'+(homeFilter==='All')+'">All</button><button class="yt-filter" data-home-filter="Videos" aria-pressed="'+(homeFilter==='Videos')+'">Videos</button><button class="yt-filter" data-home-filter="Music" aria-pressed="'+(homeFilter==='Music')+'">Music</button></div><p class="yt-feed-status" id="homeFeedStatus" aria-live="polite">Building your recommendations…</p><div id="homeFeedResults" class="yt-feed"></div><div class="yt-feed-footer"><button class="yt-refresh-wide" data-refresh-feed>Refresh recommendations ↻</button><button class="yt-manage-topics" data-open-snooze>Pause topics for a day</button></div></section>';
+ return '<section class="yt-home"><div class="yt-home-topics"><div class="yt-section-head"><div><span class="yt-eyebrow">YOUR TOPICS</span><h2>What matters to you</h2></div><div class="yt-home-actions"><button class="yt-icon-action" data-refresh-feed aria-label="Refresh recommendations" title="Refresh">'+ic('refresh')+'</button><button class="yt-icon-action" data-open-topics aria-label="Manage topics" title="Manage topics">'+ic('settings')+'</button></div></div><div class="yt-topic-rail">'+(topics.length?topics.slice(0,16).map(t=>'<button class="yt-filter yt-topic-filter" data-home-topic="'+esc(t)+'" aria-pressed="'+(homeTopicFilter===t)+'">'+esc(t)+'</button>').join(''):'<span class="yt-feed-empty">Add topics to shape your feed.</span>')+'<button class="yt-filter" data-open-topics>＋ Manage</button></div></div><div class="yt-filter-row"><button class="yt-filter" data-tab="fy" aria-pressed="'+(homeTab==='fy')+'">For you</button><button class="yt-filter" data-tab="fo" aria-pressed="'+(homeTab==='fo')+'">Following</button><span class="yt-filter-divider"></span><button class="yt-filter" data-home-filter="All" aria-pressed="'+(homeFilter==='All')+'">All</button><button class="yt-filter" data-home-filter="Videos" aria-pressed="'+(homeFilter==='Videos')+'">Videos</button><button class="yt-filter" data-home-filter="Music" aria-pressed="'+(homeFilter==='Music')+'">Music</button></div><p class="yt-feed-status" id="homeFeedStatus" aria-live="polite">Building your recommendations…</p><div id="homeFeedResults" class="yt-feed"></div><div class="yt-feed-footer"><button class="yt-refresh-wide" data-refresh-feed>Refresh recommendations ↻</button><button class="yt-manage-topics" data-open-snooze>Pause topics for a day</button></div></section>';
 }
 function renderSubsPage(){
  const channels=(prefs.sources||[]).filter(s=>s.kind==='channel');
- return '<section class="yt-subs-page"><div class="yt-page-heading"><div><span class="yt-eyebrow">YOUR CHANNELS</span><h1>Subscriptions</h1></div><button class="yt-icon-action" data-open-search aria-label="Find channels">⌕</button></div><div class="yt-subscription-list">'+(channels.length?channels.map(s=>'<article class="yt-subscription-row">'+mobileAvatar({name:s.name})+'<div class="yt-source-copy"><b>'+esc(s.name)+'</b><span>Subscribed channel</span></div><button class="chip" data-unfollow-kind="channel" data-source-id="'+esc(s.id)+'">Following</button></article>').join(''):'<p class="yt-feed-empty">No channels followed yet. Search for a channel and follow it to see new uploads here.</p>')+'</div><div class="yt-subs-feed-head"><h2>Latest uploads</h2><button class="yt-refresh-wide" data-refresh-feed>Refresh ↻</button></div><p class="yt-feed-status" id="subsFeedStatus" aria-live="polite">Loading uploads from your channels…</p><div id="subsFeedResults" class="yt-feed"></div></section>';
+ return '<section class="yt-subs-page"><div class="yt-page-heading"><div><span class="yt-eyebrow">YOUR CHANNELS</span><h1>Subscriptions</h1></div><button class="yt-icon-action" data-open-search aria-label="Find channels">'+ic('search')+'</button></div><div class="yt-subscription-list">'+(channels.length?channels.map(s=>'<article class="yt-subscription-row">'+mobileAvatar({name:s.name})+'<div class="yt-source-copy"><b>'+esc(s.name)+'</b><span>Subscribed channel</span></div><button class="chip" data-unfollow-kind="channel" data-source-id="'+esc(s.id)+'">Following</button></article>').join(''):'<p class="yt-feed-empty">No channels followed yet. Search for a channel and follow it to see new uploads here.</p>')+'</div><div class="yt-subs-feed-head"><h2>Latest uploads</h2><button class="yt-refresh-wide" data-refresh-feed>Refresh ↻</button></div><p class="yt-feed-status" id="subsFeedStatus" aria-live="polite">Loading uploads from your channels…</p><div id="subsFeedResults" class="yt-feed"></div></section>';
 }
 function skeletonCards(count=3){
  return Array.from({length:count},()=>'<article class="yt-skeleton-card" aria-hidden="true"><div class="yt-skeleton-thumb"></div><div class="yt-skeleton-row"><div class="yt-skeleton-avatar"></div><div class="yt-skeleton-copy"><i></i><i></i><i></i></div></div></article>').join('');
@@ -1790,22 +1820,22 @@ function markSearchFinished(key){
  if(unifiedPendingKeys.has(key)){unifiedPendingKeys.delete(key);unifiedPending=Math.max(0,unifiedPending-1)}
 }
 function searchHistoryHtml(){
- return searchHistory.length?'<section class="yt-search-history"><div class="yt-section-head"><h2>Recent searches</h2><button class="yt-text-action" data-clear-search-history>Clear</button></div>'+searchHistory.map(q=>'<button class="yt-history-query" data-search-history="'+esc(q)+'"><span>◷</span><b>'+esc(q)+'</b><span>↗</span></button>').join('')+'</section>':'';
+ return searchHistory.length?'<section class="yt-search-history"><div class="yt-section-head"><h2>Recent searches</h2><button class="yt-text-action" data-clear-search-history>Clear</button></div>'+searchHistory.map(q=>'<button class="yt-history-query" data-search-history="'+esc(q)+'">'+ic('clock')+'<b>'+esc(q)+'</b>'+ic('arrow')+'</button>').join('')+'</section>':'';
 }
 function renderSearchPage(){
  const active=!!unifiedQuery;
- return '<section class="yt-search-page"><form id="mobileSearchForm" class="yt-search-box" role="search"><span>⌕</span><input id="q" type="search" placeholder="Search YouTube" aria-label="Search videos, music, channels and playlists" autocomplete="off" value="'+esc(active?unifiedQuery:'')+'"><button type="button" data-clear-search aria-label="Clear search">×</button></form><div id="searchHistory">'+(active?'':searchHistoryHtml())+'</div><div id="searchResultPanel" '+(active?'':'hidden')+'><div class="yt-search-filters"><button class="yt-filter" data-search-filter="all" aria-pressed="'+(unifiedMode==='all')+'">All</button><button class="yt-filter" data-search-filter="videos" aria-pressed="'+(unifiedMode==='videos')+'">Videos</button><button class="yt-filter" data-search-filter="music" aria-pressed="'+(unifiedMode==='music')+'">Music</button><button class="yt-filter" data-search-filter="channels" aria-pressed="'+(unifiedMode==='channels')+'">Channels</button><button class="yt-filter" data-search-filter="playlists" aria-pressed="'+(unifiedMode==='playlists')+'">Playlists</button></div><div id="unifiedResults" class="yt-search-results"></div><div id="publicPlaylistContent"></div></div></section>';
+ return '<section class="yt-search-page"><form id="mobileSearchForm" class="yt-search-box" role="search">'+ic('search')+'<input id="q" type="search" placeholder="Search YouTube" aria-label="Search videos, music, channels and playlists" autocomplete="off" value="'+esc(active?unifiedQuery:'')+'"><button type="button" data-clear-search aria-label="Clear search">'+ic('close')+'</button></form><div id="searchHistory">'+(active?'':searchHistoryHtml())+'</div><div id="searchResultPanel" '+(active?'':'hidden')+'><div class="yt-search-filters"><button class="yt-filter" data-search-filter="all" aria-pressed="'+(unifiedMode==='all')+'">All</button><button class="yt-filter" data-search-filter="videos" aria-pressed="'+(unifiedMode==='videos')+'">Videos</button><button class="yt-filter" data-search-filter="music" aria-pressed="'+(unifiedMode==='music')+'">Music</button><button class="yt-filter" data-search-filter="channels" aria-pressed="'+(unifiedMode==='channels')+'">Channels</button><button class="yt-filter" data-search-filter="playlists" aria-pressed="'+(unifiedMode==='playlists')+'">Playlists</button></div><div id="unifiedResults" class="yt-search-results"></div><div id="publicPlaylistContent"></div></div></section>';
 }
 function renderTopicsPage(){
  const topics=prefs.topics||[],modes=prefs.topicModes||{};
- return '<section class="yt-preferences-page"><div class="yt-page-heading"><div><span class="yt-eyebrow">FEED CONTROLS</span><h1>Your topics</h1></div><button class="yt-icon-action" data-open-snooze aria-label="Snooze topics">◷</button></div><p class="yt-page-intro">Tell Rush what you want to learn or watch. Add a phrase and Rush will sort it into a topic where possible. Search remains unrestricted.</p><form id="topicAddForm" class="yt-topic-entry"><input id="topicInput" type="text" maxlength="64" autocomplete="off" placeholder="e.g. building apps with Kotlin" aria-label="Describe a topic to add"><button type="submit">Add topic</button></form><p class="yt-topic-assist-note">Topic Assist uses the on-device topic vocabulary. New phrases are kept as custom topics when no match is found.</p><div class="yt-topic-list" id="topicPreferenceList">'+(topics.map(topic=>{
+ return '<section class="yt-preferences-page"><div class="yt-page-heading"><div><span class="yt-eyebrow">FEED CONTROLS</span><h1>Your topics</h1></div><button class="yt-icon-action" data-open-snooze aria-label="Snooze topics">'+ic('clock')+'</button></div><p class="yt-page-intro">Tell Rush what you want to learn or watch. Add a phrase and Rush will sort it into a topic where possible. Search remains unrestricted.</p><form id="topicAddForm" class="yt-topic-entry"><input id="topicInput" type="text" maxlength="64" autocomplete="off" placeholder="e.g. building apps with Kotlin" aria-label="Describe a topic to add"><button type="submit">Add topic</button></form><p class="yt-topic-assist-note">Topic Assist uses the on-device topic vocabulary. New phrases are kept as custom topics when no match is found.</p><div class="yt-topic-list" id="topicPreferenceList">'+(topics.map(topic=>{
  const mode=modes[topic]||'normal',snoozed=(prefs.snoozedTopics||[]).some(x=>x.name===topic);
  return '<article class="yt-topic-preference"><div class="yt-topic-name"><b>'+esc(topic)+'</b>'+(snoozed?'<span class="yt-topic-state">Snoozed</span>':'')+'</div><div class="yt-topic-actions"><button class="chip '+(mode==='more'?'selected':'')+'" data-topic-mode="more" data-topic-name="'+esc(topic)+'">Show more</button><button class="chip '+(mode==='hide'?'selected':'')+'" data-topic-mode="hide" data-topic-name="'+esc(topic)+'">Don’t show</button><button class="yt-topic-remove" data-topic-remove="'+esc(topic)+'" aria-label="Remove '+esc(topic)+'">×</button></div></article>';
  }).join('')||'<p class="yt-feed-empty">No topics yet. Add a topic above.</p>')+'</div><div class="yt-preference-footer"><button class="btn k" data-open-snooze>Manage snoozed topics</button></div></section>';
 }
 function refreshLocalProfile(){
- try{localProfileData=window.RushNative?JSON.parse(RushNative.getLocalProfile()):{displayName:'',setupComplete:true}}
- catch(e){localProfileData={displayName:'',setupComplete:true}}
+ try{localProfileData=window.RushNative?JSON.parse(RushNative.getLocalProfile()):{displayName:'',setupComplete:false}}
+ catch(e){localProfileData={displayName:'',setupComplete:false}}
  return localProfileData;
 }
 let localProfileData={displayName:'',setupComplete:false};
@@ -1845,7 +1875,7 @@ function libraryShelf(title,key,ids,empty){
  return '<section class="yt-library-shelf"><div class="yt-section-head"><h2>'+title+'</h2><button class="yt-view-all" data-library-view="'+key+'">View all</button></div><div class="yt-library-carousel">'+(rows||'<p class="yt-library-empty">'+empty+'</p>')+'</div></section>';
 }
 function renderLibraryPage(){
- return '<section class="yt-library-page"><div class="yt-page-heading"><div><span class="yt-eyebrow">YOUR COLLECTION</span><h1>Library</h1></div><button class="yt-icon-action" data-open-player aria-label="Open music player">♫</button></div><div id="libraryContent"></div></section>';
+ return '<section class="yt-library-page"><div class="yt-page-heading"><div><span class="yt-eyebrow">YOUR COLLECTION</span><h1>Library</h1></div><button class="yt-icon-action" data-open-player aria-label="Open music player">'+ic('music')+'</button></div><div id="libraryContent"></div></section>';
 }
 function renderLibraryContent(){
  const root=$('#libraryContent');if(!root)return;
@@ -1879,7 +1909,7 @@ function renderVideoPage(){
  return '<section class="yt-watch-page"><div class="yt-watch-top"><button class="yt-back" data-mobile-route="home">‹ Back</button><div class="yt-player-tools"><button class="chip" data-video-fullscreen>⛶ Fullscreen</button><button class="chip" data-video-resume>Resume</button></div></div><div id="videoPlayerHost" class="yt-player-host"><div class="yt-player-placeholder">'+(thumb?'<img src="'+esc(thumb)+'" alt="">':'')+'<button class="yt-player-play" data-video-resume aria-label="Play video">▶</button></div></div><p class="yt-video-playback-status" id="videoPlaybackStatus" aria-live="polite">Preparing video…</p><div class="yt-watch-copy"><h1>'+esc(title)+'</h1><div class="yt-watch-stats">'+esc(item.views||item.viewCount||'')+(item.age?' · '+esc(item.age):'')+'</div><p class="yt-watch-description">'+esc(item.description||'')+'</p></div><div class="yt-channel-row">'+mobileAvatar({artist:creator})+'<div class="yt-source-copy"><b>'+esc(creator)+'</b><span>Creator</span></div><button class="yt-subscribe" data-follow-kind="channel" data-source-id="'+esc(item.sourceId||creator)+'" data-source-name="'+esc(item.sourceName||creator)+'">'+(sourceExists('channel',item.sourceId||creator)?'Following':'Subscribe')+'</button></div><div class="yt-engagement"><button class="chip '+(rating===1?'selected':'')+'" data-rate-video="1" data-id="'+esc(id)+'" data-title="'+esc(title)+'" data-creator="'+esc(creator)+'">👍 Like</button><button class="chip '+(rating===-1?'selected':'')+'" data-rate-video="-1" data-id="'+esc(id)+'" data-title="'+esc(title)+'" data-creator="'+esc(creator)+'">👎 Dislike</button><button class="chip" data-save-item data-id="'+esc(id)+'" data-title="'+esc(title)+'" data-creator="'+esc(creator)+'" data-music="false" data-thumbnail="'+esc(thumb)+'">♡ Save</button><button class="chip" data-share-video="'+esc(id)+'">↗ Share</button><button class="chip" data-download-media data-id="'+esc(id)+'" data-title="'+esc(title)+'" data-creator="'+esc(creator)+'" data-music="false">Download</button><button class="chip" data-video-next>Next ›</button></div><div class="yt-watch-settings"><label class="yt-autoplay-setting"><span><b>Autoplay</b><small>Play the next recommendation automatically</small></span><input id="autoplayToggle" type="checkbox" '+(autoplayEnabled?'checked':'')+'></label><details class="yt-more-options"><summary>More options</summary><div class="yt-sleep-control"><b>Sleep timer</b><div class="yt-sleep-options"><button class="chip" data-sleep-minutes="15">15 min</button><button class="chip" data-sleep-minutes="30">30 min</button><button class="chip" data-sleep-minutes="45">45 min</button><button class="chip" data-sleep-minutes="60">60 min</button><button class="chip" data-sleep-minutes="-1">After this video</button><button class="chip" data-sleep-minutes="0">Cancel</button></div><p id="sleepTimerStatus" class="yt-video-meta" aria-live="polite"></p></div><div class="yt-player-option-row"><b>Playback speed</b><div class="yt-sleep-options">'+speedOptions+'</div></div><div class="yt-player-option-row"><b>Playback & download quality</b><div class="yt-sleep-options">'+qualityOptions+'</div><p class="yt-video-meta">Downloads use the best directly downloadable format at or below this cap. The source may offer a lower maximum.</p></div><div class="yt-player-option-row"><label><input id="captionsToggle" type="checkbox" '+(captionsEnabled?'checked':'')+'> Captions</label></div></details></div><section class="yt-section yt-watch-next"><div class="yt-section-head"><h2>Up next</h2><button class="yt-view-all" data-refresh-feed>Refresh</button></div><div class="yt-feed">'+(next.map(mobileVideoCard).join('')||'<p class="yt-feed-empty">More videos will appear as recommendations load.</p>')+'</div></section></section>';
 }
 function renderMusicPage(){
- return '<section class="yt-music-page"><div class="yt-page-heading"><div><span class="yt-eyebrow">LISTEN</span><h1>Music</h1></div><button class="yt-icon-action" data-open-player>♫</button></div><div class="yt-music-now"><h2 id="musicNowTitle">'+(mediaState.isMusic?esc(mediaState.title):'Nothing playing')+'</h2><p id="musicNowArtist">'+(mediaState.isMusic?esc(mediaState.artist):'Choose a track to start listening.')+'</p><button class="btn k" data-open-player>Open player</button><button class="btn" data-music-toggle>Play / Pause</button><p id="musicStatus" class="yt-feed-status">Your listening history shapes music picks.</p></div><section class="yt-section"><div class="yt-section-head"><h2>Picked for you</h2></div><div id="musicSuggestions" class="yt-feed"></div></section><form class="yt-search-box" id="mobileMusicForm"><span>⌕</span><input id="musicQuery" type="search" placeholder="Search songs or artists" aria-label="Search music"><button type="submit">↵</button></form><div id="musicResults" class="yt-feed"></div><section class="yt-section"><div class="yt-section-head"><h2>Recently played</h2></div><div id="musicRecent"></div></section></section>';
+ return '<section class="yt-music-page"><div class="yt-page-heading"><div><span class="yt-eyebrow">LISTEN</span><h1>Music</h1></div><button class="yt-icon-action" data-open-player aria-label="Open music player">'+ic('music')+'</button></div><div class="yt-music-now"><h2 id="musicNowTitle">'+(mediaState.isMusic?esc(mediaState.title):'Nothing playing')+'</h2><p id="musicNowArtist">'+(mediaState.isMusic?esc(mediaState.artist):'Choose a track to start listening.')+'</p><button class="btn k" data-open-player>Open player</button><button class="btn" data-music-toggle>Play / Pause</button><p id="musicStatus" class="yt-feed-status">Your listening history shapes music picks.</p></div><section class="yt-section"><div class="yt-section-head"><h2>Picked for you</h2></div><div id="musicSuggestions" class="yt-feed"></div></section><form class="yt-search-box" id="mobileMusicForm"><span>⌕</span><input id="musicQuery" type="search" placeholder="Search songs or artists" aria-label="Search music"><button type="submit">↵</button></form><div id="musicResults" class="yt-feed"></div><section class="yt-section"><div class="yt-section-head"><h2>Recently played</h2></div><div id="musicRecent"></div></section></section>';
 }
 function renderSources(){
  const root=$('#followedSources');if(!root)return;
@@ -1976,6 +2006,12 @@ function updateMobileNavigation(){
  document.querySelectorAll('#nav a').forEach(a=>a.dataset.k===page?a.setAttribute('aria-current','page'):a.removeAttribute('aria-current'));
  navPosition();
 }
+function setMobileDrawerOpen(open){
+ const app=document.querySelector('.app'),drawer=$('#mobileDrawer'),scrim=$('#mobileDrawerScrim');
+ app?.classList.toggle('drawer-open',!!open);
+ drawer?.setAttribute('aria-hidden',String(!open));
+ scrim?.setAttribute('aria-hidden',String(!open));
+}
 function mobileSyncPlayer(){if(window.RushNative&&mediaState.isVideo)window.RushNative.updateVideoPosition()}
 function mobileLoadPrefs(){
  try{if(window.RushNative){const raw=RushNative.getFeedPreferences();if(raw)prefs=JSON.parse(raw)}}catch(e){}
@@ -2010,7 +2046,12 @@ libraryView='overview';
 const mobileNav=[['home','Home','home'],['search','Search','search'],['subs','Subs','follow'],['library','Library','library']];
 $('#nav').innerHTML='<i class="pill"></i>'+mobileNav.map(([key,label,icon])=>'<a href="#'+key+'" data-k="'+key+'">'+ic(icon)+'<span>'+label+'</span></a>').join('');
 document.addEventListener('click',e=>{
- const target=e.target.closest('button,a');if(!target)return;
+ const target=e.target.closest('button,a')||e.target.closest('#mobileDrawerScrim');if(!target)return;
+ if(target.id==='menuShortcut'){e.preventDefault();setMobileDrawerOpen(true);return}
+ if(target.id==='drawerClose'||target.id==='mobileDrawerScrim'){e.preventDefault();setMobileDrawerOpen(false);return}
+ if(target.id==='notificationsShortcut'){e.preventDefault();setMobileDrawerOpen(false);location.hash='#subs';return}
+ if(target.hasAttribute('data-drawer-route')){e.preventDefault();setMobileDrawerOpen(false);location.hash=(target.getAttribute('href')||'#home');return}
+ if(target.hasAttribute('data-drawer-library')){e.preventDefault();libraryView=target.dataset.drawerLibrary||'saved';setMobileDrawerOpen(false);location.hash='#library';return}
  if(target.hasAttribute('data-video-id')){
   mobileCurrentVideo={id:target.dataset.videoId,title:target.dataset.title||'Video',artist:target.dataset.creator||'YouTube',creator:target.dataset.creator||'YouTube',thumbnail:target.dataset.thumbnail||'',sourceId:target.dataset.sourceId||'',sourceName:target.dataset.sourceName||target.dataset.creator||'YouTube',description:target.dataset.description||''};
   if(page==='videos'){$('#v').innerHTML=R.videos();mobileSyncPlayer()}else location.hash='#videos';
@@ -2055,12 +2096,28 @@ document.addEventListener('click',e=>{
  if(target.hasAttribute('data-video-quality')){videoQuality=Number(target.dataset.videoQuality);if(window.RushNative)RushNative.setVideoQuality(videoQuality);document.querySelectorAll('[data-video-quality]').forEach(b=>{b.classList.toggle('selected',b.dataset.videoQuality===target.dataset.videoQuality);b.setAttribute('aria-pressed',String(b.dataset.videoQuality===target.dataset.videoQuality))});const qualityStatus=$('#profileQualityStatus');if(qualityStatus)qualityStatus.textContent='Current quality cap: '+(target.dataset.videoQuality==='0'?'Auto':target.dataset.videoQuality+'p');mobileToast(target.dataset.videoQuality==='0'?'Quality set to Auto':'Quality cap set to '+target.dataset.videoQuality+'p');return}
  if(target.hasAttribute('data-sleep-minutes')){if(window.RushNative)RushNative.setSleepTimer(Number(target.dataset.sleepMinutes));return}
  if(target.hasAttribute('data-share-video')){mobileCopy('https://www.youtube.com/watch?v='+encodeURIComponent(target.dataset.shareVideo||''));return}
- if(target.hasAttribute('data-mobile-more')){const id=target.dataset.videoId,title=target.dataset.title,creator=target.dataset.creator,thumb=target.dataset.thumbnail;const root=$('#mobileActionSheet');if(root){root.innerHTML='<h3>'+esc(title)+'</h3><button data-save-item data-id="'+esc(id)+'" data-title="'+esc(title)+'" data-creator="'+esc(creator)+'" data-music="false" data-thumbnail="'+esc(thumb)+'">♡ <span>Save to Watch Later</span></button><button data-queue-item data-id="'+esc(id)+'" data-title="'+esc(title)+'" data-creator="'+esc(creator)+'" data-music="false" data-thumbnail="'+esc(thumb)+'">＋ <span>Add to queue</span></button><button data-download-media data-id="'+esc(id)+'" data-title="'+esc(title)+'" data-creator="'+esc(creator)+'" data-music="false">↓ <span>Download video</span></button><button data-share-video="'+esc(id)+'">↗ <span>Share</span></button>';document.querySelector('.app')?.classList.add('sheet-open');root.setAttribute('aria-hidden','false')}return}
+ if(target.hasAttribute('data-mobile-more')){const id=target.dataset.videoId,title=target.dataset.title,creator=target.dataset.creator,thumb=target.dataset.thumbnail;const root=$('#mobileActionSheet');if(root){root.innerHTML='<h3>'+esc(title)+'</h3><button data-save-item data-id="'+esc(id)+'" data-title="'+esc(title)+'" data-creator="'+esc(creator)+'" data-music="false" data-thumbnail="'+esc(thumb)+'">'+ic('bookmark')+' <span>Save to Watch Later</span></button><button data-queue-item data-id="'+esc(id)+'" data-title="'+esc(title)+'" data-creator="'+esc(creator)+'" data-music="false" data-thumbnail="'+esc(thumb)+'">'+ic('queue')+' <span>Add to queue</span></button><button data-download-media data-id="'+esc(id)+'" data-title="'+esc(title)+'" data-creator="'+esc(creator)+'" data-music="false">'+ic('download')+' <span>Download video</span></button><button data-share-video="'+esc(id)+'">'+ic('share')+' <span>Share</span></button>';document.querySelector('.app')?.classList.add('sheet-open');root.setAttribute('aria-hidden','false')}return}
  if(target.hasAttribute('data-tab')){homeTab=target.dataset.tab;document.querySelectorAll('[data-tab]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.tab===homeTab)));if(window.RushNative)RushNative.loadHomeFeed(homeTab==='fo'?'following':'forYou');return}
  if(target.hasAttribute('data-search-filter')){unifiedMode=target.dataset.searchFilter;document.querySelectorAll('[data-search-filter]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.searchFilter===unifiedMode)));renderSearchResults();return}
 },true);
 document.addEventListener('submit',e=>{
- if(e.target.id==='onboardingForm'){e.preventDefault();const topics=[...document.querySelectorAll('[data-onboarding-topic][aria-pressed="true"]')].map(b=>b.dataset.onboardingTopic);const status=$('#onboardingStatus');if(!topics.length){if(status)status.textContent='Select at least one interest to continue.';return}if(window.RushNative)RushNative.completeLocalProfile($('#onboardingName')?.value||'',JSON.stringify(topics));return}
+ if(e.target.id==='onboardingForm'){
+  e.preventDefault();
+  const form=e.target,topics=[...form.querySelectorAll('[data-onboarding-topic][aria-pressed="true"]')].map(b=>b.dataset.onboardingTopic);
+  const status=$('#onboardingStatus'),submit=form.querySelector('[type="submit"]');
+  if(!topics.length){if(status)status.textContent='Select at least one interest to continue.';return}
+  if(!window.RushNative){if(status)status.textContent='Local profile storage is unavailable. Reopen Rush and try again.';return}
+  if(submit){submit.disabled=true;submit.textContent='Setting up Rush…'}
+  form.setAttribute('aria-busy','true');
+  if(status)status.textContent='Saving your interests on this device…';
+  try{RushNative.completeLocalProfile($('#onboardingName')?.value||'',JSON.stringify(topics))}
+  catch(error){
+   form.setAttribute('aria-busy','false');
+   if(submit){submit.disabled=false;submit.textContent='Start using Rush'}
+   if(status)status.textContent=error.message||'Could not save your local profile.';
+  }
+  return
+ }
  if(e.target.id==='profileForm'){e.preventDefault();if(window.RushNative)RushNative.saveLocalProfile($('#profileDisplayName')?.value||'');return}
  if(e.target.id==='mobileSearchForm'){e.preventDefault();runUnifiedSearch();return}
  if(e.target.id==='topicAddForm'){e.preventDefault();const input=$('#topicInput'),value=input&&input.value.trim();if(value&&window.RushNative){RushNative.addFeedTopic(value);input.value=''}return}
@@ -2074,8 +2131,25 @@ document.addEventListener('change',e=>{
  if(e.target&&e.target.id==='autoplayToggle'){autoplayEnabled=!!e.target.checked;if(window.RushNative)RushNative.setAutoplayEnabled(autoplayEnabled);return}
  if(e.target&&e.target.id==='captionsToggle'){captionsEnabled=!!e.target.checked;if(window.RushNative)RushNative.setCaptionsEnabled(captionsEnabled);return}
 });
-window.rushLocalProfileSaved=data=>{localProfileData=data||refreshLocalProfile();refreshProfileShortcut();if(page==='onboarding'){location.hash='#home';return}if(page==='profile')$('#v').innerHTML=R.profile();mobileToast('Profile saved on this device.')};
-window.rushLocalProfileError=error=>{const status=$('#onboardingStatus')||$('#profileStatus');if(status)status.textContent=error.message||'Could not save your local profile.';mobileToast(error.message||'Could not save your local profile.')};
+window.rushLocalProfileSaved=data=>{
+ localProfileData=data||refreshLocalProfile();
+ refreshProfileShortcut();
+ if(page==='onboarding'){
+  if(localProfileData.setupComplete){location.replace('#home')}
+  else{window.rushLocalProfileError({message:'Rush could not confirm that your local profile was saved. Please try again.'})}
+  return
+ }
+ if(page==='profile')$('#v').innerHTML=R.profile();
+ mobileToast('Profile saved on this device.')
+};
+window.rushLocalProfileError=error=>{
+ const status=$('#onboardingStatus')||$('#profileStatus');
+ const form=$('#onboardingForm'),submit=form?.querySelector('[type="submit"]');
+ if(form)form.setAttribute('aria-busy','false');
+ if(submit){submit.disabled=false;submit.textContent='Start using Rush'}
+ if(status)status.textContent=error.message||'Could not save your local profile.';
+ mobileToast(error.message||'Could not save your local profile.')
+};
 window.rushDownloadAction=state=>{if(state&&state.state==='error')mobileToast(state.message||'Download failed.');else if(state&&state.state==='queued')mobileToast((state.title||'Video')+' added to Downloads.');if(page==='library'&&window.RushNative){if(libraryView==='downloads')RushNative.loadDownloads();else RushNative.loadLibrary()}};
 window.rushHomeFeedLoading=state=>{
  if(state&&state.mode==='following'&&page==='subs')showSkeleton($('#subsFeedResults'),4);
