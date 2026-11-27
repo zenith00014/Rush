@@ -566,7 +566,7 @@ button{min-height:42px;min-width:42px}.btn,.ib,.chip{border:0;border-radius:24px
 .yt-action-sheet{position:absolute;z-index:81;left:0;right:0;bottom:0;padding:18px 20px calc(env(safe-area-inset-bottom,0px) + 22px);border-radius:20px 20px 0 0;background:#232323;transform:translateY(110%);transition:transform .22s}.app.sheet-open .yt-action-sheet{transform:translateY(0)}.yt-action-sheet h3{margin:0 0 12px;font-size:16px}.yt-action-sheet button{display:flex;align-items:center;gap:13px;width:100%;min-height:48px;text-align:left;color:#eee}
 }
 @media(max-width:390px){.yt-video-title{font-size:15px}.yt-thumb{width:calc(100% - 28px);margin-inline:14px}.yt-video-info{padding-inline:14px}.yt-filter-row{padding-inline:14px}}
-</style></head>
+</style><style id="rush-mobile-toasts">@media(max-width:899px){.yt-toast{position:absolute;z-index:90;left:50%;bottom:calc(var(--nav) + var(--sa) + 18px);transform:translate(-50%,20px);max-width:85%;padding:12px 18px;border-radius:24px;background:#303030;color:#fff;font:13px Arial;opacity:0;visibility:hidden;transition:opacity .2s,transform .2s;pointer-events:none}.yt-toast.show{opacity:1;visibility:visible;transform:translate(-50%,0)}}@media(max-width:899px){.app.video-detail .yt-toast{bottom:22px}}</style></head>
 <body>
 <div class="app">
 
@@ -1692,6 +1692,7 @@ document.getElementById('mobileDrawerScrim')?.addEventListener('click',closeMobi
 document.getElementById('mobileSheetScrim')?.addEventListener('click',closeMobileSheet);
 document.getElementById('mobileSearchForm')?.addEventListener('submit',e=>{e.preventDefault();runUnifiedSearch()});
 document.getElementById('v')?.addEventListener('submit',e=>{
+ if(e.target.id==='mobileSearchForm'){e.preventDefault();runUnifiedSearch()}
  if(e.target.id==='mobileMusicForm'){e.preventDefault();const q=$('#musicQuery')?.value.trim();if(q&&window.RushNative)RushNative.searchMusic(q)}
  if(e.target.id==='mobileNewsForm'){e.preventDefault();const q=$('#newsQuery')?.value.trim();if(q&&window.RushNative)RushNative.searchNews(q)}
 },true);
