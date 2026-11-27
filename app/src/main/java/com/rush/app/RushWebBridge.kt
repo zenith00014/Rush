@@ -278,7 +278,7 @@ class RushWebBridge(
                     }
                 }
                 publish("rushChannelSearchResults", payload.toString())
-            } catch (error: Exception) {
+            } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch (error: Exception) {
                 publish("rushChannelSearchError", JSONObject()
                     .put("message", playbackErrorMessage(error, "Channel search failed.")).toString())
             }
@@ -308,7 +308,7 @@ class RushWebBridge(
                     }
                 }
                 publish("rushPlaylistSearchResults", payload.toString())
-            } catch (error: Exception) {
+            } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch (error: Exception) {
                 publish("rushPlaylistSearchError", JSONObject()
                     .put("message", playbackErrorMessage(error, "Playlist search failed.")).toString())
             }
@@ -330,10 +330,9 @@ class RushWebBridge(
             val cacheKey = "rush_home_feed_v5_${feedMode}_${Integer.toHexString(cacheSignature.hashCode())}"
             val cached = prefs.getString(cacheKey, null)?.let { runCatching { JSONObject(it) }.getOrNull() }
             val cachedAt = cached?.optLong("fetchedAt", 0L) ?: 0L
-            if (cached != null && cachedAt > 0L &&
-                System.currentTimeMillis() - cachedAt in 0..HOME_FEED_CACHE_TTL_MS) {
+            if (cached != null && cachedAt > 0L) {
                 publish("rushHomeFeedResults", cached.toString())
-                return@launch
+                if (System.currentTimeMillis() - cachedAt in 0..HOME_FEED_CACHE_TTL_MS) return@launch
             }
             publish("rushHomeFeedLoading", JSONObject().put("mode", feedMode).toString())
 
@@ -360,7 +359,7 @@ class RushWebBridge(
                                     slots.withPermit { LiveYouTubeSearch.search(query, music = false) }
                                 } catch (cancelled: kotlinx.coroutines.CancellationException) {
                                     throw cancelled
-                                } catch (error: Exception) {
+                                } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch (error: Exception) {
                                     android.util.Log.w("RushFeed", "Video query failed: $query", error)
                                     emptyList()
                                 }
@@ -378,7 +377,7 @@ class RushWebBridge(
                                     slots.withPermit { LiveYouTubeSearch.search(query, music = true) }
                                 } catch (cancelled: kotlinx.coroutines.CancellationException) {
                                     throw cancelled
-                                } catch (error: Exception) {
+                                } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch (error: Exception) {
                                     android.util.Log.w("RushFeed", "Music query failed: $query", error)
                                     emptyList()
                                 }
@@ -390,7 +389,7 @@ class RushWebBridge(
                 }
             } catch (cancelled: kotlinx.coroutines.CancellationException) {
                 throw cancelled
-            } catch (error: Exception) {
+            } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch (error: Exception) {
                 android.util.Log.w("RushFeed", "Recommendation refresh failed", error)
                 Pair(emptyList(), emptyList())
             }
@@ -465,6 +464,13 @@ class RushWebBridge(
                 val musicItems = RushDiscoveryEngine.diversifyFeed(musicHits.values.toList(), 12, 3)
                     .mapNotNull { musicPayloads[it.candidate.id] }
                 videoItems to musicItems
+            }
+
+            if (videos.isEmpty() && music.isEmpty() && cached != null) {
+                val fallback = JSONObject(cached.toString())
+                    .put("message", "Showing saved recommendations. The feed could not refresh just now.")
+                publish("rushHomeFeedResults", fallback.toString())
+                return@launch
             }
 
             val payload = JSONObject()
@@ -744,7 +750,7 @@ class RushWebBridge(
                     }
                 }
                 publish("rushMusicSearchResults", payload.toString())
-            } catch (error: Exception) {
+            } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch (error: Exception) {
                 publish("rushMusicSearchError", JSONObject()
                     .put("message", error.message ?: "Music search failed.").toString())
             }
@@ -806,7 +812,7 @@ class RushWebBridge(
                 publish("rushMusicPlaybackState", JSONObject()
                     .put("state", "playing").put("id", videoId)
                     .put("title", title).put("artist", artist).put("thumbnail", thumbnail).toString())
-            } catch (error: Exception) {
+            } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch (error: Exception) {
                 publish("rushMusicPlaybackState", JSONObject()
                     .put("state", "error")
                     .put("message", error.message ?: "Could not play this track.").toString())
@@ -838,7 +844,7 @@ class RushWebBridge(
                     controller.play()
                 }
                 publish("rushMusicQueued", JSONObject().put("title", title).toString())
-            } catch (error: Exception) {
+            } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch (error: Exception) {
                 publish("rushMusicSearchError", JSONObject().put("message", error.message ?: "Could not add this track to the queue.").toString())
             }
         }
@@ -872,7 +878,7 @@ class RushWebBridge(
                 if ((0 until controller.mediaItemCount).none { controller.getMediaItemAt(it).mediaId == videoId }) {
                     controller.addMediaItem(item)
                 }
-            } catch (error: Exception) {
+            } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch (error: Exception) {
                 publish("rushVideoQueueError", JSONObject().put("message", playbackErrorMessage(error, "Could not queue the next video.")).toString())
             }
         }
@@ -915,7 +921,7 @@ class RushWebBridge(
                 }
             } catch (cancelled: kotlinx.coroutines.CancellationException) {
                 throw cancelled
-            } catch (error: Exception) {
+            } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch (error: Exception) {
                 publish("rushVideoQueueError", JSONObject().put("message", playbackErrorMessage(error, "Could not prepare the next videos.")).toString())
             }
         }
@@ -939,7 +945,7 @@ class RushWebBridge(
                     }
                 }
                 publish("rushVideoSearchResults", payload.toString())
-            } catch (error: Exception) {
+            } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch (error: Exception) {
                 publish("rushVideoSearchError", JSONObject()
                     .put("message", playbackErrorMessage(error, "Video search failed.")).toString())
             }
@@ -980,7 +986,7 @@ class RushWebBridge(
                 activity.runOnUiThread { activity.showNativeVideo(controller, fullscreen = false) }
                 publish("rushVideoPlaybackState", JSONObject().put("state", "playing")
                     .put("title", title).put("creator", creator).put("captionTracks", subtitleConfigs.size).toString())
-            } catch (error: Exception) {
+            } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch (error: Exception) {
                 publish("rushVideoPlaybackState", JSONObject().put("state", "error")
                     .put("message", playbackErrorMessage(error, "Could not play this video.")).toString())
             }
@@ -1038,7 +1044,7 @@ class RushWebBridge(
                 }
                 publish("rushMusicLyrics", JSONObject().put("synced", lyrics.optString("syncedLyrics"))
                     .put("plain", lyrics.optString("plainLyrics")).put("title", track).put("artist", performer).toString())
-            } catch (error: Exception) {
+            } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch (error: Exception) {
                 publish("rushMusicLyricsError", JSONObject().put("message", error.message ?: "Lyrics are unavailable.").toString())
             }
         }
@@ -1169,7 +1175,7 @@ class RushWebBridge(
                 val output = JSONArray(enriched)
                 prefs.edit().putString(cacheKey, output.toString()).apply()
                 publish("rushNewsResults", output.toString())
-            } catch (error: Exception) {
+            } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch (error: Exception) {
                 if (cached.isNullOrBlank()) publish("rushNewsError", JSONObject().put("message", playbackErrorMessage(error, "Could not load news.")).toString())
             }
         }
@@ -1438,7 +1444,7 @@ class RushWebBridge(
                     .put("count", videos.size).toString())
             } catch (cancelled: kotlinx.coroutines.CancellationException) {
                 throw cancelled
-            } catch (error: Exception) {
+            } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch (error: Exception) {
                 publish("rushPublicPlaylistError", JSONObject()
                     .put("message", playbackErrorMessage(error, "Could not open this playlist.")).toString())
             }
@@ -1523,7 +1529,7 @@ class RushWebBridge(
                 else playVideo(sourceId, title, creator, thumbnail)
             } catch (cancelled: kotlinx.coroutines.CancellationException) {
                 throw cancelled
-            } catch (error: Exception) {
+            } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch (error: Exception) {
                 publish("rushLibraryError", JSONObject().put("message", playbackErrorMessage(error, "Could not play this library item.")).toString())
             }
         }
@@ -1746,7 +1752,7 @@ class RushWebBridge(
                     .put("skipped", skipped).toString())
             } catch (cancelled: kotlinx.coroutines.CancellationException) {
                 throw cancelled
-            } catch (error: Exception) {
+            } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch (error: Exception) {
                 publish("rushQueuePlayback", JSONObject()
                     .put("state", "error")
                     .put("message", playbackErrorMessage(error, "Could not play this queue.")).toString())
@@ -1805,7 +1811,7 @@ class RushWebBridge(
                 loadDownloads()
             } catch (cancelled: kotlinx.coroutines.CancellationException) {
                 throw cancelled
-            } catch (error: Exception) {
+            } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch (error: Exception) {
                 publish("rushDownloadAction", JSONObject()
                     .put("state", "error")
                     .put("message", playbackErrorMessage(error, "Could not start this download.")).toString())
@@ -1851,7 +1857,7 @@ class RushWebBridge(
                     .put("items", array)
                     .put("count", snapshot.first.size)
                     .put("bytes", snapshot.third).toString())
-            } catch (error: Exception) {
+            } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch (error: Exception) {
                 publish("rushDownloadsError", JSONObject().put("message", error.message ?: "Could not load offline downloads.").toString())
             }
         }
@@ -1879,7 +1885,7 @@ class RushWebBridge(
                 loadDownloads()
             } catch (cancelled: kotlinx.coroutines.CancellationException) {
                 throw cancelled
-            } catch (error: Exception) {
+            } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch (error: Exception) {
                 publish("rushDownloadsError", JSONObject().put("message", error.message ?: "Could not resume this download.").toString())
             }
         }
@@ -1896,7 +1902,7 @@ class RushWebBridge(
                 } ?: return@launch
                 OfflineDownloads.delete(activity.applicationContext, media)
                 loadDownloads()
-            } catch (error: Exception) {
+            } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch (error: Exception) {
                 publish("rushDownloadsError", JSONObject().put("message", error.message ?: "Could not delete this download.").toString())
             }
         }
@@ -1953,7 +1959,7 @@ class RushWebBridge(
                     .put("isOffline", true).toString())
             } catch (cancelled: kotlinx.coroutines.CancellationException) {
                 throw cancelled
-            } catch (error: Exception) {
+            } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch (error: Exception) {
                 publish("rushDownloadAction", JSONObject().put("state", "error")
                     .put("message", error.message ?: "Could not play this download.").toString())
             }
@@ -2061,7 +2067,7 @@ class RushWebBridge(
                 if (enriched.any { it.optString("thumbnail").isNotBlank() }) {
                     publish("rushNewsResults", JSONArray(enriched).toString())
                 }
-            } catch (error: Exception) {
+            } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch (error: Exception) {
                 publish("rushNewsError", JSONObject().put("message", playbackErrorMessage(error, "Could not load news.")).toString())
             }
         }
