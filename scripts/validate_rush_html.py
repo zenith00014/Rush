@@ -181,7 +181,7 @@ def main():
         "solid feed segment without glass": ".seg{border-radius:18px!important;background:#131b21!important" in html,
         "library uses library icon": "library:'M4 4h13v16H4z" in js and "['library','Library','follow']" not in js,
         "edge-to-edge root uses dark surface": "setBackgroundColor(android.graphics.Color.rgb(11,16,20))" in activity,
-        "onboarding accepts the default and custom local interests": "map(::resolveTopic)" in prefs and "onboardingCanSaveTheDefaultLocalInterestSelection" in feed_preferences_tests and "Culture" in feed_preferences_tests and "Language" in feed_preferences_tests,
+        "onboarding accepts defaults and existing custom interests without weakening normal validation": "FeedPreferences.saveOnboardingTopics" in bridge and "fun saveOnboardingTopics(" in prefs and "map(::resolveCatalogTopic)" in prefs and "onboardingCanSaveTheDefaultLocalInterestSelection" in feed_preferences_tests and "onboardingAcceptsDefaultTopicsAndPreviouslySavedCustomInterests" in feed_preferences_tests and "regularTopicSaveStillRejectsUnknownPhrases" in feed_preferences_tests and "onboardingRejectsCustomInterestUntilItIsSavedLocally" in feed_preferences_tests,
         "onboarding shows a saving state and restores the action after failure": "form.setAttribute('aria-busy','true')" in js and "window.rushLocalProfileError" in js and "submit.disabled=false" in js,
         "mobile header and drawer use literal SVG markup": 'id="menuShortcut"' in html and 'id="mobileDrawer"' in html and '<svg class="ic" viewBox="0 0 24 24"' in html and "'+ic('menu')+'" not in html.split("<script>", 1)[0],
         "dynamic mobile controls use the shared SVG helper": "const IC={" in js and "ic('refresh')" in js and "ic('search')" in js,
