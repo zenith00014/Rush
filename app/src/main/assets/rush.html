@@ -436,6 +436,13 @@ html,body{background:var(--paper);color:var(--ink)}
 .mobile-top-actions{display:flex;align-items:center;gap:8px}
 .mobile-top-actions .ib{width:44px;height:44px;min-width:44px;min-height:44px;border-radius:50%!important;background:var(--paper2);border:1px solid var(--border);box-shadow:none}
 .mobile-top-actions [hidden]{display:none!important}
+.home-page .creator-strip{padding:8px 14px 0}
+.home-page .creator-strip-head{display:none}
+.home-page .home-categories{padding-top:8px}
+.home-page .home-bento{grid-template-columns:minmax(0,1fr);gap:14px}
+.home-page .home-music-art{aspect-ratio:16/9}
+.home-page .home-topic-filter{border-style:dashed!important}
+.yt-library-page .yt-page-heading{justify-content:flex-start}
 .home-page .creator-strip{padding-top:12px}
 .home-page .home-priority-note{display:none}
 .home-page .home-feed-status{padding-top:2px!important}
@@ -946,15 +953,13 @@ function homeCreatorStrip(){
   const initials=String(source.name||'Creator').trim().split(/\s+/).slice(0,2).map(part=>part[0]||'').join('').toUpperCase();
   return '<div class="creator-bubble"><span class="creator-avatar" style="--creator-color:'+PAL[index%PAL.length]+'">'+esc(initials||'•')+'</span><span class="creator-name">'+esc(source.name||'Creator')+'</span></div>';
  }).join('');
- return '<section class="creator-strip" aria-label="Followed creators"><div class="creator-strip-head"><span>YOUR CREATORS</span><button class="chip" data-open-search>DISCOVER</button></div>'+(bubbles?'<div class="creator-strip-row">'+bubbles+'</div>':'<p class="creator-empty">Follow educators and creators to build this row.</p>')+'</section>';
+ return '<section class="creator-strip" aria-label="Followed creators">'+(bubbles?'<div class="creator-strip-row">'+bubbles+'</div>':'<p class="creator-empty">Follow creators to build this row.</p>')+'</section>';
 }
 function renderHome(){
  const filters=['All','Videos','Music','News'];
  return '<div class="home-page"><div id="creatorStrip">'+homeCreatorStrip()+'</div>'+
- '<div class="seg" role="tablist"><i></i><button role="tab" data-tab="fy" aria-selected="'+(homeTab==='fy')+'">For you</button><button role="tab" data-tab="fo" aria-selected="'+(homeTab==='fo')+'">Following</button></div>'+
- '<div class="home-tools"><div class="home-categories" role="group" aria-label="Filter home feed">'+filters.map(label=>'<button class="home-filter" data-home-filter="'+label+'" aria-pressed="'+(homeFilter===label)+'">'+label+'</button>').join('')+'</div>'+
- '<div class="feed-actions"><button class="chip" data-open-topics>YOUR TOPICS</button><button class="chip" data-open-search>FIND CHANNELS & SOURCES</button></div></div>'+
- '<p class="home-priority-note">LEARNING · CONTEXT · CREATIVE WORK</p><p class="meta pad home-feed-status" id="homeFeedStatus" aria-live="polite">Building your feed…</p><div id="homeFeedResults"></div></div>';
+ '<div class="home-tools"><div class="home-categories" role="group" aria-label="Filter home feed">'+filters.map(label=>'<button class="home-filter" data-home-filter="'+label+'" aria-pressed="'+(homeFilter===label)+'">'+label+'</button>').join('')+'<button class="home-filter home-topic-filter" data-open-topics>Topics</button></div></div>'+
+ '<p class="meta pad home-feed-status" id="homeFeedStatus" aria-live="polite">Building your feed…</p><div id="homeFeedResults"></div></div>';
 }
 function renderExplorePage(){
  const topics=['Science','Technology','AI and machine learning','Programming','Education','History','Engineering','Design','Economics','Business','World news','Documentaries'];
@@ -1300,6 +1305,7 @@ document.addEventListener('input',e=>{if(e.target&&e.target.id==='topicQuery')up
 document.addEventListener('click',e=>{
  const b=e.target.closest('button');if(!b)return;
  if(b.id==='mobileNotifications'){mobileToast('Notifications are not available yet.');return}
+ if(b.dataset.mobileRoute==='profile'){location.hash='#profile';return}
  if(b.id==='profileShortcut'){location.hash='#profile';return}
  if(b.id==='topicsShortcut'||b.hasAttribute('data-open-topics')){location.hash='#topics';return}
  if(b.dataset.libraryView){
@@ -1886,7 +1892,7 @@ function libraryShelf(title,key,ids,empty){
  return '<section class="yt-library-shelf"><div class="yt-section-head"><h2>'+title+'</h2><button class="yt-view-all" data-library-view="'+key+'">View all</button></div><div class="yt-library-carousel">'+(rows||'<p class="yt-library-empty">'+empty+'</p>')+'</div></section>';
 }
 function renderLibraryPage(){
- return '<section class="yt-library-page"><div class="yt-page-heading"><div><span class="yt-eyebrow">YOUR COLLECTION</span><h1>Library</h1></div><div class="yt-home-actions"><button class="yt-icon-action" data-mobile-route="profile" aria-label="Open profile">'+ic('user')+'</button><button class="yt-icon-action" data-open-player aria-label="Open music player">'+ic('music')+'</button></div></div><div id="libraryContent"></div></section>';
+ return '<section class="yt-library-page"><div class="yt-page-heading"><div><span class="yt-eyebrow">YOUR COLLECTION</span><h1>Library</h1></div></div><div id="libraryContent"></div></section>';
 }
 function renderLibraryContent(){
  const root=$('#libraryContent');if(!root)return;
