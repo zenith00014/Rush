@@ -67,6 +67,14 @@ class RushWebBridge(
     }
 
     @JavascriptInterface
+    fun removeFeedTopic(topic: String) {
+        val prefs = activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)
+        runCatching { FeedPreferences.removeTopic(prefs, topic) }
+            .onSuccess { publish("rushFeedPreferences", FeedPreferences.asJson(prefs).toString()) }
+            .onFailure { publish("rushFeedPreferencesError", JSONObject().put("message", it.message ?: "Could not remove that topic.").toString()) }
+    }
+
+    @JavascriptInterface
     fun setTopicPreference(topic: String, mode: String) {
         val prefs = activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)
         runCatching { FeedPreferences.setTopicMode(prefs, topic, mode) }
@@ -109,7 +117,7 @@ class RushWebBridge(
     @JavascriptInterface
     fun rateVideo(id: String, title: String, creator: String, rating: Int) {
         val cleanId = id.trim().take(256)
-        if (cleanId.isBlank() || rating !in setOf(-1, 1)) return
+        if (cleanId.isBlank() || rating !in setOf(-1, 0, 1)) return
         val prefs = activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)
         val feedback = runCatching { JSONObject(prefs.getString("rush_video_feedback", "{}") ?: "{}") }
             .getOrDefault(JSONObject())
@@ -777,6 +785,47 @@ class RushWebBridge(
                 }
             } catch (error: Exception) {
                 publish("rushVideoQueueError", JSONObject().put("message", playbackErrorMessage(error, "Could not queue the next video.")).toString())
+            }
+        }
+    }
+
+    @JavascriptInterface
+    fun queueVideos(itemsJson: String) {
+        val items = runCatching { JSONArray(itemsJson) }.getOrDefault(JSONArray())
+        if (items.length() == 0) return
+        activity.lifecycleScope.launch {
+            try {
+                val prefs = activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)
+                val controller = getController()
+                val quality = prefs.getInt("video_quality", 0)
+                val preferMp4 = prefs.getBoolean("download_mp4", false)
+                for (index in 0 until minOf(items.length(), 12)) {
+                    val data = items.optJSONObject(index) ?: continue
+                    val id = data.optString("id")
+                    if (!id.matches(Regex("[A-Za-z0-9_-]{11}"))) continue
+                    if ((0 until controller.mediaItemCount).any { controller.getMediaItemAt(it).mediaId == id }) continue
+                    val resolved = withContext(Dispatchers.IO) {
+                        resolvePlaybackMedia(id, audioOnly = false, maxHeight = quality.takeIf { it > 0 },
+                            preferMp4 = preferMp4, preferDash = !preferMp4, allowDashFallback = !preferMp4)
+                    }
+                    val title = data.optString("title")
+                    val creator = data.optString("creator")
+                    val thumbnail = data.optString("thumbnail")
+                    val subtitles = resolved.subtitles.map { subtitle ->
+                        MediaItem.SubtitleConfiguration.Builder(android.net.Uri.parse(subtitle.url))
+                            .setMimeType(subtitle.mimeType).setLanguage(subtitle.languageTag)
+                            .setSelectionFlags(androidx.media3.common.C.SELECTION_FLAG_DEFAULT)
+                            .setLabel(subtitle.label).build()
+                    }
+                    val metadata = MediaMetadata.Builder().setTitle(title).setArtist(creator)
+                        .apply { if (thumbnail.isNotBlank()) setArtworkUri(android.net.Uri.parse(thumbnail)) }
+                        .setExtras(PlaybackMetadata.extras(id, false, quality, preferMp4)).build()
+                    controller.addMediaItem(MediaItem.Builder().setMediaId(id).setUri(resolved.url)
+                        .setMimeType(resolved.mimeType).setMediaMetadata(metadata)
+                        .setSubtitleConfigurations(subtitles).build())
+                }
+            } catch (error: Exception) {
+                publish("rushVideoQueueError", JSONObject().put("message", playbackErrorMessage(error, "Could not prepare the next videos.")).toString())
             }
         }
     }
