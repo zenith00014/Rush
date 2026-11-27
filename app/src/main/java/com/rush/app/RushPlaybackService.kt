@@ -103,8 +103,8 @@ class RushPlaybackService : MediaSessionService() {
             .setBufferDurationsMs(
                 25_000,
                 90_000,
-                3_000,
-                2_500
+                2_000,
+                2_000
             )
             .setBackBuffer(15_000, true)
             .setPrioritizeTimeOverSizeThresholds(true)
