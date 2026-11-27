@@ -123,6 +123,14 @@ def main():
         fail("Video quality resolver or its unit tests are missing")
     playback_engine = playback_engine_path.read_text(encoding="utf-8")
     quality_tests = quality_test_path.read_text(encoding="utf-8")
+    feed_preferences_test_path = ROOT / "app/src/test/java/com/rush/app/FeedPreferencesTest.kt"
+    if not feed_preferences_test_path.is_file():
+        fail("Feed preference tests are missing")
+    feed_preferences_tests = feed_preferences_test_path.read_text(encoding="utf-8")
+    design_path = ROOT / "DESIGN.md"
+    if not design_path.is_file():
+        fail("Rush design system documentation is missing")
+    design = design_path.read_text(encoding="utf-8")
     download_function = bridge.split("fun downloadMedia(", 1)[1].split("fun loadDownloads(", 1)[0]
     mobile_js = js[js.find("const rushOriginalGo=go;"):]
     mobile_card = js.split("function mobileVideoCard", 1)[1].split("function mobileMusicCard", 1)[0]
@@ -173,6 +181,11 @@ def main():
         "solid feed segment without glass": ".seg{border-radius:18px!important;background:#131b21!important" in html,
         "library uses library icon": "library:'M4 4h13v16H4z" in js and "['library','Library','follow']" not in js,
         "edge-to-edge root uses dark surface": "setBackgroundColor(android.graphics.Color.rgb(11,16,20))" in activity,
+        "onboarding accepts the default and custom local interests": "map(::resolveTopic)" in prefs and "onboardingCanSaveTheDefaultLocalInterestSelection" in feed_preferences_tests and "Culture" in feed_preferences_tests and "Language" in feed_preferences_tests,
+        "onboarding shows a saving state and restores the action after failure": "form.setAttribute('aria-busy','true')" in js and "window.rushLocalProfileError" in js and "submit.disabled=false" in js,
+        "mobile header and drawer use the shared SVG icon system": "const IC={" in js and "+ic('menu')+" in js and "+ic('search')+" in js and "setMobileDrawerOpen(true)" in mobile_js,
+        "drawer destinations are interactive": "target.hasAttribute('data-drawer-route')" in mobile_js and "target.hasAttribute('data-drawer-library')" in mobile_js and "target.id==='notificationsShortcut'" in mobile_js,
+        "design system documents the adapted source guidance": "Source basis" in design and "Consistent iconography" in design and "prefers-reduced-motion" in design,
     }
     if "preferDash = false" not in download_function or "allowDashFallback = false" not in download_function:
         fail("Offline video downloads must resolve a direct playable stream, not a DASH/HLS manifest")
