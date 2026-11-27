@@ -350,20 +350,21 @@ class RushWebBridge(
             val videoQueries = channelSources.map { it.name to it } +
                 topicQueries.map { it to null }
 
-            val videoHits = LinkedHashMap<String, RushDiscoveryEngine.FeedHit>()
-            val videoPayloads = LinkedHashMap<String, JSONObject>()
-            val musicHits = LinkedHashMap<String, RushDiscoveryEngine.FeedHit>()
-            val musicPayloads = LinkedHashMap<String, JSONObject>()
-
-            try {
-                val fetched = withContext(Dispatchers.IO) {
+            val fetched = try {
+                withContext(Dispatchers.IO) {
                     coroutineScope {
                         val slots = Semaphore(5)
                         val videoJobs = videoQueries.map { (query, source) ->
                             async {
-                                Triple(query, source, runCatching {
+                                val results = try {
                                     slots.withPermit { LiveYouTubeSearch.search(query, music = false) }
-                                }.getOrDefault(emptyList()))
+                                } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                                    throw cancelled
+                                } catch (error: Exception) {
+                                    android.util.Log.w("RushFeed", "Video query failed: $query", error)
+                                    emptyList()
+                                }
+                                Triple(query, source, results)
                             }
                         }
                         val musicQueries = (artistSources.map { it.name } +
@@ -373,14 +374,33 @@ class RushWebBridge(
                             .distinct().take(5)
                         val musicJobs = musicQueries.map { query ->
                             async {
-                                query to runCatching {
+                                val results = try {
                                     slots.withPermit { LiveYouTubeSearch.search(query, music = true) }
-                                }.getOrDefault(emptyList())
+                                } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                                    throw cancelled
+                                } catch (error: Exception) {
+                                    android.util.Log.w("RushFeed", "Music query failed: $query", error)
+                                    emptyList()
+                                }
+                                query to results
                             }
                         }
                         Pair(videoJobs.awaitAll(), musicJobs.awaitAll())
                     }
                 }
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                android.util.Log.w("RushFeed", "Recommendation refresh failed", error)
+                Pair(emptyList(), emptyList())
+            }
+
+            // Search results can be numerous; normalize, score and diversify away from Main.
+            val (videos, music) = withContext(Dispatchers.Default) {
+                val videoHits = LinkedHashMap<String, RushDiscoveryEngine.FeedHit>()
+                val videoPayloads = LinkedHashMap<String, JSONObject>()
+                val musicHits = LinkedHashMap<String, RushDiscoveryEngine.FeedHit>()
+                val musicPayloads = LinkedHashMap<String, JSONObject>()
 
                 fetched.first.forEach { (_, source, results) ->
                     results.filter { item ->
@@ -439,16 +459,14 @@ class RushWebBridge(
                         }
                     }
                 }
-            } catch (cancelled: kotlinx.coroutines.CancellationException) {
-                throw cancelled
-            } catch (error: Exception) {
-                android.util.Log.w("RushFeed", "Recommendation refresh failed", error)
+
+                val videoItems = RushDiscoveryEngine.diversifyFeed(videoHits.values.toList(), 30, 2)
+                    .mapNotNull { videoPayloads[it.candidate.id] }
+                val musicItems = RushDiscoveryEngine.diversifyFeed(musicHits.values.toList(), 12, 3)
+                    .mapNotNull { musicPayloads[it.candidate.id] }
+                videoItems to musicItems
             }
 
-            val videos = RushDiscoveryEngine.diversifyFeed(videoHits.values.toList(), 30, 2)
-                .mapNotNull { videoPayloads[it.candidate.id] }
-            val music = RushDiscoveryEngine.diversifyFeed(musicHits.values.toList(), 12, 3)
-                .mapNotNull { musicPayloads[it.candidate.id] }
             val payload = JSONObject()
                 .put("mode", feedMode)
                 .put("videos", JSONArray(videos))
