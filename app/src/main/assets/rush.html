@@ -346,6 +346,64 @@ html,body{background:var(--paper);color:var(--ink)}
 .empty-state p{margin:8px 0 16px;color:var(--mu);font-size:13px;line-height:1.5}
 @media(max-width:360px){.home-bento{gap:8px}.home-section-heading h2{font-size:20px}.home-news-slot .news-open{grid-template-columns:minmax(0,1fr) 88px;gap:8px}}
 @media(prefers-reduced-motion:reduce){.home-media-art img{transition:none!important}}
+/* Mobile-first Juxtopposed layout: creator row, topic pills, vertical video feed and five-tab navigation. */
+:root{--sp:#f02f68}
+.home-page .pt{padding:12px 16px 6px}
+.home-page .pt h1{font-size:34px;line-height:1;font-weight:800;letter-spacing:-.04em}
+.home-page .stk{font-size:9px}
+.creator-strip{padding:10px 14px 4px}
+.creator-strip-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.creator-strip-head>span{font:700 10px var(--m);letter-spacing:.09em;color:var(--mu)}
+.creator-strip-head .chip{min-height:30px;padding:0 10px;font-size:9px;border-radius:999px!important}
+.creator-strip-row{display:flex;gap:14px;overflow-x:auto;scrollbar-width:none;padding:2px 1px 10px}
+.creator-strip-row::-webkit-scrollbar{display:none}
+.creator-bubble{flex:0 0 62px;min-width:0;display:flex;flex-direction:column;align-items:center;gap:6px}
+.creator-avatar{width:54px;height:54px;display:grid;place-items:center;border-radius:50%;border:2px solid var(--topic-color,var(--sp));outline:2px solid rgba(255,255,255,.12);background:radial-gradient(circle at 35% 25%,color-mix(in srgb,var(--creator-color) 78%,white),var(--creator-color));color:#fff;font:800 15px var(--f);box-shadow:0 0 0 3px rgba(255,255,255,.05)}
+.creator-name{max-width:62px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--mu);font:10px var(--f);text-align:center}
+.creator-empty{padding:8px 0 12px;color:var(--mu);font-size:12px}
+.home-page .seg{margin:8px 14px 10px;border-radius:999px!important;background:#20252b!important;border:1px solid var(--border)!important;box-shadow:none!important}
+.home-page .seg i{border-radius:999px!important;background:var(--sp)!important}
+.home-page .seg button{border-radius:999px!important;font-size:13px}
+.home-page .home-tools{padding-top:2px;background:rgba(11,16,20,.96)}
+.home-page .home-categories{gap:7px;padding:8px 14px 10px}
+.home-page .home-filter{min-height:38px;border-radius:999px!important;background:#242930!important;border:1px solid transparent!important;padding:0 15px}
+.home-page .home-filter[aria-pressed=true]{background:#f5f5f5!important;color:#111!important;border-color:#f5f5f5!important}
+.home-page .home-tools .feed-actions{padding:0 14px 4px}
+.home-page .home-tools .feed-actions .chip{border-radius:999px!important}
+.home-priority-note{padding:8px 16px 2px;color:var(--mu);font:9px var(--m);letter-spacing:.1em}
+.home-page .home-feed-status{padding:5px 16px 6px!important}
+.home-page .home-bento{display:flex;flex-direction:column;gap:16px}
+.home-page .home-tile{width:100%;border:0;border-radius:15px;background:transparent;overflow:visible}
+.home-page .home-media-open{overflow:hidden;border-radius:15px;background:var(--paper2)}
+.home-page .home-media-art{border-radius:15px}
+.home-page .home-video-art{aspect-ratio:16/9}
+.home-page .home-tile-copy{padding:10px 2px 8px}
+.home-page .home-tile-copy b,.home-page .home-video-feature .home-tile-copy b{font-size:15px;line-height:1.25}
+.home-page .home-tile-copy>span{font:11px/1.35 var(--f);margin-top:5px}
+.home-page .home-tile .result-actions{padding:0 2px 2px}
+.home-page .home-tile .result-actions .chip{border-radius:999px!important}
+.home-page .home-news-slot .news-card{border-radius:15px!important;padding:14px}
+.home-page .home-section-heading h2{font-size:20px}
+.explore-intro{padding-top:10px;padding-bottom:14px;line-height:1.5}
+.explore-topics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;padding:0 14px 18px}
+.explore-topic{min-height:76px;display:flex;align-items:flex-end;justify-content:space-between;gap:8px;padding:13px;border:1px solid var(--border);border-radius:13px;background:linear-gradient(135deg,color-mix(in srgb,var(--topic-color) 22%,var(--paper2)),var(--paper2));text-align:left}
+.explore-topic span{font-size:13px;font-weight:750}
+.explore-topic b{color:var(--topic-color);font-size:19px}
+#v>.btn{margin:0 14px 18px;width:calc(100% - 28px);border-radius:999px!important}
+.subs-sources{padding:4px 14px 12px}
+.subs-heading{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.subs-heading h2{padding:12px 0;font-size:20px}
+.subs-heading h2:after{display:none}
+.subs-heading .chip{border-radius:999px!important}
+.subs-sources .source-card{border-radius:13px!important}
+.nav{left:0!important;right:0!important;bottom:0!important;height:calc(var(--nav) + var(--sa))!important;padding:0 4px var(--sa)!important;background:rgba(12,15,19,.97)!important;border:0!important;border-top:1px solid rgba(255,255,255,.14)!important;border-radius:17px 17px 0 0!important;box-shadow:0 -8px 28px rgba(0,0,0,.28)!important}
+.nav .pill{top:5px!important;bottom:calc(var(--sa) + 5px)!important;border:0!important;border-radius:14px!important;background:rgba(240,47,104,.18)!important}
+.nav a{gap:5px!important;font-size:10px!important;font-weight:650!important;color:var(--mu)}
+.nav a[aria-current]{color:#fff}
+.nav a[aria-current] .ic{color:var(--sp)}
+#sc{padding-bottom:calc(var(--nav) + var(--sa) + 22px)!important}
+.btn,.ib,.chip{border-radius:999px!important}
+@media(max-width:360px){.creator-strip-row{gap:10px}.creator-bubble{flex-basis:56px}.creator-avatar{width:48px;height:48px}.explore-topics{gap:7px}.explore-topic{min-height:68px;padding:10px}}
 </style></head>
 <body>
 <div class="app">
@@ -374,6 +432,8 @@ const IC={
  vid:'M4 5h16v14H4zM10 9l5 3-5 3z',
  music:'M9 18V5l11-2v13M9 18a3 3 0 11-6 0 3 3 0 016 0zM20 16a3 3 0 11-6 0 3 3 0 016 0z',
  news:'M4 4h13v16H4zM17 8h3v10a2 2 0 01-2 2M7 8h7M7 12h7M7 16h4',
+ explore:'M12 22a10 10 0 110-20 10 10 0 010 20zM15.5 8.5l-2 5-5 2 2-5 5-2z',
+ follow:'M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8M20 8v6M23 11h-6',
  search:'M11 4a7 7 0 100 14 7 7 0 000-14zM20 20l-4-4',
  play:'M7 4l13 8-13 8z', pause:'M7 5h3v14H7zM14 5h3v14h-3z',
  arrow:'M5 12h14M13 6l6 6-6 6', follow:'M12 5v14M5 12h14', library:'M4 4h13v16H4zM7 8h7M7 12h7M7 16h4M19 7v13'
@@ -381,11 +441,11 @@ const IC={
 const FILL=['play','pause'];
 const ic=n=>'<svg class="ic'+(FILL.includes(n)?' f':'')+'" viewBox="0 0 24 24" aria-hidden="true"><path d="'+(IC[n]||IC.arrow)+'"/></svg>';
 const PAL=['#FF6B3D','#4D7DFF','#D8FF3F','#35E0E0','#B58CFF','#3DDC84'];
-const TOPICS=['Science','Technology','AI and machine learning','Programming','Cybersecurity','History','Geography','Education','Languages','Literature','Books','Philosophy','Psychology','Mathematics','Space','Engineering','Economics','Business','Startups','Personal finance','Investing','Politics','Current affairs','World news','Environment','Climate','Health','Medicine','Fitness','Sports','Football','Basketball','Cricket','Esports','Gaming','Game development','Design','Art','Photography','Architecture','Fashion','Beauty','Makeup','Cooking','Food','Travel','Cars','Motorcycles','Nature','Wildlife','Pets','Gardening','Home improvement','Music','Music production','Classical music','Hip-hop','K-pop','Film analysis','Anime','Manga','Podcasts','Documentaries','Vlogs','Comedy','Memes','Viral clips','Celebrity gossip','Pranks','Internet drama','Rage bait','Reality TV','Shorts','ASMR','Luxury','Shopping','Product reviews','Relationships','Parenting','Lifestyle','Meditation','Self-improvement','Romance','Horror','Internet culture','Streaming','Live streams','Board games','Collecting','Crafts'];
+const TOPICS=['Science','Technology','AI and machine learning','Programming','Cybersecurity','History','Geography','Education','Languages','Literature','Books','Philosophy','Psychology','Mathematics','Space','Engineering','Economics','Business','Startups','Personal finance','Investing','Politics','Current affairs','World news','Environment','Climate','Health','Medicine','Fitness','Sports','Football','Basketball','Cricket','Esports','Gaming','Game development','Design','Art','Photography','Architecture','Fashion','Beauty','Makeup','Cooking','Food','Travel','Cars','Motorcycles','Nature','Wildlife','Pets','Gardening','Home improvement','Music','Music production','Classical music','Hip-hop','K-pop','Film analysis','Anime','Manga','Podcasts','Documentaries','Vlogs','Comedy','Memes','Viral clips','Celebrity gossip','Pranks','Internet drama','Rage bait','Reality TV','ASMR','Luxury','Shopping','Product reviews','Relationships','Parenting','Lifestyle','Meditation','Self-improvement','Romance','Horror','Internet culture','Streaming','Live streams','Board games','Collecting','Crafts'];
 const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const safeUrl=v=>/^https:\/\/[^\s"'<>]+$/i.test(String(v||''))?String(v):'';
 let prefs={topics:['Science','Technology','History','Education','Design','Engineering','Economics','Culture','Environment','Sports','Music','Health','Language','Business','Art','Documentaries'],sources:[]};
-let page='home',homeTab='fy',homeFilter='All',homeFeedCache={videos:[],music:[],news:[]},unifiedMode='all',unifiedQuery='',mediaState={hasItem:false,isMusic:false,isVideo:false,isPlaying:false,title:'',artist:'',artwork:''};
+let page='home',homeTab='fy',homeFilter='All',homeFeedCache={videos:[],music:[],news:[]},unifiedMode='all',unifiedQuery='',pendingSearchQuery='',mediaState={hasItem:false,isMusic:false,isVideo:false,isPlaying:false,title:'',artist:'',artwork:''};
 const unifiedData={videos:[],music:[],news:[],channels:[],playlists:[]};
 let publicPlaylistData=null;
 const selectedTopics=()=>prefs.topics||[];
@@ -443,18 +503,38 @@ function section(title,body){
 function pageTop(title,kicker){
  return '<header class="pt"><h1>'+title+'</h1><em class="stk">'+kicker+'</em></header>';
 }
+function homeCreatorStrip(){
+ const creators=(prefs.sources||[]).filter(s=>['channel','artist','musician'].includes(String(s.kind||'').toLowerCase())).slice(0,12);
+ const bubbles=creators.map((source,index)=>{
+  const initials=String(source.name||'Creator').trim().split(/\\s+/).slice(0,2).map(part=>part[0]||'').join('').toUpperCase();
+  return '<div class="creator-bubble"><span class="creator-avatar" style="--creator-color:'+PAL[index%PAL.length]+'">'+esc(initials||'•')+'</span><span class="creator-name">'+esc(source.name||'Creator')+'</span></div>';
+ }).join('');
+ return '<section class="creator-strip" aria-label="Followed creators"><div class="creator-strip-head"><span>YOUR CREATORS</span><button class="chip" data-open-search>DISCOVER</button></div>'+(bubbles?'<div class="creator-strip-row">'+bubbles+'</div>':'<p class="creator-empty">Follow educators and creators to build this row.</p>')+'</section>';
+}
 function renderHome(){
  const filters=['All','Videos','Music','News'];
- return pageTop('Home','your feed')+
+ return '<div class="home-page">'+pageTop('Home','useful picks, not endless scroll')+'<div id="creatorStrip">'+homeCreatorStrip()+'</div>'+
  '<div class="seg" role="tablist"><i></i><button role="tab" data-tab="fy" aria-selected="'+(homeTab==='fy')+'">For you</button><button role="tab" data-tab="fo" aria-selected="'+(homeTab==='fo')+'">Following</button></div>'+
  '<div class="home-tools"><div class="home-categories" role="group" aria-label="Filter home feed">'+filters.map(label=>'<button class="home-filter" data-home-filter="'+label+'" aria-pressed="'+(homeFilter===label)+'">'+label+'</button>').join('')+'</div>'+
  '<div class="feed-actions"><button class="chip" data-open-topics>YOUR TOPICS</button><button class="chip" data-open-search>FIND CHANNELS & SOURCES</button></div></div>'+
- '<p class="meta pad home-feed-status" id="homeFeedStatus" aria-live="polite">Building your feed…</p><div id="homeFeedResults"></div>';
+ '<p class="home-priority-note">LEARNING · CONTEXT · CREATIVE WORK</p><p class="meta pad home-feed-status" id="homeFeedStatus" aria-live="polite">Building your feed…</p><div id="homeFeedResults"></div></div>';
+}
+function renderExplorePage(){
+ const topics=['Science','Technology','AI and machine learning','Programming','Education','History','Engineering','Design','Economics','Business','World news','Documentaries'];
+ return pageTop('Explore','go deeper on what matters')+
+ '<p class="meta pad explore-intro">Browse learning-led topics and discover creators. Recommendations favour useful, informative material; Search remains open to everything.</p>'+
+ '<div class="explore-topics">'+topics.map((topic,index)=>'<button class="explore-topic" data-explore-topic="'+esc(topic)+'" style="--topic-color:'+PAL[index%PAL.length]+'"><span>'+esc(topic)+'</span><b aria-hidden="true">→</b></button>').join('')+'</div>'+
+ '<button class="btn" data-open-search>SEARCH ALL CONTENT</button>';
+}
+function renderSubsPage(){
+ return pageTop('Subscriptions','latest from creators you follow')+
+ '<section class="subs-sources"><div class="subs-heading"><h2>Following</h2><button class="chip" data-open-search>FIND CREATORS</button></div><div id="followedSources"></div></section>'+
+ '<p class="meta pad home-feed-status" id="subsFeedStatus" aria-live="polite">Loading the latest from your subscriptions…</p><div id="subsFeedResults"></div>';
 }
 function renderVideoPage(){
- return pageTop('Videos','full-screen playback')+
+ return pageTop('Explore','video discovery')+
  '<section class="video-controls"><div class="video-player-status"><p class="meta pad video-playback-status" id="videoPlaybackStatus" aria-live="polite" hidden></p><button class="chip" data-video-resume hidden>OPEN VIDEO PLAYER</button></div>'+
- '<h2>Find videos</h2><label class="si">'+ic('search')+'<input id="videoQuery" type="search" placeholder="Search videos, creators and topics" aria-label="Search videos" autocomplete="off"></label><button class="btn" data-video-search>SEARCH YOUTUBE</button><p class="meta pad" id="videoStatus">Choose a result to open the full-screen player. Search remains broad across YouTube.</p><div id="videoResults"></div></section>';
+ '<h2>Find videos</h2><label class="si">'+ic('search')+'<input id="videoQuery" type="search" placeholder="Search videos, creators and topics" aria-label="Search videos" autocomplete="off"></label><button class="btn" data-video-search>SEARCH VIDEOS</button><p class="meta pad" id="videoStatus">Open a result in the full-screen player. Search is not restricted by your feed preferences.</p><div id="videoResults"></div></section>';
 }
 
 function renderMusicPage(){
@@ -508,7 +588,7 @@ function renderTopicsPage(){
  '<div class="feed-actions"><button class="btn k" data-save-topics>SAVE INTERESTS</button></div>'+
  '<h2>Followed sources</h2><p class="meta pad">Follow any channel, publisher or musician. Followed YouTube channels can all supply For You candidates; productive and informative items rank higher.</p><div id="followedSources"></div>';
 }
-const R={home:renderHome,videos:renderVideoPage,music:renderMusicPage,player:renderPlayerPage,news:renderNewsPage,search:renderSearchPage,topics:renderTopicsPage,library:renderLibraryPage};
+const R={home:renderHome,explore:renderExplorePage,subs:renderSubsPage,videos:renderVideoPage,music:renderMusicPage,player:renderPlayerPage,news:renderNewsPage,search:renderSearchPage,topics:renderTopicsPage,library:renderLibraryPage};
 
 let libraryView='saved',libraryData={saved:[],history:[],queue:[],playlists:[],items:{}},downloadData={items:[],count:0,bytes:0};
 function renderLibraryPage(){
@@ -569,7 +649,7 @@ function refreshLibrary(){
  if(page==='library')loadLibrary();
 }
 
-const NAV=[['home','Home','home'],['videos','Videos','vid'],['music','Music','music'],['news','News','news'],['library','Library','library']];
+const NAV=[['home','Home','home'],['explore','Explore','explore'],['search','Search','search'],['subs','Subs','follow'],['library','Library','library']];
 $('#nav').innerHTML='<i class="pill"></i>'+NAV.map(([key,label,icon])=>'<a href="#'+key+'" data-k="'+key+'">'+ic(icon)+'<span>'+label+'</span></a>').join('');
 function navPosition(){
  const active=$('#nav a[aria-current]'),nav=$('#nav');if(!active)return;
@@ -592,7 +672,7 @@ function applyPrefs(data){
  const root=$('#topicOptions');
  if(root)root.querySelectorAll('[data-topic]').forEach(b=>b.setAttribute('aria-pressed',selectedTopics().includes(b.dataset.topic)));
  const status=$('#topicStatus');if(status)status.textContent=selectedTopics().length+' selected · '+TOPICS.length+' interests';
- renderSources();updateTopicOptions();
+ renderSources();const creatorRoot=$('#creatorStrip');if(creatorRoot)creatorRoot.innerHTML=homeCreatorStrip();updateTopicOptions();
 }
 function loadFeedPreferences(){
  try{if(window.RushNative){const raw=RushNative.getFeedPreferences();if(raw)applyPrefs(JSON.parse(raw))}}catch(e){}
@@ -605,9 +685,10 @@ function go(){
  document.querySelectorAll('#nav a').forEach(a=>a.dataset.k===activePage?a.setAttribute('aria-current','page'):a.removeAttribute('aria-current'));
  $('.app').classList.toggle('player-open',page==='player');
  $('#sc').scrollTop=0;navPosition();indicator();loadFeedPreferences();
+ if(page==='search'&&pendingSearchQuery){const input=$('#q');if(input){input.value=pendingSearchQuery;pendingSearchQuery='';runUnifiedSearch()}}
  if(window.RushNative){
   RushNative.loadCurrentPlayback();
-  if(page==='home')loadHomeFeed();
+  if(page==='home'||page==='subs')loadHomeFeed();
   if(page!=='videos')RushNative.hideVideo();
   if(page==='music'){RushNative.loadMusicHistory();RushNative.loadMusicSuggestions()}
   if(page==='player')RushNative.loadCurrentMusicLyrics();
@@ -616,8 +697,10 @@ function go(){
  }
 }
 function loadHomeFeed(){
- const status=$('#homeFeedStatus');if(status)status.textContent=homeTab==='fy'?'Finding a mix of videos, music and news for you…':'Loading posts from sources you follow…';
- if(window.RushNative)RushNative.loadHomeFeed(homeTab==='fy'?'forYou':'following');
+ const following=page==='subs'||homeTab==='fo';
+ const status=$(page==='subs'?'#subsFeedStatus':'#homeFeedStatus');
+ if(status)status.textContent=following?'Loading the latest from creators you follow…':'Prioritising useful videos, music and reporting…';
+ if(window.RushNative)RushNative.loadHomeFeed(following?'following':'forYou');
 }
 function homeVideoTile(x,featured){
  const thumb=safeUrl(x.thumbnail);
@@ -628,12 +711,13 @@ function homeMusicTile(x){
  return '<article class="home-tile home-music-tile"><button class="home-media-open" data-track="'+esc(x.id)+'" data-title="'+esc(x.title)+'" data-artist="'+esc(x.artist||'')+'" data-thumbnail="'+esc(thumb)+'" aria-label="Play '+esc(x.title)+'"><span class="home-media-art home-music-art">'+(thumb?'<img src="'+esc(thumb)+'" alt="" loading="lazy" decoding="async" onerror="this.hidden=true">':'')+'<span class="home-media-kind">MUSIC</span><span class="home-play-mark">'+ic('play')+'</span></span><span class="home-tile-copy"><b>'+esc(x.title)+'</b><span>'+esc(x.artist||'Unknown artist')+(x.duration?' · '+esc(x.duration):'')+'</span></span></button>'+mediaActions(x,true)+'</article>';
 }
 function renderFeedResults(data){
- if(page!=='home')return;
- const expectedMode=homeTab==='fy'?'forYou':'following';
+ if(page!=='home'&&page!=='subs')return;
+ const mode=page==='subs'?'fo':homeTab;
+ const expectedMode=mode==='fy'?'forYou':'following';
  if(data&&data.mode&&data.mode!==expectedMode)return;
  const feed=data||{videos:[],music:[],news:[]};
  homeFeedCache=feed;
- const root=$('#homeFeedResults'),status=$('#homeFeedStatus');if(!root)return;
+ const root=$(page==='subs'?'#subsFeedResults':'#homeFeedResults'),status=$(page==='subs'?'#subsFeedStatus':'#homeFeedStatus');if(!root)return;
  const allVideos=feed.videos||[],allMusic=feed.music||[],allNews=feed.news||[];
  const videos=homeFilter==='Music'||homeFilter==='News'?[]:allVideos;
  const music=homeFilter==='Videos'||homeFilter==='News'?[]:allMusic;
@@ -646,7 +730,7 @@ function renderFeedResults(data){
  music.slice(1).forEach(item=>tiles.push(homeMusicTile(item)));
  news.slice(1).forEach(item=>tiles.push('<div class="home-news-slot">'+newsCard(item)+'</div>'));
  const count=videos.length+music.length+news.length;
- root.innerHTML=count?'<section class="home-feed-section"><div class="home-section-heading"><h2>'+(homeFilter==='All'?(homeTab==='fy'?'Picked for you':'From your subscriptions'):homeFilter)+'</h2><span>'+count+' ITEMS</span></div><div class="home-bento">'+tiles.join('')+'</div></section>':'<div class="empty-state"><b>'+(homeFilter==='All'?(feed.message||'Your feed is taking shape.'):'Nothing in '+esc(homeFilter)+' yet.')+'</b><p>'+(homeFilter==='All'?'Follow channels, musicians or publishers and choose topics to shape your feed. Search stays open to every kind of content.':'Try another category or explore all recommendations.')+'</p><button class="btn k" data-open-search>FIND SOURCES</button></div>';
+ root.innerHTML=count?'<section class="home-feed-section"><div class="home-section-heading"><h2>'+(homeFilter==='All'?(mode==='fy'?'Useful picks':'Latest from your subscriptions'):homeFilter)+'</h2><span>'+count+' ITEMS</span></div><div class="home-bento">'+tiles.join('')+'</div></section>':'<div class="empty-state"><b>'+(homeFilter==='All'?(feed.message||'Your feed is taking shape.'):'Nothing in '+esc(homeFilter)+' yet.')+'</b><p>'+(homeFilter==='All'?'Follow channels, musicians or publishers and choose topics to shape your feed. Search stays open to every kind of content.':'Try another category or explore all recommendations.')+'</p><button class="btn k" data-open-search>FIND SOURCES</button></div>';
  if(status)status.textContent=data.message||((allVideos.length+allMusic.length+allNews.length)+' items · '+(homeTab==='fy'?'For You':'Following')+' feed');
 }
 function renderChannels(items){
