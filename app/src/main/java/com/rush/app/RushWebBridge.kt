@@ -48,6 +48,16 @@ class RushWebBridge(
 
 
     @JavascriptInterface
+    fun showSearchKeyboard() {
+        activity.runOnUiThread {
+            webView.requestFocus()
+            val inputMethod = activity.getSystemService(android.content.Context.INPUT_METHOD_SERVICE)
+                as? android.view.inputmethod.InputMethodManager
+            inputMethod?.showSoftInput(webView, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
+        }
+    }
+
+    @JavascriptInterface
     fun getFeedPreferences(): String =
         FeedPreferences.asJson(activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)).toString()
 
@@ -841,7 +851,7 @@ class RushWebBridge(
                 val controller = getController()
                 val quality = prefs.getInt("video_quality", 0)
                 val preferMp4 = prefs.getBoolean("download_mp4", false)
-                for (index in 0 until minOf(items.length(), 12)) {
+                for (index in 0 until minOf(items.length(), 3)) {
                     val data = items.optJSONObject(index) ?: continue
                     val id = data.optString("id")
                     if (!id.matches(Regex("[A-Za-z0-9_-]{11}"))) continue
@@ -866,6 +876,8 @@ class RushWebBridge(
                         .setMimeType(resolved.mimeType).setMediaMetadata(metadata)
                         .setSubtitleConfigurations(subtitles).build())
                 }
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                throw cancelled
             } catch (error: Exception) {
                 publish("rushVideoQueueError", JSONObject().put("message", playbackErrorMessage(error, "Could not prepare the next videos.")).toString())
             }
@@ -2046,6 +2058,24 @@ class RushWebBridge(
                     }
 
                     override fun onIsPlayingChanged(isPlaying: Boolean) {
+                        loadCurrentPlayback()
+                    }
+
+                    override fun onPlaybackStateChanged(playbackState: Int) {
+                        val item = controller.currentMediaItem
+                        publish("rushPlaybackBufferingState", JSONObject()
+                            .put("state", when (playbackState) {
+                                androidx.media3.common.Player.STATE_BUFFERING -> "buffering"
+                                androidx.media3.common.Player.STATE_READY -> "ready"
+                                androidx.media3.common.Player.STATE_ENDED -> "ended"
+                                else -> "idle"
+                            })
+                            .put("isBuffering", playbackState == androidx.media3.common.Player.STATE_BUFFERING)
+                            .put("isReady", playbackState == androidx.media3.common.Player.STATE_READY)
+                            .put("isPlaying", controller.isPlaying)
+                            .put("isVideo", item?.mediaMetadata?.extras?.getBoolean(PlaybackMetadata.AUDIO_ONLY, false) == false)
+                            .put("mediaId", item?.mediaId.orEmpty())
+                            .toString())
                         loadCurrentPlayback()
                     }
                 }
