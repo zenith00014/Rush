@@ -190,6 +190,7 @@ def main():
         "media actions are grouped behind an accessible overflow menu": 'return \'<details class="result-more"><summary aria-label="More actions"\'' in js and ".result-more[open] .result-actions" in html,
         "empty feed message is not duplicated in status and empty state": "if(status)status.textContent=count?" in js,
         "Home feed uses a single vertical column on mobile": ".home-page .home-bento{grid-template-columns:minmax(0,1fr);gap:14px}" in html,
+        "top-bar uses the actual Rush lightning launcher mark": 'viewBox="0 0 48 48"' in html and 'M28 5 10 26h11l-2 17 19-24H27z' in html,
         "mobile header is limited to Rush branding and notifications": 'class="mobile-topbar"' in html and 'class="mobile-brand"' in html and 'id="mobileNotifications"' in html and html.count('class="mobile-top-actions"') == 1,
         "profile/settings action is hidden outside Library": 'id="mobileLibraryProfile"' in html and 'hidden>' in html[html.index('id="mobileLibraryProfile"'):html.index('id="mobileLibraryProfile"') + 220] and "libraryProfile.hidden=page!=='library'" in js,
         "notification action reports its current unavailable state": "b.id==='mobileNotifications'" in js and "Notifications are not available yet." in js,
