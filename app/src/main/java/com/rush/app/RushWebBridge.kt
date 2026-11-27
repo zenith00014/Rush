@@ -138,6 +138,47 @@ class RushWebBridge(
     }
 
     @JavascriptInterface
+    fun setPlaybackSpeed(speed: Float) {
+        if (speed !in 0.25f..3.0f) return
+        activity.lifecycleScope.launch {
+            runCatching { getController().setPlaybackSpeed(speed) }
+                .onFailure { publish("rushPlayerOptionError", JSONObject().put("message", "Could not change playback speed.").toString()) }
+        }
+    }
+
+    @JavascriptInterface
+    fun setCaptionsEnabled(enabled: Boolean) {
+        activity.lifecycleScope.launch {
+            runCatching {
+                val controller = getController()
+                controller.trackSelectionParameters = controller.trackSelectionParameters.buildUpon()
+                    .setTrackTypeDisabled(androidx.media3.common.C.TRACK_TYPE_TEXT, !enabled)
+                    .build()
+            }.onFailure {
+                publish("rushPlayerOptionError", JSONObject().put("message", "Could not change captions.").toString())
+            }
+        }
+    }
+
+    @JavascriptInterface
+    fun setVideoQuality(maxHeight: Int) {
+        if (maxHeight != 0 && maxHeight !in 144..4320) return
+        val prefs = activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)
+        prefs.edit().putInt("video_quality", maxHeight).apply()
+        activity.lifecycleScope.launch {
+            runCatching {
+                val controller = getController()
+                val height = if (maxHeight == 0) Int.MAX_VALUE else maxHeight
+                controller.trackSelectionParameters = controller.trackSelectionParameters.buildUpon()
+                    .setMaxVideoSize(Int.MAX_VALUE, height)
+                    .build()
+            }.onFailure {
+                publish("rushPlayerOptionError", JSONObject().put("message", "Could not change video quality.").toString())
+            }
+        }
+    }
+
+    @JavascriptInterface
     fun setAutoplayEnabled(enabled: Boolean) {
         val prefs = activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)
         prefs.edit().putBoolean("autoplay_video", enabled).apply()
