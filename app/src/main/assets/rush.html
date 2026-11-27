@@ -732,7 +732,7 @@ button{min-height:42px;min-width:42px}.btn,.ib,.chip{border:0;border-radius:24px
  .yt-toast.show{opacity:1;visibility:visible;transform:translate(-50%,0)}
 }
 @media(prefers-reduced-motion:reduce){.yt-toast{transition:none!important}.nav .pill{transition:none!important}}
-</style></head>
+</style><style id="rush-desktop-chrome-removal">@media(min-width:900px){.d-topbar{display:none!important}.desktop-app{grid-template-rows:0 minmax(0,1fr)!important}.d-sidebar{grid-row:2}.d-main{grid-row:2}}</style></head>
 <body>
 <div class="app">
 
@@ -752,7 +752,7 @@ button{min-height:42px;min-width:42px}.btn,.ib,.chip{border:0;border-radius:24px
   </header>
   <aside class="d-sidebar" id="desktopSidebar" aria-label="Primary navigation">
     <a class="d-nav-item" href="#home" data-desk-route="home"><span class="d-nav-ico">⌂</span><span class="d-nav-label">Home</span></a>
-    <a class="d-nav-item" href="#explore" data-desk-route="explore"><span class="d-nav-ico">◎</span><span class="d-nav-label">Explore</span></a>
+        <a class="d-nav-item" href="#search" data-desk-route="search"><span class="d-nav-ico">⌕</span><span class="d-nav-label">Search</span></a>
     <a class="d-nav-item" href="#videos" data-desk-route="videos"><span class="d-nav-ico">▣</span><span class="d-nav-label">TV Mode</span></a>
     <div class="d-nav-divider"></div>
     <a class="d-nav-item" href="#library" data-desk-route="library" data-desk-library="history"><span class="d-nav-ico">◷</span><span class="d-nav-label">History</span></a>
@@ -776,7 +776,7 @@ button{min-height:42px;min-width:42px}.btn,.ib,.chip{border:0;border-radius:24px
 <div class="yt-drawer-scrim" id="mobileDrawerScrim"></div>
 <aside class="yt-drawer" id="mobileDrawer" aria-label="Rush navigation" aria-hidden="true">
  <div class="yt-drawer-head"><span class="yt-brand-mark">▶</span><b>Rush</b><button id="drawerClose" type="button" aria-label="Close menu">×</button></div>
- <a href="#home" data-drawer-route>⌂ <span>Home</span></a><a href="#explore" data-drawer-route>◎ <span>Explore</span></a><a href="#search" data-drawer-route>⌕ <span>Search</span></a>
+ <a href="#home" data-drawer-route>⌂ <span>Home</span></a><a href="#search" data-drawer-route>⌕ <span>Search</span></a>
  <div class="yt-drawer-divider"></div>
  <button data-drawer-library="history">◷ <span>History</span></button><button data-drawer-library="saved">◴ <span>Watch Later</span></button><button data-drawer-library="playlists">☷ <span>Playlists</span></button><button data-drawer-library="downloads">▣ <span>Downloads</span></button>
  <div class="yt-drawer-divider"></div><a href="#subs" data-drawer-route>▤ <span>Subscriptions</span></a><a href="#topics" data-drawer-route>⚙ <span>Personalise Rush</span></a>
@@ -1434,7 +1434,7 @@ const desktopFallbackMusic=[
  {id:'demo-track-1',title:'Weightless',artist:'Marconi Union',duration:'8:09',thumbnail:'https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&w=800&q=82'},
  {id:'demo-track-2',title:'Experience',artist:'Ludovico Einaudi',duration:'5:15',thumbnail:'https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=800&q=82'}
 ];
-const desktopCategoryNames=['All','Subscriptions','Music','Tech','Design','Science','Education','History','Engineering','Economics','Documentaries','News'];
+const desktopCategoryNames=['All','Subscriptions','Music','Tech','Design','Science','Education','History','Engineering','Economics','Documentaries'];
 function isDesktopRush(){return window.matchMedia('(min-width:900px)').matches}
 function desktopVideos(){
  const items=(homeFeedCache&&homeFeedCache.videos)||[];
@@ -1491,8 +1491,7 @@ function desktopHomePage(){
  '<div class="d-section-title"><span>Recommended for you</span><small>For You · Based on your topics and watch history</small></div>'+
  (rest.length?'<div class="d-video-grid">'+rest.map((item,i)=>desktopVideoCard(item,i+4,false)).join('')+'</div>':'<div class="d-empty">No videos match this topic yet. Choose another category to keep exploring.</div>')+
  '<div class="d-caught-up">You’re caught up. Rush adds more recommendations when there is useful new content.</div>'+
- (desktopMusic().length?'<section class="d-shelf"><div class="d-section-title"><span>Music</span><button data-desk-category="Music">View all</button></div><div class="d-video-grid">'+desktopMusic().slice(0,4).map(desktopMusicCard).join('')+'</div></section>':'')+
- (desktopNews().length?'<section class="d-shelf"><div class="d-section-title"><span>News</span><button data-desk-category="News">View all</button></div><div class="d-video-grid">'+desktopNews().slice(0,4).map(desktopNewsCard).join('')+'</div></section>':'');
+ (desktopMusic().length?'<section class="d-shelf"><div class="d-section-title"><span>Music</span><button data-desk-category="Music">View all</button></div><div class="d-video-grid">'+desktopMusic().slice(0,4).map(desktopMusicCard).join('')+'</div></section>':'');
 }
 function desktopExplorePage(){
  const items=desktopVideos();
@@ -1503,7 +1502,7 @@ function desktopExplorePage(){
 function desktopSubscriptionsPage(){
  const items=desktopVideos();
  return '<div class="d-page-title"><h1>Subscriptions</h1><small>Latest from creators you follow</small></div>'+
- '<div class="d-filter-row"><button class="d-filter" aria-pressed="true">All</button><button class="d-filter">Videos</button><button class="d-filter">Music</button><button class="d-filter">News</button><button class="d-filter">Newest</button><button class="d-filter">Oldest</button></div>'+
+ '<div class="d-filter-row"><button class="d-filter" aria-pressed="true">All</button><button class="d-filter">Videos</button><button class="d-filter">Music</button><button class="d-filter">Newest</button><button class="d-filter">Oldest</button></div>'+
  '<div class="d-video-grid">'+items.map((item,i)=>desktopVideoCard(item,i,false)).join('')+'</div>';
 }
 function desktopMusicPage(){
@@ -1517,20 +1516,20 @@ function desktopNewsPage(){
  (items.length?'<div class="d-video-grid">'+items.map(desktopNewsCard).join('')+'</div>':'<div class="d-empty">News recommendations appear here when Rush has loaded publisher results.</div>');
 }
 function desktopSearchPage(){
- const groups={videos:unifiedData.videos||[],music:unifiedData.music||[],news:unifiedData.news||[],channels:unifiedData.channels||[],playlists:unifiedData.playlists||[]};
- const names={videos:'Videos',music:'Music',news:'News',channels:'YouTube channels',playlists:'Public YouTube playlists'};
- const active=['all','videos','music','news','channels','playlists'];
+ const groups={videos:unifiedData.videos||[],music:unifiedData.music||[],channels:unifiedData.channels||[],playlists:unifiedData.playlists||[]};
+ const names={videos:'Videos',music:'Music',channels:'YouTube channels',playlists:'Public YouTube playlists'};
+ const active=['all','videos','music','channels','playlists'];
  const filters=active.map(key=>'<button class="d-filter" data-desk-search-filter="'+key+'" aria-pressed="'+(unifiedMode===key)+'">'+(key==='all'?'All':names[key]||key)+'</button>').join('');
  const total=Object.values(groups).reduce((sum,items)=>sum+items.length,0);
  let content='';
  if(unifiedMode==='all'||unifiedMode==='videos')content+='<section class="d-shelf"><div class="d-section-title">Videos · '+groups.videos.length+'</div><div class="d-video-grid">'+groups.videos.map((item,i)=>desktopVideoCard(item,i,false)).join('')+'</div></section>';
  if(unifiedMode==='all'||unifiedMode==='music')content+='<section class="d-shelf"><div class="d-section-title">Music · '+groups.music.length+'</div><div class="d-video-grid">'+groups.music.map(desktopMusicCard).join('')+'</div></section>';
- if(unifiedMode==='all'||unifiedMode==='news')content+='<section class="d-shelf"><div class="d-section-title">News · '+groups.news.length+'</div><div class="d-video-grid">'+groups.news.map(desktopNewsCard).join('')+'</div></section>';
+
  if(unifiedMode==='all'||unifiedMode==='channels')content+='<section class="d-shelf"><div class="d-section-title">YouTube channels · '+groups.channels.length+'</div><div class="d-video-grid">'+groups.channels.map((item,i)=>'<article class="d-card"><div class="d-card-line"><span class="d-channel-avatar">'+desktopAvatar(item)+'</span><div class="d-card-copy"><b>'+esc(item.name||'Channel')+'</b><span class="d-card-sub">'+esc(item.subscribers||'YouTube channel')+'</span></div></div>'+sourceButton('channel',item.id,item.name,'FOLLOW')+'</article>').join('')+'</div></section>';
  if(unifiedMode==='all'||unifiedMode==='playlists')content+='<section class="d-shelf"><div class="d-section-title">Public playlists · '+groups.playlists.length+'</div>'+groups.playlists.map(playlistRow).join('')+'</section>';
  return '<div class="d-page-title"><h1>Search</h1><small>Search is broad and is not restricted by feed preferences</small></div>'+
- '<form class="d-search-form-page" id="desktopSearchPageForm"><input id="desktopSearchPageInput" type="search" placeholder="Search videos, music, news, channels or playlists" value="'+esc(unifiedQuery||'')+'"><button>Search</button></form>'+
- '<div class="d-filter-row">'+filters+'</div><p class="d-card-sub">'+total+' results · All content remains searchable</p>'+content;
+ '<form class="d-search-form-page" id="desktopSearchPageForm"><input id="desktopSearchPageInput" type="search" placeholder="Search videos, music, channels or playlists" value="'+esc(unifiedQuery||'')+'"><button>Search</button></form>'+
+ '<div class="d-filter-row">'+filters+'</div>'+content;
 }
 function desktopLibraryPage(){
  const current=libraryView||'saved';
@@ -1599,8 +1598,8 @@ function renderDesktopPage(){
  const app=document.getElementById('desktopApp'),root=document.getElementById('desktopPage'),cats=document.getElementById('desktopCategories');
  if(!app||!root||!isDesktopRush())return;
  if(desktopLastPage!==page){const main=document.getElementById('desktopMain');if(main)main.scrollTop=0;desktopLastPage=page}
- if(cats){const show=['home','explore','subs'].includes(page);cats.style.display=show?'flex':'none';cats.innerHTML=show?desktopCategoriesHtml():''}
- const renderers={home:desktopHomePage,explore:desktopExplorePage,subs:desktopSubscriptionsPage,videos:desktopVideoPage,music:desktopMusicPage,player:desktopPlayerPage,news:desktopNewsPage,search:desktopSearchPage,topics:desktopTopicsPage,library:desktopLibraryPage,watch:desktopWatchPage};
+ if(cats){const show=['home','subs'].includes(page);cats.style.display=show?'flex':'none';cats.innerHTML=show?desktopCategoriesHtml():''}
+ const renderers={home:desktopHomePage,subs:desktopSubscriptionsPage,videos:desktopVideoPage,music:desktopMusicPage,player:desktopPlayerPage,search:desktopSearchPage,topics:desktopTopicsPage,library:desktopLibraryPage,watch:desktopWatchPage};
  root.innerHTML=(renderers[page]||desktopHomePage)();
  app.classList.toggle('d-sidebar-collapsed',!!app.dataset.collapsed);
  app.querySelectorAll('[data-desk-route]').forEach(link=>link.classList.toggle('active',link.dataset.deskRoute===(page==='watch'?'videos':page)));
