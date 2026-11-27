@@ -230,3 +230,6 @@ The CI run after these corrections is the verification gate. No APK is considere
 ## UI redesign progress
 
 The active visual implementation log and remaining-work checklist are maintained in [`UI_REDESIGN_PROGRESS.md`](UI_REDESIGN_PROGRESS.md).
+
+
+The active Home/watch/navigation refinement pass is tracked in [`UI_REDESIGN_PROGRESS.md`](UI_REDESIGN_PROGRESS.md); it corrects the later mobile renderers rather than relying on shadowed legacy functions.

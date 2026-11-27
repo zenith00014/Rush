@@ -5,6 +5,13 @@
 **Last updated:** 2026-11-27
 
 ## Completed in the current redesign passes
+- Corrected the active Home renderer so the creator rail is visible before a single compact horizontal filter row.
+- Moved video-card Save, Queue, Download and Share into the existing More action sheet, removing permanently visible action rows.
+- Corrected the bottom navigation to four equal columns for its four actual tabs.
+- Preserved the originating tab when opening a video from Home, Search, Subscriptions or Library; the watch Back control returns to that source and the originating tab remains selected.
+- Rebuilt the watch action area with accessible SVG icons and a compact overflow menu; removed duplicate Resume controls and emoji controls.
+- Made watch view/date metadata and description conditional on actual source data; pass avatar/view/date metadata from video cards when available.
+- Tightened watch title, creator row, action row, autoplay settings and Up next spacing while retaining the native Media3 player host.
 - Added a minimal mobile top bar: Rush mark and wordmark plus Notifications.
 - Added a Settings/Profile control in the top bar that is visible only on Library.
 - Kept Cast and all other extra actions out of the top bar, per the latest direction.
@@ -25,19 +32,19 @@
 ### Critical
 - Compare the native video player against the reference on a physical Android device: remove top whitespace, fix crop/aspect ratio, anchor controls inside the video, verify resume/fullscreen/rotation/scroll.
 - Verify mini-player thumbnail, dimensions, position above bottom navigation, tap targets, and feed scroll clearance on-device.
-- Verify bottom-navigation selection always matches the displayed route, including watch/player and Library subviews.
+- Verify bottom-navigation selection on-device for watch/player and Library subviews; four-column layout and watch-origin selection are corrected in code.
 
 ### High
 - Verify the More actions menu opens/closes correctly and remains inside the viewport on narrow screens.
 - Refine Home card hierarchy, title/metadata density, thumbnail radius/aspect ratio, and overflow actions against the reference screenshots.
-- Fix Search's duplicate clear affordance if reproduced; compact search/filter layout and verify keyboard/submit/clear states.
+- Search's duplicate native clear affordance is suppressed in favour of the explicit Clear button; verify keyboard/submit/clear states on-device.
 - Fix Subscriptions empty/loading/error states and remove duplicate error messaging.
 - Investigate channel avatar source data. Persisted `FeedSource` currently stores kind/id/name/productive only; do not invent avatar URLs or fake logos. Extend metadata only if a trustworthy thumbnail is available from actual channel search/feed results.
 - Remove any remaining duplicate or competing page-level actions that conflict with the minimal top-bar rule.
 
 ### Medium
 - Verify Library shelves (History, Watch Later, Liked videos, Playlists) and View all transitions against the reference; check queue/download subviews separately.
-- Implement/refine comments preview/sheet only if the existing data layer exposes real comments; do not fabricate comments.
+- Comments preview remains out of scope until a real comments source is available; the current native bridge exposes no comments data, so no sample comments are fabricated.
 - Standardize action icons, card spacing, text clamping, and touch targets across Search, Subscriptions, Library, and Watch.
 
 ## Known limits and verification
@@ -45,7 +52,7 @@
 - No Cast control is included in the top bar.
 - Channel avatar images are not available in the persisted followed-source model; initials remain the honest fallback until real avatar metadata is available.
 - CI build/lint/test status must be checked for the latest commit; a running workflow is not a pass.
-- Physical-device verification is still required for player geometry, mini-player behavior, and actual image loading.
+- Physical-device verification is still required for player geometry, mini-player behavior, narrow-screen overflow menus, search keyboard/clear states, and actual image loading.
 - No backend/authentication or fake sample data was added as part of this UI work.
 
 ## Verification checklist
