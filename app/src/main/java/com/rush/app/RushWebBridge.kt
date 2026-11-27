@@ -58,6 +58,41 @@ class RushWebBridge(
     }
 
     @JavascriptInterface
+    fun getLocalProfile(): String = localProfileJson().toString()
+
+    @JavascriptInterface
+    fun saveLocalProfile(displayName: String) {
+        val prefs = activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)
+        prefs.edit().putString("rush_profile_display_name", displayName.trim().take(40)).apply()
+        publish("rushLocalProfileSaved", localProfileJson().toString())
+    }
+
+    @JavascriptInterface
+    fun completeLocalProfile(displayName: String, topicsJson: String) {
+        val prefs = activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)
+        try {
+            FeedPreferences.saveTopics(prefs, topicsJson)
+            prefs.edit()
+                .putString("rush_profile_display_name", displayName.trim().take(40))
+                .putBoolean("rush_profile_setup_complete", true)
+                .apply()
+            publish("rushFeedPreferences", FeedPreferences.asJson(prefs).toString())
+            publish("rushLocalProfileSaved", localProfileJson().toString())
+        } catch (error: Exception) {
+            publish("rushLocalProfileError", JSONObject()
+                .put("message", error.message ?: "Could not save your local profile.")
+                .toString())
+        }
+    }
+
+    private fun localProfileJson(): JSONObject {
+        val prefs = activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)
+        return JSONObject()
+            .put("displayName", prefs.getString("rush_profile_display_name", "").orEmpty())
+            .put("setupComplete", prefs.getBoolean("rush_profile_setup_complete", false))
+    }
+
+    @JavascriptInterface
     fun getFeedPreferences(): String =
         FeedPreferences.asJson(activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)).toString()
 
@@ -357,8 +392,6 @@ class RushWebBridge(
                             async {
                                 val results = try {
                                     slots.withPermit { LiveYouTubeSearch.search(query, music = false) }
-                                } catch (cancelled: kotlinx.coroutines.CancellationException) {
-                                    throw cancelled
                                 } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch (error: Exception) {
                                     android.util.Log.w("RushFeed", "Video query failed: $query", error)
                                     emptyList()
@@ -375,8 +408,6 @@ class RushWebBridge(
                             async {
                                 val results = try {
                                     slots.withPermit { LiveYouTubeSearch.search(query, music = true) }
-                                } catch (cancelled: kotlinx.coroutines.CancellationException) {
-                                    throw cancelled
                                 } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch (error: Exception) {
                                     android.util.Log.w("RushFeed", "Music query failed: $query", error)
                                     emptyList()
@@ -387,8 +418,6 @@ class RushWebBridge(
                         Pair(videoJobs.awaitAll(), musicJobs.awaitAll())
                     }
                 }
-            } catch (cancelled: kotlinx.coroutines.CancellationException) {
-                throw cancelled
             } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch (error: Exception) {
                 android.util.Log.w("RushFeed", "Recommendation refresh failed", error)
                 Pair(emptyList(), emptyList())
@@ -920,8 +949,6 @@ class RushWebBridge(
                         .setMimeType(resolved.mimeType).setMediaMetadata(metadata)
                         .setSubtitleConfigurations(subtitles).build())
                 }
-            } catch (cancelled: kotlinx.coroutines.CancellationException) {
-                throw cancelled
             } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch (error: Exception) {
                 publish("rushVideoQueueError", JSONObject().put("message", playbackErrorMessage(error, "Could not prepare the next videos.")).toString())
             }
@@ -1444,8 +1471,6 @@ class RushWebBridge(
                     .put("title", playlistTitle.trim().take(300).ifBlank { "YouTube playlist" })
                     .put("items", payload)
                     .put("count", videos.size).toString())
-            } catch (cancelled: kotlinx.coroutines.CancellationException) {
-                throw cancelled
             } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch (error: Exception) {
                 publish("rushPublicPlaylistError", JSONObject()
                     .put("message", playbackErrorMessage(error, "Could not open this playlist.")).toString())
@@ -1529,8 +1554,6 @@ class RushWebBridge(
                 val thumbnail = entry.optString("thumbnail").take(2048)
                 if (entry.optBoolean("music")) playMusic(sourceId, title, creator, thumbnail)
                 else playVideo(sourceId, title, creator, thumbnail)
-            } catch (cancelled: kotlinx.coroutines.CancellationException) {
-                throw cancelled
             } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch (error: Exception) {
                 publish("rushLibraryError", JSONObject().put("message", playbackErrorMessage(error, "Could not play this library item.")).toString())
             }
@@ -1752,8 +1775,6 @@ class RushWebBridge(
                     .put("state", "playing")
                     .put("count", queue.size)
                     .put("skipped", skipped).toString())
-            } catch (cancelled: kotlinx.coroutines.CancellationException) {
-                throw cancelled
             } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch (error: Exception) {
                 publish("rushQueuePlayback", JSONObject()
                     .put("state", "error")
@@ -1788,8 +1809,8 @@ class RushWebBridge(
                         maxHeight = maxHeight,
                         maxAudioBitrate = maxAudioBitrate,
                         preferMp4 = preferMp4,
-                        preferDash = !isAudio && !preferMp4,
-                        allowDashFallback = !isAudio && !preferMp4
+                        preferDash = false,
+                        allowDashFallback = false
                     )
                 }
                 val workId = withContext(Dispatchers.IO) {
@@ -1811,8 +1832,6 @@ class RushWebBridge(
                     .put("title", title.take(300))
                     .put("workId", workId.toString()).toString())
                 loadDownloads()
-            } catch (cancelled: kotlinx.coroutines.CancellationException) {
-                throw cancelled
             } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch (error: Exception) {
                 publish("rushDownloadAction", JSONObject()
                     .put("state", "error")
@@ -1885,8 +1904,6 @@ class RushWebBridge(
                 OfflineDownloads.resume(activity.applicationContext, media)
                 publish("rushDownloadAction", JSONObject().put("state", "queued").put("title", media.title).toString())
                 loadDownloads()
-            } catch (cancelled: kotlinx.coroutines.CancellationException) {
-                throw cancelled
             } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch (error: Exception) {
                 publish("rushDownloadsError", JSONObject().put("message", error.message ?: "Could not resume this download.").toString())
             }
@@ -1959,8 +1976,6 @@ class RushWebBridge(
                     .put("mediaId", "offline:${media.id}")
                     .put("sourceId", media.sourceId)
                     .put("isOffline", true).toString())
-            } catch (cancelled: kotlinx.coroutines.CancellationException) {
-                throw cancelled
             } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch (error: Exception) {
                 publish("rushDownloadAction", JSONObject().put("state", "error")
                     .put("message", error.message ?: "Could not play this download.").toString())
