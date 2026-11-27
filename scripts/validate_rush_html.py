@@ -129,7 +129,7 @@ def main():
         fail("WebView must not require remote font downloads")
 
     ui_contracts = {
-        "no preloaded fixed video player": 'id="videoPlayerHost"' not in html,
+        "inline native player host is rendered on the watch screen": 'id="videoPlayerHost"' in html,
         "dedicated music player screen": "function renderPlayerPage()" in js,
         "music player offers explicit video mode": 'id="playerModeToggle"' in html and "data-player-watch-video" in js and "data-player-listen-audio" in js,
         "video mode keeps current track details visible": "VIDEO MODE · PLAYING" in js and "const hasMedia=isMusic||isVideo;" in js,
