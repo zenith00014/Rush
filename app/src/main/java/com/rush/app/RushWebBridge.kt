@@ -423,8 +423,9 @@ class RushWebBridge(
                             .put("artist", item.creator)
                             .put("duration", item.duration)
                             .put("thumbnail", thumbnailFor(item.videoId, item.thumbnailUrl))
-                            .put("sourceId", source?.id ?: "")
-                            .put("sourceName", source?.name ?: "")
+                            .put("sourceId", source?.id?.takeIf { it.isNotBlank() } ?: item.channelId)
+                            .put("sourceName", source?.name?.takeIf { it.isNotBlank() } ?: item.creator)
+                            .put("description", item.description)
                         val score = RushDiscoveryEngine.scoreFeed(candidate, profile)
                         val previous = videoHits[item.videoId]
                         if (previous == null || score > previous.score) {
@@ -941,7 +942,8 @@ class RushWebBridge(
                     results.forEach { item ->
                         put(JSONObject().put("id", item.videoId).put("title", item.title)
                             .put("artist", item.creator).put("duration", item.duration)
-                            .put("thumbnail", thumbnailFor(item.videoId, item.thumbnailUrl)))
+                            .put("thumbnail", thumbnailFor(item.videoId, item.thumbnailUrl))
+                            .put("channelId", item.channelId).put("description", item.description))
                     }
                 }
                 publish("rushVideoSearchResults", payload.toString())
