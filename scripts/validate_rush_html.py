@@ -184,7 +184,7 @@ def main():
         fail("Empty music queue must produce a persistent informational message")
     if "safeUrl(x.url)" not in js:
         fail("News cards must validate HTTPS article links before rendering")
-    if "HOME_FEED_CACHE_TTL_MS" not in bridge or "rush_home_feed_v4_" not in bridge:
+    if "HOME_FEED_CACHE_TTL_MS" not in bridge or "rush_home_feed_v5_" not in bridge:
         fail("Home feed must render a cached payload before refetching")
     if "Semaphore(5)" not in bridge or "awaitAll()" not in bridge:
         fail("Home feed source lookups must run concurrently with bounded parallelism")
