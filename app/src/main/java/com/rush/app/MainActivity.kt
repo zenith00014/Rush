@@ -124,7 +124,7 @@ class MainActivity:ComponentActivity(){
    }.also { nativeVideoView=it }
    view.player=player
    if(view.parent==null)rootLayout.addView(view,android.widget.FrameLayout.LayoutParams(1,1))
-   setPipEligible(true)
+   setPipEligible(false)
    if(fullscreen)setNativeVideoFullscreen(true) else updateNativeVideoPosition()
   }
  }
@@ -134,7 +134,7 @@ class MainActivity:ComponentActivity(){
   runOnUiThread {
    if(!nativeVideoRequested||nativeVideoFullscreen)return@runOnUiThread
    val request=++nativeVideoPositionRequest
-   val script="""(function(){const e=document.getElementById('videoPlayerHost');if(!e)return 'null';const r=e.getBoundingClientRect();const s=getComputedStyle(e);return JSON.stringify({left:r.left,top:r.top,width:r.width,height:r.height,visible:s.display!=='none'&&s.visibility!=='hidden'&&r.width>100&&r.height>70&&r.bottom>0&&r.top<innerHeight});})()"""
+   val script="""(function(){const watch=document.getElementById('videoPlayerHost');const mini=document.getElementById('videoMiniHost');const visible=e=>{if(!e)return false;const r=e.getBoundingClientRect();const s=getComputedStyle(e);return s.display!=='none'&&s.visibility!=='hidden'&&r.width>35&&r.height>30&&r.bottom>0&&r.top<innerHeight};const e=visible(watch)?watch:(visible(mini)?mini:null);if(!e)return 'null';const r=e.getBoundingClientRect();return JSON.stringify({host:e.id,left:r.left,top:r.top,width:r.width,height:r.height,visible:true});})()"""
    webView.evaluateJavascript(script){raw->
     if(request!=nativeVideoPositionRequest||!nativeVideoRequested||nativeVideoFullscreen)return@evaluateJavascript
     val jsonText=runCatching { org.json.JSONTokener(raw?:"null").nextValue() as? String }.getOrNull()
@@ -145,6 +145,9 @@ class MainActivity:ComponentActivity(){
      setPipEligible(false)
      return@evaluateJavascript
     }
+    val miniHost=geometry.optString("host")=="videoMiniHost"
+    view.useController=!miniHost
+    view.controllerAutoShow=!miniHost
     val density=resources.displayMetrics.density
     val rootPosition=IntArray(2)
     val webPosition=IntArray(2)
