@@ -1901,7 +1901,6 @@ function runUnifiedSearch(){
  try{localStorage.setItem('rush_search_history',JSON.stringify(searchHistory))}catch(e){}
  const history=$('#searchHistory');if(history)history.hidden=true;
  const panel=$('#searchResultPanel');if(panel)panel.hidden=false;
- const status=$('#unifiedStatus');if(status)status.textContent='Searching…';
  unifiedData.videos=[];unifiedData.music=[];unifiedData.channels=[];unifiedData.playlists=[];
  unifiedPendingKeys=new Set(['videos','music','channels','playlists']);unifiedPending=unifiedPendingKeys.size;
  const root=$('#unifiedResults');showSkeleton(root,4);
