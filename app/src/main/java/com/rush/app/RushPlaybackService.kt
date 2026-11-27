@@ -104,7 +104,7 @@ class RushPlaybackService : MediaSessionService() {
                 25_000,
                 90_000,
                 3_000,
-                5_000
+                2_500
             )
             .setBackBuffer(15_000, true)
             .setPrioritizeTimeOverSizeThresholds(true)
@@ -128,6 +128,7 @@ class RushPlaybackService : MediaSessionService() {
             .build()
         player.pauseAtEndOfMediaItems = !getSharedPreferences("rush_prefs", MODE_PRIVATE)
             .getBoolean("autoplay_video", true)
+        player.setPreloadConfiguration(ExoPlayer.PreloadConfiguration(5_000_000L))
         player.addListener(object : androidx.media3.common.Player.Listener {
             override fun onMediaItemTransition(
                 mediaItem: androidx.media3.common.MediaItem?,
