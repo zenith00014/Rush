@@ -1888,6 +1888,11 @@ const mobileNav=[['home','Home','home'],['search','Search','search'],['subs','Su
 $('#nav').innerHTML='<i class="pill"></i>'+mobileNav.map(([key,label,icon])=>'<a href="#'+key+'" data-k="'+key+'">'+ic(icon)+'<span>'+label+'</span></a>').join('');
 document.addEventListener('click',e=>{
  const target=e.target.closest('button,a');if(!target)return;
+ if(target.hasAttribute('data-video-id')){
+  mobileCurrentVideo={id:target.dataset.videoId,title:target.dataset.title||'Video',artist:target.dataset.creator||'YouTube',creator:target.dataset.creator||'YouTube',thumbnail:target.dataset.thumbnail||''};
+  if(page==='videos'){$('#v').innerHTML=R.videos();mobileSyncPlayer()}else location.hash='#videos';
+ }
+ if(target.closest('#videoMiniHost')){location.hash='#videos';return}
  if(target.hasAttribute('data-mobile-route')){e.preventDefault();location.hash='#'+target.dataset.mobileRoute;return}
  if(target.hasAttribute('data-open-topics')){e.preventDefault();location.hash='#topics';return}
  if(target.hasAttribute('data-open-snooze')){e.preventDefault();location.hash='#snooze';return}
@@ -1902,7 +1907,14 @@ document.addEventListener('click',e=>{
  if(target.hasAttribute('data-snooze-topic')){if(window.RushNative)RushNative.snoozeFeedTopic(target.dataset.snoozeTopic);return}
  if(target.hasAttribute('data-unsnooze-topic')){if(window.RushNative)RushNative.unsnoozeFeedTopic(target.dataset.unsnoozeTopic);return}
  if(target.hasAttribute('data-rate-video')){const id=target.dataset.id,rating=Number(target.dataset.rateVideo),current=(()=>{try{return RushNative.getVideoRating(id)}catch(e){return 0}})();if(window.RushNative)RushNative.rateVideo(id,target.dataset.title||'',target.dataset.creator||'',current===rating?0:rating);return}
- if(target.hasAttribute('data-video-next')){if(window.RushNative)RushNative.skipNext();return}
+ if(target.hasAttribute('data-video-next')){
+  const current=mobileCurrentVideo&&mobileCurrentVideo.id||mediaState.mediaId;
+  const pool=(homeFeedCache.videos||[]).concat(unifiedData.videos||[]);
+  const seen=new Set();const next=pool.find(item=>item&&item.id!==current&&!seen.has(item.id)&&seen.add(item.id));
+  if(next&&window.RushNative){mobileCurrentVideo=next;RushNative.playVideo(next.id,next.title||'',next.artist||next.creator||'',mobileThumb(next));$('#v').innerHTML=R.videos();mobileSyncPlayer()}
+  else if(window.RushNative)RushNative.skipNext();
+  return
+ }
  if(target.hasAttribute('data-sleep-minutes')){if(window.RushNative)RushNative.setSleepTimer(Number(target.dataset.sleepMinutes));return}
  if(target.hasAttribute('data-share-video')){mobileCopy('https://www.youtube.com/watch?v='+encodeURIComponent(target.dataset.shareVideo||''));return}
  if(target.hasAttribute('data-mobile-more')){const id=target.dataset.videoId,title=target.dataset.title,creator=target.dataset.creator,thumb=target.dataset.thumbnail;const root=$('#mobileActionSheet');if(root){root.innerHTML='<h3>'+esc(title)+'</h3><button data-save-item data-id="'+esc(id)+'" data-title="'+esc(title)+'" data-creator="'+esc(creator)+'" data-music="false" data-thumbnail="'+esc(thumb)+'">♡ <span>Save to Watch Later</span></button><button data-queue-item data-id="'+esc(id)+'" data-title="'+esc(title)+'" data-creator="'+esc(creator)+'" data-music="false" data-thumbnail="'+esc(thumb)+'">＋ <span>Add to queue</span></button><button data-share-video="'+esc(id)+'">↗ <span>Share</span></button>';document.querySelector('.app')?.classList.add('sheet-open');root.setAttribute('aria-hidden','false')}return}
@@ -1918,7 +1930,14 @@ document.addEventListener('change',e=>{
  if(e.target&&e.target.id==='autoplayToggle'){autoplayEnabled=!!e.target.checked;if(window.RushNative)RushNative.setAutoplayEnabled(autoplayEnabled);return}
 });
 window.rushHomeFeedResults=renderFeedResults;
-window.rushFeedPreferences=data=>{if(data)prefs=data;if(page==='topics')$('#v').innerHTML=renderTopicsPage();if(page==='snooze')$('#v').innerHTML=renderSnoozePage();if(page==='home')$('#v').innerHTML=renderHome();if(page==='subs')$('#v').innerHTML=renderSubsPage();if(page==='library'){libraryData=libraryData||{};renderLibraryContent()}};
+window.rushFeedPreferences=data=>{
+ if(data)prefs=data;
+ if(page==='topics')$('#v').innerHTML=renderTopicsPage();
+ if(page==='snooze')$('#v').innerHTML=renderSnoozePage();
+ if(page==='home'){$('#v').innerHTML=renderHome();if(window.RushNative)RushNative.refreshHomeFeed(homeTab==='fo'?'following':'forYou')}
+ if(page==='subs'){$('#v').innerHTML=renderSubsPage();if(window.RushNative)RushNative.refreshHomeFeed('following')}
+ if(page==='library')renderLibraryContent()
+};
 window.rushFeedPreferencesError=error=>mobileToast(error.message||'Could not update preferences.');
 window.rushVideoSearchResults=items=>{unifiedData.videos=items||[];const panel=$('#searchResultPanel');if(panel)panel.hidden=false;renderSearchResults()};
 window.rushVideoSearchError=error=>{const root=$('#unifiedResults');if(root)root.innerHTML='<p class="yt-feed-empty">'+esc(error.message||'Video search failed.')+'</p>'};
