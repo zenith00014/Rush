@@ -187,6 +187,7 @@ def main():
         "Library profile action routes to profile": "b.dataset.mobileRoute==='profile'" in js,
         "Library page does not duplicate top-bar actions": "yt-home-actions" not in js[js.index("function renderLibraryPage()"):js.index("function renderLibraryContent()")],
         "Home uses a creator rail and one category row": "home-topic-filter" in js and "data-tab=\"fo\"" not in js[js.index("function renderHome()"):js.index("function renderExplorePage()")],
+        "empty feed message is not duplicated in status and empty state": "if(status)status.textContent=count?" in js,
         "Home feed uses a single vertical column on mobile": ".home-page .home-bento{grid-template-columns:minmax(0,1fr);gap:14px}" in html,
         "mobile header is limited to Rush branding and notifications": 'class="mobile-topbar"' in html and 'class="mobile-brand"' in html and 'id="mobileNotifications"' in html and html.count('class="mobile-top-actions"') == 1,
         "profile/settings action is hidden outside Library": 'id="mobileLibraryProfile"' in html and 'hidden>' in html[html.index('id="mobileLibraryProfile"'):html.index('id="mobileLibraryProfile"') + 220] and "libraryProfile.hidden=page!=='library'" in js,

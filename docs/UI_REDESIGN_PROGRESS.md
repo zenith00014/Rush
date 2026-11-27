@@ -17,6 +17,8 @@
 - Retained the existing native Media3 player and requestAnimationFrame-coalesced geometry update on nested WebView scroll/resize.
 - Added validator assertions for the header, Library profile routing, and Home layout contracts.
 
+- Fixed duplicate empty/error messaging on the Subscriptions feed: the empty-state message is now shown once instead of also being repeated in the live status line.
+
 ## Remaining work, in priority order
 
 ### Critical

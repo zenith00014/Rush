@@ -1173,7 +1173,7 @@ function renderFeedResults(data){
  news.slice(1).forEach(item=>tiles.push('<div class="home-news-slot">'+newsCard(item)+'</div>'));
  const count=videos.length+music.length+news.length;
  root.innerHTML=count?'<section class="home-feed-section"><div class="home-section-heading"><h2>'+(homeFilter==='All'?(mode==='fy'?'Useful picks':'Latest from your subscriptions'):homeFilter)+'</h2><span>'+count+' ITEMS</span></div><div class="home-bento">'+tiles.join('')+'</div></section>':'<div class="empty-state"><b>'+(homeFilter==='All'?(feed.message||'Your feed is taking shape.'):'Nothing in '+esc(homeFilter)+' yet.')+'</b><p>'+(homeFilter==='All'?'Follow channels, musicians or publishers and choose topics to shape your feed. Search stays open to every kind of content.':'Try another category or explore all recommendations.')+'</p><button class="btn k" data-open-search>FIND SOURCES</button></div>';
- if(status)status.textContent=data.message||((allVideos.length+allMusic.length+allNews.length)+' items · '+(mode==='fy'?'For You':'Following')+' feed');
+ if(status)status.textContent=count?(data.message||((count)+' items · '+(mode==='fy'?'For You':'Following')+' feed')):'';
 }
 function renderChannels(items){
  const root=$('#channelResults');if(!root)return;
