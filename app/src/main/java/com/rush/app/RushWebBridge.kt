@@ -778,7 +778,7 @@ class RushWebBridge(
                 controller.prepare()
                 controller.play()
                 LocalLibrary.rememberPlayback(prefs, videoId, title, creator, false, thumbnail, videoId)
-                activity.runOnUiThread { activity.showNativeVideo(controller, fullscreen = true) }
+                activity.runOnUiThread { activity.showNativeVideo(controller, fullscreen = false) }
                 publish("rushVideoPlaybackState", JSONObject().put("state", "playing")
                     .put("title", title).put("creator", creator).put("captionTracks", subtitleConfigs.size).toString())
             } catch (error: Exception) {
@@ -795,7 +795,7 @@ class RushWebBridge(
                 val controller = getController()
                 val item = controller.currentMediaItem ?: return@launch
                 val audioOnly = item.mediaMetadata.extras?.getBoolean(PlaybackMetadata.AUDIO_ONLY, false) == true
-                if (!audioOnly) activity.runOnUiThread { activity.showNativeVideo(controller, fullscreen = true) }
+                if (!audioOnly) activity.runOnUiThread { activity.showNativeVideo(controller, fullscreen = false) }
             }
         }
     }
