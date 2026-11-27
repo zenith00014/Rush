@@ -36,14 +36,15 @@ class FeedPreferencesTest {
     @Test
     fun onboardingCanSaveTheDefaultLocalInterestSelection() {
         val defaults = FeedPreferences.defaultTopics
-        val selected = FeedPreferences.saveTopics(prefs, org.json.JSONArray(defaults).toString())
+        val selected = FeedPreferences.saveOnboardingTopics(prefs, org.json.JSONArray(defaults).toString())
 
         assertEquals(defaults, selected)
     }
 
     @Test
-    fun selectedTopicsAcceptExistingAndUserDefinedPhrases() {
-        val selected = FeedPreferences.saveTopics(
+    fun onboardingAcceptsDefaultTopicsAndPreviouslySavedCustomInterests() {
+        FeedPreferences.addTopic(prefs, "Urban sketching")
+        val selected = FeedPreferences.saveOnboardingTopics(
             prefs,
             """["Science","Culture","Language","Urban sketching","Machine learning"]"""
         )
@@ -53,6 +54,17 @@ class FeedPreferencesTest {
             selected
         )
         assertTrue(selected.contains("Urban sketching"))
+    }
+
+    @Test
+    fun regularTopicSaveStillRejectsUnknownPhrases() {
+        var rejected = false
+        try {
+            FeedPreferences.saveTopics(prefs, """["not-a-topic"]""")
+        } catch (_: IllegalArgumentException) {
+            rejected = true
+        }
+        assertTrue("Unknown topics must be rejected by regular topic editing", rejected)
     }
 
     @Test
