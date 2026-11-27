@@ -230,8 +230,8 @@ class RushWebBridge(
         val prefs = activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)
         prefs.edit().putInt("video_quality", maxHeight).apply()
         activity.lifecycleScope.launch {
+            val controller = completedController() ?: return@launch
             runCatching {
-                val controller = getController()
                 val height = if (maxHeight == 0) Int.MAX_VALUE else maxHeight
                 controller.trackSelectionParameters = controller.trackSelectionParameters.buildUpon()
                     .setMaxVideoSize(Int.MAX_VALUE, height)
