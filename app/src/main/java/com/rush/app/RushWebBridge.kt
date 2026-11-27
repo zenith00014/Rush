@@ -898,10 +898,9 @@ class RushWebBridge(
             try {
                 val prefs = activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)
                 val quality = prefs.getInt("video_quality", 0)
-                val preferMp4 = prefs.getBoolean("download_mp4", false)
                 val resolved = withContext(Dispatchers.IO) {
                     resolvePlaybackMedia(videoId, audioOnly = false, maxHeight = quality.takeIf { it > 0 },
-                        preferMp4 = preferMp4, preferDash = !preferMp4, allowDashFallback = !preferMp4)
+                        preferMp4 = false, preferDash = true, allowDashFallback = true)
                 }
                 val subtitleConfigs = resolved.subtitles.map { subtitle ->
                     MediaItem.SubtitleConfiguration.Builder(android.net.Uri.parse(subtitle.url))
@@ -911,7 +910,7 @@ class RushWebBridge(
                 }
                 val metadata = MediaMetadata.Builder().setTitle(title).setArtist(creator)
                     .apply { if (thumbnail.isNotBlank()) setArtworkUri(android.net.Uri.parse(thumbnail)) }
-                    .setExtras(PlaybackMetadata.extras(videoId, false, quality, preferMp4)).build()
+                    .setExtras(PlaybackMetadata.extras(videoId, false, quality, false)).build()
                 val item = MediaItem.Builder().setMediaId(videoId).setUri(resolved.url)
                     .setMimeType(resolved.mimeType).setMediaMetadata(metadata)
                     .setSubtitleConfigurations(subtitleConfigs).build()
@@ -934,7 +933,6 @@ class RushWebBridge(
                 val prefs = activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)
                 val controller = getController()
                 val quality = prefs.getInt("video_quality", 0)
-                val preferMp4 = prefs.getBoolean("download_mp4", false)
                 for (index in 0 until minOf(items.length(), 3)) {
                     val data = items.optJSONObject(index) ?: continue
                     val id = data.optString("id")
@@ -942,7 +940,7 @@ class RushWebBridge(
                     if ((0 until controller.mediaItemCount).any { controller.getMediaItemAt(it).mediaId == id }) continue
                     val resolved = withContext(Dispatchers.IO) {
                         resolvePlaybackMedia(id, audioOnly = false, maxHeight = quality.takeIf { it > 0 },
-                            preferMp4 = preferMp4, preferDash = !preferMp4, allowDashFallback = !preferMp4)
+                            preferMp4 = false, preferDash = true, allowDashFallback = true)
                     }
                     val title = data.optString("title")
                     val creator = data.optString("creator")
@@ -955,7 +953,7 @@ class RushWebBridge(
                     }
                     val metadata = MediaMetadata.Builder().setTitle(title).setArtist(creator)
                         .apply { if (thumbnail.isNotBlank()) setArtworkUri(android.net.Uri.parse(thumbnail)) }
-                        .setExtras(PlaybackMetadata.extras(id, false, quality, preferMp4)).build()
+                        .setExtras(PlaybackMetadata.extras(id, false, quality, false)).build()
                     controller.addMediaItem(MediaItem.Builder().setMediaId(id).setUri(resolved.url)
                         .setMimeType(resolved.mimeType).setMediaMetadata(metadata)
                         .setSubtitleConfigurations(subtitles).build())
@@ -1003,10 +1001,9 @@ class RushWebBridge(
                 val prefs = activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)
                 prefs.edit().remove("music_last_id").apply()
                 val quality = prefs.getInt("video_quality", 0)
-                val preferMp4 = prefs.getBoolean("download_mp4", false)
                 val resolved = withContext(Dispatchers.IO) {
                     resolvePlaybackMedia(videoId, audioOnly = false, maxHeight = quality.takeIf { it > 0 },
-                        preferMp4 = preferMp4, preferDash = !preferMp4, allowDashFallback = !preferMp4)
+                        preferMp4 = false, preferDash = true, allowDashFallback = true)
                 }
                 val controller = getController()
                 val subtitleConfigs = resolved.subtitles.map { subtitle ->
@@ -1017,7 +1014,7 @@ class RushWebBridge(
                 }
                 val metadata = MediaMetadata.Builder().setTitle(title).setArtist(creator)
                     .apply { if (thumbnail.isNotBlank()) setArtworkUri(android.net.Uri.parse(thumbnail)) }
-                    .setExtras(PlaybackMetadata.extras(videoId, false, quality, preferMp4)).build()
+                    .setExtras(PlaybackMetadata.extras(videoId, false, quality, false)).build()
                 val item = MediaItem.Builder().setMediaId(videoId).setUri(resolved.url)
                     .setMimeType(resolved.mimeType).setMediaMetadata(metadata)
                     .setSubtitleConfigurations(subtitleConfigs).build()
@@ -1731,9 +1728,9 @@ class RushWebBridge(
                             audioOnly = isMusic,
                             maxHeight = if (isMusic) null else prefs.getInt("video_quality", 0).takeIf { it > 0 },
                             maxAudioBitrate = if (isMusic) prefs.getInt("audio_quality", 160).takeIf { it > 0 } else null,
-                            preferMp4 = !isMusic && prefs.getBoolean("download_mp4", false),
-                            preferDash = !isMusic && !prefs.getBoolean("download_mp4", false),
-                            allowDashFallback = !isMusic && !prefs.getBoolean("download_mp4", false)
+                            preferMp4 = false,
+                            preferDash = !isMusic,
+                            allowDashFallback = !isMusic
                         )
                     }
                     val uri = if (localFile.isFile) {

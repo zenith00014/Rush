@@ -261,8 +261,7 @@ class RushPlaybackService : MediaSessionService() {
             if (audioOnly) "audio_quality" else "video_quality",
             savedQuality
         ).takeIf { it > 0 }
-        val savedMp4 = extras?.getBoolean(PlaybackMetadata.PREFER_MP4, false) ?: false
-        val preferMp4 = !audioOnly && preferences.getBoolean("download_mp4", savedMp4)
+        val preferMp4 = false
         val currentPosition = player.currentPosition.coerceAtLeast(0L)
         val savedPosition = PlaybackProgress.resumePositionMs(this, mediaId)
         val startPosition = maxOf(currentPosition, savedPosition)
@@ -283,16 +282,16 @@ class RushPlaybackService : MediaSessionService() {
                     if (player.currentMediaItem?.mediaId != mediaId) return@launch
 
                     try {
-                        val preferDash = !audioOnly && !preferMp4 && retry == 1
+                        val preferDash = !audioOnly
                         val resolved = withContext(Dispatchers.IO) {
                             RushPlaybackEngine.resolveMedia(
                                 source,
                                 audioOnly,
                                 if (audioOnly) null else quality,
                                 if (audioOnly) quality else null,
-                                preferMp4,
+                                false,
                                 preferDash,
-                                !audioOnly && !preferMp4,
+                                !audioOnly,
                                 forceRefresh = true
                             )
                         }

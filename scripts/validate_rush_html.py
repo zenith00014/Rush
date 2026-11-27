@@ -139,6 +139,12 @@ def main():
     design = design_path.read_text(encoding="utf-8")
     download_function = bridge.split("fun downloadMedia(", 1)[1].split("fun loadDownloads(", 1)[0]
     mobile_js = js[js.find("const rushOriginalGo=go;"):]
+    playback_methods = []
+    for marker in ("fun queueVideo(", "fun queueVideos(", "fun playVideo("):
+        start = bridge.index(marker)
+        end = bridge.index("\n    @JavascriptInterface", start)
+        playback_methods.append(bridge[start:end])
+    library_queue = bridge.split("fun playLibraryQueue()", 1)[1].split("@JavascriptInterface", 1)[0]
     mobile_card = js.split("function mobileVideoCard", 1)[1].split("function mobileMusicCard", 1)[0]
     if "RushDiscoveryEngine.scoreFeed" not in bridge or "RushDiscoveryEngine.rankSearch" not in bridge:
         fail("Native bridge is not integrated with shared feed and search ranking")
@@ -201,6 +207,12 @@ def main():
         fail("Offline video downloads must resolve a direct playable stream, not a DASH/HLS manifest")
     if "forceRefresh = true" not in download_function or offline.count("forceRefresh = true") < 3:
         fail("Download recovery must refresh expired stream URLs instead of reusing cached URLs")
+    if any("download_mp4" in method or "preferDash = true" not in method or "allowDashFallback = true" not in method for method in playback_methods):
+        fail("Video playback and queued videos must use adaptive formats independently of the download MP4 preference")
+    if "download_mp4" in library_queue or "preferDash = !isMusic" not in library_queue:
+        fail("Library queue video playback must use adaptive formats independently of download preferences")
+    if "val preferMp4 = false" not in service or "val preferDash = !audioOnly" not in service:
+        fail("Playback recovery must use adaptive video streams rather than the download format preference")
     if "selectVideoHeight" not in playback_engine or "Ultra HD" not in html:
         fail("High-quality selection must fall back to available downloadable formats")
     if "setMaxVideoSize(Int.MAX_VALUE, qualityCap)" not in service:

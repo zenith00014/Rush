@@ -223,3 +223,5 @@ The CI run after these corrections is the verification gate. No APK is considere
 - Download creation and worker recovery force-refresh cached stream metadata after URL expiry. Adaptive SABR audio is no longer mislabeled as a video download.
 - Remaining validation is the Android CI build and device-level playback/download checks; YouTube availability and source restrictions remain external dependencies.
 
+- Playback format is independent of the MP4 offline-download preference. Direct play, single-video queueing, autoplay queueing, library queues and service recovery all request adaptive video formats; MP4 selection remains confined to downloads.
+
