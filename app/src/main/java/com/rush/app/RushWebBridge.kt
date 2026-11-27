@@ -1740,7 +1740,7 @@ class RushWebBridge(
                     media.file.absolutePath
                 )
                 if (media.isAudio) activity.hideNativeVideo()
-                else activity.runOnUiThread { activity.showNativeVideo(controller, fullscreen = true) }
+                else activity.runOnUiThread { activity.showNativeVideo(controller, fullscreen = false) }
                 publish("rushCurrentPlayback", JSONObject()
                     .put("hasItem", true)
                     .put("isMusic", media.isAudio)
