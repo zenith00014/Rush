@@ -118,7 +118,13 @@ class RushPlaybackService : MediaSessionService() {
                 0.70f
             )
         ).apply {
-            setParameters(buildUponParameters().setForceHighestSupportedBitrate(false))
+            val qualityCap = getSharedPreferences("rush_prefs", MODE_PRIVATE)
+                .getInt("video_quality", 0).takeIf { it > 0 } ?: Int.MAX_VALUE
+            setParameters(
+                buildUponParameters()
+                    .setForceHighestSupportedBitrate(false)
+                    .setMaxVideoSize(Int.MAX_VALUE, qualityCap)
+            )
         }
         val player = ExoPlayer.Builder(this)
             .setMediaSourceFactory(mediaSourceFactory)
