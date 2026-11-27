@@ -72,7 +72,11 @@ object LocalLibrary {
     fun like(prefs: SharedPreferences, id: String, title: String, creator: String, thumbnail: String) {
         val cleanId = id.trim().take(256)
         require(cleanId.isNotBlank()) { "A media ID is required." }
-        saveMetadata(prefs, cleanId, title, creator, false, thumbnail, cleanId, "")
+        val existingThumbnail = runCatching {
+            JSONObject(prefs.getString(METADATA_KEY, "{}") ?: "{}")
+                .optJSONObject(cleanId)?.optString("thumbnail").orEmpty()
+        }.getOrDefault("")
+        saveMetadata(prefs, cleanId, title, creator, false, thumbnail.ifBlank { existingThumbnail }, cleanId, "")
         val updated = prefs.getStringSet(LIKED_KEY, emptySet()).orEmpty().toMutableSet()
         updated += cleanId
         prefs.edit().putStringSet(LIKED_KEY, updated).apply()
