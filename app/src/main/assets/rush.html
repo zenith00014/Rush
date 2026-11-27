@@ -800,7 +800,7 @@ button{min-height:42px;min-width:42px}.btn,.ib,.chip{border:0;border-radius:24px
 </div>
 <header class="top yt-topbar">
     <div class="yt-top-left"><button class="yt-header-icon" id="menuShortcut" type="button" aria-label="Open navigation">☰</button><a class="yt-brand" href="#home"><span class="yt-brand-mark">▶</span><b>Rush</b></a></div>
-    <div class="yt-top-actions"><button class="yt-header-icon" id="searchShortcut" data-open-search aria-label="Search all Rush">⌕</button><button class="yt-header-icon" id="notificationsShortcut" type="button" aria-label="Subscriptions">♧</button><button class="yt-profile" id="topicsShortcut" type="button" aria-label="Personalise Rush">R</button></div>
+    <div class="yt-top-actions"><button class="yt-header-icon" id="searchShortcut" data-open-search aria-label="Search all Rush">⌕</button><button class="yt-header-icon" id="notificationsShortcut" type="button" aria-label="Subscriptions">♧</button><button class="yt-profile" id="profileShortcut" type="button" aria-label="Personalise Rush">R</button></div>
   </header>
 <div class="yt-drawer-scrim" id="mobileDrawerScrim"></div>
 <aside class="yt-drawer" id="mobileDrawer" aria-label="Rush navigation" aria-hidden="true">
@@ -808,7 +808,7 @@ button{min-height:42px;min-width:42px}.btn,.ib,.chip{border:0;border-radius:24px
  <a href="#home" data-drawer-route>⌂ <span>Home</span></a><a href="#search" data-drawer-route>⌕ <span>Search</span></a>
  <div class="yt-drawer-divider"></div>
  <button data-drawer-library="history">◷ <span>History</span></button><button data-drawer-library="saved">◴ <span>Watch Later</span></button><button data-drawer-library="playlists">☷ <span>Playlists</span></button><button data-drawer-library="downloads">▣ <span>Downloads</span></button>
- <div class="yt-drawer-divider"></div><a href="#subs" data-drawer-route>▤ <span>Subscriptions</span></a><a href="#topics" data-drawer-route>⚙ <span>Personalise Rush</span></a>
+ <div class="yt-drawer-divider"></div><a href="#subs" data-drawer-route>▤ <span>Subscriptions</span></a><a href="#profile" data-drawer-route>◉ <span>Profile</span></a><a href="#topics" data-drawer-route>⚙ <span>Personalise Rush</span></a>
 </aside>
 <div class="yt-sheet-scrim" id="mobileSheetScrim"></div><section class="yt-action-sheet" id="mobileActionSheet" aria-label="Video actions" aria-hidden="true"></section>
 <main id="sc"><div id="v"></div></main>
@@ -1259,7 +1259,8 @@ function refreshCurrentPage(){
 document.addEventListener('input',e=>{if(e.target&&e.target.id==='topicQuery')updateTopicOptions()});
 document.addEventListener('click',e=>{
  const b=e.target.closest('button');if(!b)return;
- if(b.id==='topicsShortcut'||b.hasAttribute('data-open-topics')||b.id==='profileShortcut'){location.hash='#topics';return}
+ if(b.id==='profileShortcut'){location.hash='#profile';return}
+ if(b.id==='topicsShortcut'||b.hasAttribute('data-open-topics')){location.hash='#topics';return}
  if(b.dataset.libraryView){
   libraryView=b.dataset.libraryView;renderLibraryContent();
   if(window.RushNative){RushNative.loadLibrary();if(libraryView==='downloads')RushNative.loadDownloads()}
@@ -1797,6 +1798,24 @@ function renderTopicsPage(){
  const mode=modes[topic]||'normal',snoozed=(prefs.snoozedTopics||[]).some(x=>x.name===topic);
  return '<article class="yt-topic-preference"><div class="yt-topic-name"><b>'+esc(topic)+'</b>'+(snoozed?'<span class="yt-topic-state">Snoozed</span>':'')+'</div><div class="yt-topic-actions"><button class="chip '+(mode==='more'?'selected':'')+'" data-topic-mode="more" data-topic-name="'+esc(topic)+'">Show more</button><button class="chip '+(mode==='hide'?'selected':'')+'" data-topic-mode="hide" data-topic-name="'+esc(topic)+'">Don’t show</button><button class="yt-topic-remove" data-topic-remove="'+esc(topic)+'" aria-label="Remove '+esc(topic)+'">×</button></div></article>';
  }).join('')||'<p class="yt-feed-empty">No topics yet. Add a topic above.</p>')+'</div><div class="yt-preference-footer"><button class="btn k" data-open-snooze>Manage snoozed topics</button></div></section>';
+}
+function refreshLocalProfile(){
+ try{localProfileData=window.RushNative?JSON.parse(RushNative.getLocalProfile()):{displayName:'',setupComplete:true}}
+ catch(e){localProfileData={displayName:'',setupComplete:true}}
+ return localProfileData;
+}
+let localProfileData={displayName:'',setupComplete:false};
+function videoQualityButtons(){
+ return [[0,'Auto'],[360,'360p'],[720,'720p'],[1080,'1080p'],[1440,'1440p'],[2160,'4K Ultra HD'],[4320,'8K']].map(([quality,label])=>'<button class="chip '+(videoQuality===quality?'selected':'')+'" data-video-quality="'+quality+'" aria-pressed="'+(videoQuality===quality)+'">'+label+'</button>').join('');
+}
+function renderOnboardingPage(){
+ const selected=new Set(prefs.topics||[]);
+ const topics=[...new Set([...TOPICS.slice(0,32),...selected])];
+ return '<section class="yt-onboarding-page"><div class="yt-page-heading"><div><span class="yt-eyebrow">WELCOME TO RUSH</span><h1>Make your feed yours</h1></div></div><p class="yt-page-intro">Choose a few interests and an optional display name. Your profile, preferences and activity stay on this device. Rush does not need an email, password or cloud account.</p><form id="onboardingForm"><label class="yt-profile-field">Display name <span>(optional)</span><input id="onboardingName" maxlength="40" autocomplete="nickname" placeholder="What should Rush call you?"></label><h2>What are you interested in?</h2><div class="yt-onboarding-topics">'+topics.map(topic=>'<button type="button" class="yt-filter" data-onboarding-topic="'+esc(topic)+'" aria-pressed="'+selected.has(topic)+'">'+esc(topic)+'</button>').join('')+'</div><p class="yt-video-playback-status" id="onboardingStatus" aria-live="polite">Select at least one interest. You can change these later.</p><button class="btn k" type="submit">Start using Rush</button></form></section>';
+}
+function renderProfilePage(){
+ const profile=refreshLocalProfile();
+ return '<section class="yt-profile-page"><div class="yt-page-heading"><div><span class="yt-eyebrow">ON THIS DEVICE</span><h1>Your profile</h1></div><span class="yt-avatar">'+mobileInitials(profile.displayName||'Rush')+'</span></div><p class="yt-page-intro">This is a local profile for personalisation only. No sign-in, email, password or cloud sync is used.</p><form id="profileForm" class="yt-profile-card"><label class="yt-profile-field">Display name<input id="profileDisplayName" maxlength="40" autocomplete="nickname" value="'+esc(profile.displayName||'')+'" placeholder="Your name"></label><button class="btn k" type="submit">Save profile</button><p id="profileStatus" class="yt-video-playback-status" aria-live="polite">Saved privately on this device.</p></form><section class="yt-profile-card"><h2>Personalisation</h2><p class="yt-page-intro">Manage your interests and recommendation controls.</p><div class="yt-profile-actions"><button class="chip" data-open-topics>Manage interests</button><button class="chip" data-open-snooze>Snooze topics</button></div></section><section class="yt-profile-card"><h2>Default video quality</h2><p class="yt-page-intro">Applies to new playback sessions and video downloads. Downloads use the best directly downloadable format at or below this cap; the source may offer a lower maximum.</p><div class="yt-onboarding-topics">'+videoQualityButtons()+'</div><p class="yt-video-playback-status" id="profileQualityStatus" aria-live="polite">Current quality cap: '+(videoQuality===0?'Auto':videoQuality+'p')+'</p></section></section>';
 }
 function renderSnoozePage(){
  const topics=prefs.topics||[],snoozed=new Map((prefs.snoozedTopics||[]).map(x=>[x.name,x.until]));
