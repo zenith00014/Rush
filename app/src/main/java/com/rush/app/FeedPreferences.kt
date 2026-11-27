@@ -60,7 +60,7 @@ object FeedPreferences {
         val stored = runCatching { JSONArray(prefs.getString(TOPICS_KEY, null) ?: "[]") }
             .getOrDefault(JSONArray())
         val values = (0 until stored.length()).mapNotNull { stored.optString(it).trim().takeIf(String::isNotBlank) }
-        return values.distinct().ifEmpty { defaultTopics }
+        return values.filterNot { it.equals("Shorts", ignoreCase = true) }.distinct().ifEmpty { defaultTopics }
     }
 
     fun sources(prefs: SharedPreferences): List<FeedSource> {
