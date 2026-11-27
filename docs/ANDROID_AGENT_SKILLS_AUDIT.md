@@ -191,3 +191,8 @@ The repository workflow validates the WebView/bridge contract, runs Android lint
 - The WebView validation script now checks onboarding default/custom topic support, submit/error recovery, SVG icon usage, drawer control wiring and presence of the design guide.
 - It verifies that the mobile top bar and its menu/search/profile controls remain visible.
 - CI validation and unit tests for this final commit are still required before calling the update complete. Real-device keyboard, TalkBack, visual layout and onboarding persistence checks remain outstanding.
+
+
+**Static-versus-dynamic SVG handling**
+- The top bar and drawer are literal HTML, so their icons are now inline SVG elements directly in the markup. Dynamic cards, rows and action sheets use the shared `ic(name)` SVG helper from the app script.
+- Validation checks the static HTML and dynamic helper separately so JavaScript expressions cannot accidentally be emitted as visible raw text in static markup.
