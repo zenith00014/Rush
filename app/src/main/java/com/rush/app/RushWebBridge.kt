@@ -150,6 +150,8 @@ class RushWebBridge(
     @JavascriptInterface
     fun setPlaybackSpeed(speed: Float) {
         if (speed !in 0.25f..3.0f) return
+        activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)
+            .edit().putFloat("playback_speed", speed).apply()
         activity.lifecycleScope.launch {
             runCatching { getController().setPlaybackSpeed(speed) }
                 .onFailure { publish("rushPlayerOptionError", JSONObject().put("message", "Could not change playback speed.").toString()) }
@@ -157,7 +159,24 @@ class RushWebBridge(
     }
 
     @JavascriptInterface
+    fun getPlaybackSpeed(): Float =
+        activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)
+            .getFloat("playback_speed", 1.0f)
+
+    @JavascriptInterface
+    fun getVideoQuality(): Int =
+        activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)
+            .getInt("video_quality", 0)
+
+    @JavascriptInterface
+    fun getCaptionsEnabled(): Boolean =
+        activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)
+            .getBoolean("captions_enabled", true)
+
+    @JavascriptInterface
     fun setCaptionsEnabled(enabled: Boolean) {
+        activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)
+            .edit().putBoolean("captions_enabled", enabled).apply()
         activity.lifecycleScope.launch {
             runCatching {
                 val controller = getController()
