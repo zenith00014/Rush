@@ -19,7 +19,10 @@ object RushDiscoveryEngine {
         val topics: List<String> = emptyList(),
         val followedCreators: Set<String> = emptySet(),
         val historyTerms: Set<String> = emptySet(),
-        val recentIds: Set<String> = emptySet()
+        val recentIds: Set<String> = emptySet(),
+        val likedTerms: Set<String> = emptySet(),
+        val dislikedTerms: Set<String> = emptySet(),
+        val showMoreTopics: Set<String> = emptySet()
     )
 
     data class Candidate(
@@ -102,16 +105,24 @@ object RushDiscoveryEngine {
         val novelty = if (candidate.id.isNotBlank() && candidate.id !in profile.recentIds) 0.75 else 0.12
         val utility = utilitySignal(body, candidate.summary)
         val taste = maxOf(topic, history * 0.85)
+        val positiveFeedback = feedbackAffinity(body, profile.likedTerms)
+        val negativeFeedback = feedbackAffinity(body, profile.dislikedTerms)
+        val topicBoost = profile.showMoreTopics.sumOf { selected ->
+            val key = normalize(selected)
+            if (key.isNotBlank() && body.contains(key)) 0.12 else 0.0
+        }.coerceAtMost(0.24)
 
         // Common profile layer used by every section.
         val shared =
-            topic * 0.26 +
-            follow * 0.18 +
-            history * 0.14 +
-            fresh * 0.10 +
-            complete * 0.12 +
+            topic * 0.24 +
+            follow * 0.16 +
+            history * 0.12 +
+            fresh * 0.09 +
+            complete * 0.11 +
             engagement * 0.05 +
-            novelty * 0.15
+            novelty * 0.13 +
+            positiveFeedback * 0.10 +
+            topicBoost
 
         // Specialist algorithms: productive material is preferred in video/news; music is taste-led.
         val specialist = when (candidate.kind) {
@@ -137,6 +148,7 @@ object RushDiscoveryEngine {
         }
 
         var combined = shared * 0.64 + specialist * 0.36
+        combined -= negativeFeedback * 0.15
         if (candidate.kind == Kind.VIDEO || candidate.kind == Kind.NEWS) {
             combined += (utility - 0.45) * 0.08
             combined -= lowInfoPenalty(body) * 0.05
@@ -269,6 +281,13 @@ object RushDiscoveryEngine {
     fun parseRssDate(value: String): Long = runCatching {
         ZonedDateTime.parse(value.trim(), DateTimeFormatter.RFC_1123_DATE_TIME).toEpochSecond()
     }.getOrDefault(0L)
+
+    private fun feedbackAffinity(body: String, terms: Set<String>): Double {
+        if (terms.isEmpty()) return 0.0
+        val matches = terms.asSequence().map(::normalize).filter { it.length >= 3 }
+            .count { term -> body.contains(term) || term.split(' ').any { word -> word.length >= 4 && body.contains(word) } }
+        return (matches.toDouble() / minOf(terms.size, 12).coerceAtLeast(1)).coerceIn(0.0, 1.0)
+    }
 
     private fun topicAffinity(body: String, topics: List<String>, tags: Set<String>): Double {
         if (topics.isEmpty() && tags.isEmpty()) return 0.35

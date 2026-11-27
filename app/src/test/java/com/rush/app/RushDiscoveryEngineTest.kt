@@ -83,4 +83,28 @@ class RushDiscoveryEngineTest {
         assertEquals(3, selected.size)
         assertTrue(selected.any { it.candidate.creator == "Creator B" })
     }
+
+    @Test fun positiveAndNegativeFeedbackChangePersonalizedVideoScores() {
+        val candidate = RushDiscoveryEngine.Candidate(
+            "feedback", RushDiscoveryEngine.Kind.VIDEO,
+            "Quantum computing explained with practical examples", "Science Desk",
+            "A detailed engineering and technology lesson.", durationSeconds = 900
+        )
+        val base = RushDiscoveryEngine.Profile(topics = listOf("Technology"))
+        val liked = base.copy(likedTerms = setOf("quantum", "computing"))
+        val disliked = base.copy(dislikedTerms = setOf("quantum", "computing"))
+        assertTrue(RushDiscoveryEngine.scoreFeed(candidate, liked) > RushDiscoveryEngine.scoreFeed(candidate, base))
+        assertTrue(RushDiscoveryEngine.scoreFeed(candidate, disliked) < RushDiscoveryEngine.scoreFeed(candidate, base))
+    }
+
+    @Test fun showMoreTopicAddsARecommendationBoost() {
+        val candidate = RushDiscoveryEngine.Candidate(
+            "design", RushDiscoveryEngine.Kind.VIDEO,
+            "Urban sketching basics", "Drawing Studio",
+            "A practical lesson in sketching and observation.", durationSeconds = 600
+        )
+        val base = RushDiscoveryEngine.Profile(topics = listOf("Art"))
+        val more = base.copy(showMoreTopics = setOf("Urban sketching"))
+        assertTrue(RushDiscoveryEngine.scoreFeed(candidate, more) > RushDiscoveryEngine.scoreFeed(candidate, base))
+    }
 }

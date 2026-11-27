@@ -10,6 +10,8 @@ import androidx.media3.datasource.cache.SimpleCache
 import androidx.media3.database.StandaloneDatabaseProvider
 import java.io.File
 import java.io.IOException
+import android.os.Handler
+import android.os.Looper
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import kotlinx.coroutines.CoroutineScope
@@ -39,6 +41,35 @@ class RushPlaybackService : MediaSessionService() {
     private val recoveryAttempts = mutableMapOf<String, Int>()
     private var recoveryInProgress: String? = null
     private var activeMediaId: String? = null
+    private val sleepTimerHandler = Handler(Looper.getMainLooper())
+    private var sleepTimerRunnable: Runnable? = null
+    private var sleepAfterCurrent = false
+
+    fun setAutoplayEnabled(enabled: Boolean) {
+        getSharedPreferences("rush_prefs", MODE_PRIVATE).edit()
+            .putBoolean("autoplay_video", enabled).apply()
+        (mediaSession?.player as? ExoPlayer)?.pauseAtEndOfMediaItems = !enabled
+    }
+
+    fun setSleepTimer(minutes: Int): String {
+        sleepTimerRunnable?.let(sleepTimerHandler::removeCallbacks)
+        sleepTimerRunnable = null
+        sleepAfterCurrent = false
+        if (minutes == -1) {
+            sleepAfterCurrent = true
+            return "Sleep timer will stop after this video or track."
+        }
+        if (minutes == 0) return "Sleep timer cancelled."
+        require(minutes in 1..480) { "Choose a timer between 1 and 480 minutes." }
+        val task = Runnable {
+            mediaSession?.player?.pause()
+            sleepTimerRunnable = null
+            sleepAfterCurrent = false
+        }
+        sleepTimerRunnable = task
+        sleepTimerHandler.postDelayed(task, minutes * 60_000L)
+        return "Playback will stop in $minutes minutes."
+    }
 
     override fun onCreate() {
         super.onCreate()
@@ -72,8 +103,8 @@ class RushPlaybackService : MediaSessionService() {
             .setBufferDurationsMs(
                 25_000,
                 90_000,
-                3_000,
-                5_000
+                2_000,
+                2_000
             )
             .setBackBuffer(15_000, true)
             .setPrioritizeTimeOverSizeThresholds(true)
@@ -87,7 +118,13 @@ class RushPlaybackService : MediaSessionService() {
                 0.70f
             )
         ).apply {
-            setParameters(buildUponParameters().setForceHighestSupportedBitrate(false))
+            val qualityCap = getSharedPreferences("rush_prefs", MODE_PRIVATE)
+                .getInt("video_quality", 0).takeIf { it > 0 } ?: Int.MAX_VALUE
+            setParameters(
+                buildUponParameters()
+                    .setForceHighestSupportedBitrate(false)
+                    .setMaxVideoSize(Int.MAX_VALUE, qualityCap)
+            )
         }
         val player = ExoPlayer.Builder(this)
             .setMediaSourceFactory(mediaSourceFactory)
@@ -95,12 +132,21 @@ class RushPlaybackService : MediaSessionService() {
             .setLoadControl(loadControl)
             .setWakeMode(androidx.media3.common.C.WAKE_MODE_LOCAL)
             .build()
+        player.pauseAtEndOfMediaItems = !getSharedPreferences("rush_prefs", MODE_PRIVATE)
+            .getBoolean("autoplay_video", true)
+        player.setPreloadConfiguration(ExoPlayer.PreloadConfiguration(5_000_000L))
+        player.setPlaybackSpeed(getSharedPreferences("rush_prefs", MODE_PRIVATE)
+            .getFloat("playback_speed", 1.0f))
         player.addListener(object : androidx.media3.common.Player.Listener {
             override fun onMediaItemTransition(
                 mediaItem: androidx.media3.common.MediaItem?,
                 reason: Int
             ) {
                 val mediaId = mediaItem?.mediaId.orEmpty()
+                if (sleepAfterCurrent && activeMediaId != null && activeMediaId != mediaId) {
+                    sleepAfterCurrent = false
+                    player.pause()
+                }
                 if (activeMediaId != mediaId) {
                     activeMediaId = mediaId
                     recoveryAttempts.clear()
@@ -128,6 +174,11 @@ class RushPlaybackService : MediaSessionService() {
             }
 
             override fun onPlaybackStateChanged(playbackState: Int) {
+                if (playbackState == androidx.media3.common.Player.STATE_ENDED && sleepAfterCurrent) {
+                    sleepAfterCurrent = false
+                    player.pause()
+                    return
+                }
                 if (playbackState == androidx.media3.common.Player.STATE_READY) {
                     val mediaId = player.currentMediaItem?.mediaId.orEmpty()
                     recoveryAttempts.remove(mediaId)
@@ -210,8 +261,7 @@ class RushPlaybackService : MediaSessionService() {
             if (audioOnly) "audio_quality" else "video_quality",
             savedQuality
         ).takeIf { it > 0 }
-        val savedMp4 = extras?.getBoolean(PlaybackMetadata.PREFER_MP4, false) ?: false
-        val preferMp4 = !audioOnly && preferences.getBoolean("download_mp4", savedMp4)
+        val preferMp4 = false
         val currentPosition = player.currentPosition.coerceAtLeast(0L)
         val savedPosition = PlaybackProgress.resumePositionMs(this, mediaId)
         val startPosition = maxOf(currentPosition, savedPosition)
@@ -232,16 +282,16 @@ class RushPlaybackService : MediaSessionService() {
                     if (player.currentMediaItem?.mediaId != mediaId) return@launch
 
                     try {
-                        val preferDash = !audioOnly && !preferMp4 && retry == 1
+                        val preferDash = !audioOnly
                         val resolved = withContext(Dispatchers.IO) {
                             RushPlaybackEngine.resolveMedia(
                                 source,
                                 audioOnly,
                                 if (audioOnly) null else quality,
                                 if (audioOnly) quality else null,
-                                preferMp4,
+                                false,
                                 preferDash,
-                                !audioOnly && !preferMp4,
+                                !audioOnly,
                                 forceRefresh = true
                             )
                         }
@@ -342,6 +392,9 @@ class RushPlaybackService : MediaSessionService() {
             }
         }
         serviceScope.cancel()
+        sleepTimerRunnable?.let(sleepTimerHandler::removeCallbacks)
+        sleepTimerRunnable = null
+        sleepAfterCurrent = false
         mediaSession?.let { session ->
             session.player.release()
             session.release()

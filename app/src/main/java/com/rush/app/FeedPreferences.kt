@@ -15,6 +15,9 @@ data class FeedSource(
 object FeedPreferences {
     private const val TOPICS_KEY = "rush_feed_topics"
     private const val SOURCES_KEY = "rush_followed_sources"
+    private const val TOPIC_MODES_KEY = "rush_topic_modes"
+    private const val SNOOZED_TOPICS_KEY = "rush_snoozed_topics"
+    private const val DAY_MS = 24L * 60L * 60L * 1000L
 
     val defaultTopics = listOf(
         "Science", "Technology", "History", "Education", "Design", "Engineering",
@@ -34,34 +37,170 @@ object FeedPreferences {
         "Gardening", "Home improvement", "Music", "Music production", "Classical music",
         "Hip-hop", "K-pop", "Film analysis", "Anime", "Manga", "Podcasts", "Documentaries",
         "Vlogs", "Comedy", "Memes", "Viral clips", "Celebrity gossip", "Pranks",
-        "Internet drama", "Rage bait", "Reality TV", "Shorts", "ASMR", "Luxury",
+        "Internet drama", "Rage bait", "Reality TV", "ASMR", "Luxury",
         "Shopping", "Product reviews", "Relationships", "Parenting", "Lifestyle",
         "Meditation", "Self-improvement", "Romance", "Horror", "Internet culture",
         "Streaming", "Live streams", "Board games", "Collecting", "Crafts"
     )
 
-    private val lowAttentionTerms = listOf(
-        "brainrot", "meme", "memes", "prank", "pranks", "rage bait", "ragebait",
-        "celebrity gossip", "influencer drama", "internet drama", "viral challenge",
-        "viral clip", "reaction prank", "clickbait"
+    private val topicAliases = listOf(
+        listOf("artificial intelligence", "machine learning", "llm", "large language model", "generative ai") to "AI and machine learning",
+        listOf("coding", "software development", "web development", "python", "javascript", "java", "kotlin") to "Programming",
+        listOf("game dev", "unity", "unreal engine", "game design") to "Game development",
+        listOf("money management", "budgeting", "saving money") to "Personal finance",
+        listOf("mental health", "therapy", "brain science") to "Psychology",
+        listOf("space exploration", "astronomy", "astrophysics") to "Space",
+        listOf("climate change", "global warming", "sustainability") to "Environment",
+        listOf("workouts", "exercise", "strength training") to "Fitness",
+        listOf("cooking recipes", "baking", "meal prep") to "Cooking",
+        listOf("graphic design", "ui design", "ux design", "product design") to "Design",
+        listOf("filmmaking", "cinematography", "movie breakdown") to "Film analysis",
+        listOf("sound design", "beat making", "music recording") to "Music production"
     )
 
-    private val contextTerms = listOf(
-        "explained", "analysis", "documentary", "documentaries", "research",
-        "lecture", "tutorial", "how it works", "deep dive", "history of",
-        "investigation", "report", "review", "guide", "science", "engineering"
-    )
+    fun allTopics(prefs: SharedPreferences): List<String> {
+        val stored = runCatching { JSONArray(prefs.getString(TOPICS_KEY, null) ?: "[]") }
+            .getOrDefault(JSONArray())
+        val values = (0 until stored.length())
+            .mapNotNull { stored.optString(it).trim().takeIf(String::isNotBlank) }
+        return values.filterNot { it.equals("Shorts", ignoreCase = true) }.distinct().ifEmpty { defaultTopics }
+    }
+
+    fun topics(prefs: SharedPreferences): List<String> {
+        val now = System.currentTimeMillis()
+        val modes = topicModes(prefs)
+        val snoozed = snoozedTopics(prefs).filterValues { it > now }.keys
+        return allTopics(prefs).filter { modes[it] != "hide" && it !in snoozed }
+    }
+
+    fun topicModes(prefs: SharedPreferences): Map<String, String> {
+        val json = runCatching { JSONObject(prefs.getString(TOPIC_MODES_KEY, "{}") ?: "{}") }
+            .getOrDefault(JSONObject())
+        return json.keys().asSequence().mapNotNull { key ->
+            json.optString(key).takeIf { it == "more" || it == "hide" }?.let { key to it }
+        }.toMap()
+    }
+
+    fun setTopicMode(prefs: SharedPreferences, topic: String, mode: String) {
+        val clean = cleanTopic(topic)
+        require(clean in allTopics(prefs)) { "Topic not found." }
+        require(mode in setOf("more", "hide", "normal")) { "Invalid topic preference." }
+        val json = runCatching { JSONObject(prefs.getString(TOPIC_MODES_KEY, "{}") ?: "{}") }
+            .getOrDefault(JSONObject())
+        if (mode == "normal") json.remove(clean) else json.put(clean, mode)
+        prefs.edit().putString(TOPIC_MODES_KEY, json.toString()).apply()
+    }
+
+    fun snoozedTopics(prefs: SharedPreferences): Map<String, Long> {
+        val json = runCatching { JSONObject(prefs.getString(SNOOZED_TOPICS_KEY, "{}") ?: "{}") }
+            .getOrDefault(JSONObject())
+        val now = System.currentTimeMillis()
+        val values = json.keys().asSequence().mapNotNull { key ->
+            json.optLong(key, 0L).takeIf { it > now }?.let { key to it }
+        }.toMap()
+        if (values.size != json.length()) {
+            prefs.edit().putString(SNOOZED_TOPICS_KEY, JSONObject(values.mapValues { it.value }).toString()).apply()
+        }
+        return values
+    }
+
+    fun snoozeTopic(prefs: SharedPreferences, topic: String): Long {
+        val clean = cleanTopic(topic)
+        require(clean in allTopics(prefs)) { "Topic not found." }
+        val until = System.currentTimeMillis() + DAY_MS
+        val json = runCatching { JSONObject(prefs.getString(SNOOZED_TOPICS_KEY, "{}") ?: "{}") }
+            .getOrDefault(JSONObject())
+        json.put(clean, until)
+        prefs.edit().putString(SNOOZED_TOPICS_KEY, json.toString()).apply()
+        return until
+    }
+
+    fun unsnoozeTopic(prefs: SharedPreferences, topic: String) {
+        val json = runCatching { JSONObject(prefs.getString(SNOOZED_TOPICS_KEY, "{}") ?: "{}") }
+            .getOrDefault(JSONObject())
+        json.remove(cleanTopic(topic))
+        prefs.edit().putString(SNOOZED_TOPICS_KEY, json.toString()).apply()
+    }
+
+    /** Local topic resolver maps natural-language requests to the closest known subject. */
+    fun resolveTopic(raw: String): String {
+        val clean = cleanTopic(raw)
+        require(clean.length >= 2) { "Enter a topic with at least two characters." }
+        require(clean.length <= 64) { "Keep topics under 64 characters." }
+        val normalized = clean.lowercase(Locale.ROOT)
+        topicAliases.firstOrNull { (aliases, _) -> aliases.any { normalized.contains(it) } }?.let { return it.second }
+        topicCatalog.firstOrNull { it.equals(clean, true) }?.let { return it }
+        return clean.replace(Regex("\\s+"), " ")
+            .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString() }
+    }
+
+    fun addTopic(prefs: SharedPreferences, raw: String): String {
+        val topic = resolveTopic(raw)
+        val updated = (allTopics(prefs) + topic).distinct().take(100)
+        prefs.edit().putString(TOPICS_KEY, JSONArray(updated).toString()).apply()
+        return topic
+    }
+
+    fun removeTopic(prefs: SharedPreferences, topic: String): List<String> {
+        val clean = cleanTopic(topic)
+        val updated = allTopics(prefs).filterNot { it.equals(clean, true) }
+        require(updated.isNotEmpty()) { "Keep at least one topic." }
+        prefs.edit().putString(TOPICS_KEY, JSONArray(updated).toString()).apply()
+        setTopicModeIfPresent(prefs, clean, null)
+        unsnoozeTopic(prefs, clean)
+        return updated
+    }
+
+    private fun setTopicModeIfPresent(prefs: SharedPreferences, topic: String, mode: String?) {
+        val json = runCatching { JSONObject(prefs.getString(TOPIC_MODES_KEY, "{}") ?: "{}") }
+            .getOrDefault(JSONObject())
+        if (mode == null) json.remove(topic) else json.put(topic, mode)
+        prefs.edit().putString(TOPIC_MODES_KEY, json.toString()).apply()
+    }
+
+    private fun cleanTopic(value: String): String = value.trim()
+        .replace(Regex("[\\p{Cntrl}<>]"), "")
+        .replace(Regex("\\s+"), " ")
+        .take(64)
+
+    private fun resolveCatalogTopic(raw: String): String {
+        val clean = cleanTopic(raw)
+        require(clean.length >= 2) { "Enter a valid topic." }
+        val normalized = clean.lowercase(Locale.ROOT)
+        topicAliases.firstOrNull { (aliases, _) ->
+            aliases.any { normalized.contains(it) }
+        }?.second?.let { alias ->
+            return (topicCatalog + defaultTopics).firstOrNull { it.equals(alias, ignoreCase = true) }
+                ?: throw IllegalArgumentException("Unsupported topic alias.")
+        }
+        return (topicCatalog + defaultTopics).firstOrNull { it.equals(clean, ignoreCase = true) }
+            ?: throw IllegalArgumentException("Choose a topic from the catalog or add it first.")
+    }
+
+    /**
+     * Onboarding may re-submit existing local custom interests, but may not introduce
+     * arbitrary phrases. New custom interests are added through Topic Assist first.
+     */
+    fun saveOnboardingTopics(prefs: SharedPreferences, raw: String): List<String> {
+        val array = JSONArray(raw)
+        val allowed = (topicCatalog + defaultTopics + allTopics(prefs)).toSet()
+        val selected = (0 until array.length())
+            .mapNotNull { array.optString(it).trim().takeIf(String::isNotBlank) }
+            .map { rawTopic ->
+                val resolved = resolveTopic(rawTopic)
+                require(resolved in allowed) { "Choose an available interest." }
+                resolved
+            }
+            .distinct()
+            .take(100)
+        require(selected.isNotEmpty()) { "Add at least one topic." }
+        prefs.edit().putString(TOPICS_KEY, JSONArray(selected).toString()).apply()
+        return selected
+    }
 
     /** Every followed YouTube channel may supply For You candidates; productivity only affects ranking. */
     fun forYouChannels(sources: List<FeedSource>): List<FeedSource> =
         sources.filter { it.kind == "channel" }
-
-    fun topics(prefs: SharedPreferences): List<String> {
-        val stored = runCatching { JSONArray(prefs.getString(TOPICS_KEY, null) ?: "[]") }
-            .getOrDefault(JSONArray())
-        val values = (0 until stored.length()).mapNotNull { stored.optString(it).trim().takeIf(String::isNotBlank) }
-        return values.distinct().ifEmpty { defaultTopics }
-    }
 
     fun sources(prefs: SharedPreferences): List<FeedSource> {
         val stored = runCatching { JSONArray(prefs.getString(SOURCES_KEY, "[]") ?: "[]") }
@@ -109,22 +248,32 @@ object FeedPreferences {
     fun saveTopics(prefs: SharedPreferences, raw: String): List<String> {
         val array = JSONArray(raw)
         val selected = (0 until array.length())
-            .mapNotNull { array.optString(it).trim().takeIf { value -> value in topicCatalog } }
-            .distinct()
-        require(selected.isNotEmpty()) { "Choose at least one topic." }
+            .mapNotNull { array.optString(it).trim().takeIf(String::isNotBlank) }
+            .map(::resolveCatalogTopic)
+            .distinct().take(100)
+        require(selected.isNotEmpty()) { "Add at least one topic." }
         prefs.edit().putString(TOPICS_KEY, JSONArray(selected).toString()).apply()
         return selected
     }
 
     fun asJson(prefs: SharedPreferences): JSONObject {
-        val topicArray = JSONArray(topics(prefs))
+        val topicArray = JSONArray(allTopics(prefs))
         val sourceArray = JSONArray().apply {
             sources(prefs).forEach {
                 put(JSONObject().put("kind", it.kind).put("id", it.id).put("name", it.name)
                     .put("productive", it.productive))
             }
         }
-        return JSONObject().put("topics", topicArray).put("sources", sourceArray)
+        val snoozedArray = JSONArray().apply {
+            snoozedTopics(prefs).forEach { (name, until) ->
+                put(JSONObject().put("name", name).put("until", until))
+            }
+        }
+        return JSONObject()
+            .put("topics", topicArray)
+            .put("sources", sourceArray)
+            .put("topicModes", JSONObject(topicModes(prefs)))
+            .put("snoozedTopics", snoozedArray)
     }
 
     /** Compatibility wrapper; new recommendation paths use the shared typed scoring engine. */

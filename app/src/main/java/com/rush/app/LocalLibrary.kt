@@ -10,6 +10,7 @@ import org.json.JSONObject
  */
 object LocalLibrary {
     private const val SAVED_KEY = "saved"
+    private const val LIKED_KEY = "liked_videos"
     private const val HISTORY_KEY = "history_order"
     private const val LEGACY_HISTORY_KEY = "history"
     private const val METADATA_KEY = "item_metadata"
@@ -68,6 +69,26 @@ object LocalLibrary {
         prefs.edit().putStringSet(SAVED_KEY, updated).apply()
     }
 
+    fun like(prefs: SharedPreferences, id: String, title: String, creator: String, thumbnail: String) {
+        val cleanId = id.trim().take(256)
+        require(cleanId.isNotBlank()) { "A media ID is required." }
+        val existingThumbnail = runCatching {
+            JSONObject(prefs.getString(METADATA_KEY, "{}") ?: "{}")
+                .optJSONObject(cleanId)?.optString("thumbnail").orEmpty()
+        }.getOrDefault("")
+        saveMetadata(prefs, cleanId, title, creator, false, thumbnail.ifBlank { existingThumbnail }, cleanId, "")
+        val updated = prefs.getStringSet(LIKED_KEY, emptySet()).orEmpty().toMutableSet()
+        updated += cleanId
+        prefs.edit().putStringSet(LIKED_KEY, updated).apply()
+    }
+
+    fun unlike(prefs: SharedPreferences, id: String) {
+        val cleanId = id.trim()
+        if (cleanId.isBlank()) return
+        val updated = prefs.getStringSet(LIKED_KEY, emptySet()).orEmpty() - cleanId
+        prefs.edit().putStringSet(LIKED_KEY, updated).apply()
+    }
+
     fun unsave(prefs: SharedPreferences, id: String) {
         val cleanId = id.trim()
         if (cleanId.isBlank()) return
@@ -106,6 +127,7 @@ object LocalLibrary {
         }
         return JSONObject()
             .put("saved", JSONArray(prefs.getStringSet(SAVED_KEY, emptySet()).orEmpty().sorted()))
+            .put("liked", JSONArray(prefs.getStringSet(LIKED_KEY, emptySet()).orEmpty().sorted()))
             .put("history", JSONArray(history(prefs)))
             .put("queue", JSONArray(QueueStore.load(prefs)))
             .put("playlists", playlists)

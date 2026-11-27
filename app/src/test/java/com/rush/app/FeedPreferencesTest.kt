@@ -34,9 +34,68 @@ class FeedPreferencesTest {
     }
 
     @Test
-    fun selectedTopicsComeFromApprovedCatalog() {
-        val selected = FeedPreferences.saveTopics(prefs, """["Science","Memes","Technology"]""")
-        assertEquals(listOf("Science", "Memes", "Technology"), selected)
-        assertTrue(FeedPreferences.topicCatalog.containsAll(selected))
+    fun onboardingCanSaveTheDefaultLocalInterestSelection() {
+        val defaults = FeedPreferences.defaultTopics
+        val selected = FeedPreferences.saveOnboardingTopics(prefs, org.json.JSONArray(defaults).toString())
+
+        assertEquals(defaults, selected)
+    }
+
+    @Test
+    fun onboardingAcceptsDefaultTopicsAndPreviouslySavedCustomInterests() {
+        FeedPreferences.addTopic(prefs, "Urban sketching")
+        val selected = FeedPreferences.saveOnboardingTopics(
+            prefs,
+            """["Science","Culture","Language","Urban sketching","Machine learning"]"""
+        )
+
+        assertEquals(
+            listOf("Science", "Culture", "Language", "Urban sketching", "AI and machine learning"),
+            selected
+        )
+        assertTrue(selected.contains("Urban sketching"))
+    }
+
+    @Test
+    fun regularTopicSaveStillRejectsUnknownPhrases() {
+        var rejected = false
+        try {
+            FeedPreferences.saveTopics(prefs, """["not-a-topic"]""")
+        } catch (_: IllegalArgumentException) {
+            rejected = true
+        }
+        assertTrue("Unknown topics must be rejected by regular topic editing", rejected)
+    }
+
+    @Test
+    fun onboardingRejectsCustomInterestUntilItIsSavedLocally() {
+        var rejected = false
+        try {
+            FeedPreferences.saveOnboardingTopics(prefs, """["not-a-topic"]""")
+        } catch (_: IllegalArgumentException) {
+            rejected = true
+        }
+        assertTrue("Onboarding must not accept arbitrary unsaved phrases", rejected)
+    }
+
+    @Test
+    fun freeformTopicAssistMapsAliasesAndKeepsCustomTopics() {
+        assertEquals("AI and machine learning", FeedPreferences.addTopic(prefs, "videos about large language models"))
+        assertEquals("Urban sketching", FeedPreferences.addTopic(prefs, "urban sketching"))
+        assertTrue(FeedPreferences.allTopics(prefs).contains("Urban sketching"))
+    }
+
+    @Test
+    fun topicModesAndOneDaySnoozeAffectActiveFeedTopics() {
+        FeedPreferences.saveTopics(prefs, """["Science","Technology"]""")
+        FeedPreferences.setTopicMode(prefs, "Science", "more")
+        FeedPreferences.setTopicMode(prefs, "Technology", "hide")
+        assertEquals("more", FeedPreferences.topicModes(prefs)["Science"])
+        assertTrue("Technology" !in FeedPreferences.topics(prefs))
+        val until = FeedPreferences.snoozeTopic(prefs, "Science")
+        assertTrue(until - System.currentTimeMillis() in (23L * 60 * 60 * 1000)..(24L * 60 * 60 * 1000))
+        assertTrue("Science" !in FeedPreferences.topics(prefs))
+        FeedPreferences.unsnoozeTopic(prefs, "Science")
+        assertTrue("Science" in FeedPreferences.topics(prefs))
     }
 }

@@ -48,6 +48,7 @@ private fun androidx.media3.ui.PlayerView.prepareForPlayback(
  controllerAutoShow=true
  setResizeMode(androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_FIT)
  setKeepContentOnPlayerReset(true)
+ setShowBuffering(androidx.media3.ui.PlayerView.SHOW_BUFFERING_WHEN_PLAYING)
  setShowFastForwardButton(true)
  setShowRewindButton(true)
  setShowPreviousButton(true)
@@ -119,21 +120,54 @@ class MainActivity:ComponentActivity(){
     controllerAutoShow=true
     setShowSubtitleButton(true)
     setKeepContentOnPlayerReset(true)
+    setShowBuffering(androidx.media3.ui.PlayerView.SHOW_BUFFERING_WHEN_PLAYING)
     setBackgroundColor(android.graphics.Color.BLACK)
     elevation=resources.displayMetrics.density*8
    }.also { nativeVideoView=it }
    view.player=player
    if(view.parent==null)rootLayout.addView(view,android.widget.FrameLayout.LayoutParams(1,1))
-   setPipEligible(true)
-   if(fullscreen)setNativeVideoFullscreen(true) else updateNativeVideoPosition()
+   setPipEligible(false)
+   if(fullscreen)setNativeVideoFullscreen(true) else webView.post { updateNativeVideoPosition() }
   }
  }
+ private var nativeVideoPositionRequest=0
  fun updateNativeVideoPosition() {
-  if(!nativeVideoRequested||nativeVideoFullscreen)return
+  if(!nativeVideoRequested||nativeVideoFullscreen||!::webView.isInitialized)return
   runOnUiThread {
-   if(!nativeVideoFullscreen){
-    nativeVideoView?.visibility=android.view.View.GONE
-    setPipEligible(false)
+   if(!nativeVideoRequested||nativeVideoFullscreen)return@runOnUiThread
+   val request=++nativeVideoPositionRequest
+   val script="""(function(){const watch=document.getElementById('videoPlayerHost');const mini=document.getElementById('videoMiniHost');const scale=window.devicePixelRatio||1;const visible=e=>{if(!e)return false;const r=e.getBoundingClientRect();const s=getComputedStyle(e);return s.display!=='none'&&s.visibility!=='hidden'&&r.width>35&&r.height>30&&r.right>0&&r.bottom>0&&r.left<innerWidth&&r.top<innerHeight};const e=visible(watch)?watch:(visible(mini)?mini:null);if(!e)return 'null';const r=e.getBoundingClientRect();return JSON.stringify({host:e.id,left:r.left,top:r.top,width:r.width,height:r.height,scale:scale,visible:true});})()"""
+   webView.evaluateJavascript(script){raw->
+    if(request!=nativeVideoPositionRequest||!nativeVideoRequested||nativeVideoFullscreen)return@evaluateJavascript
+    val jsonText=runCatching { org.json.JSONTokener(raw?:"null").nextValue() as? String }.getOrNull()
+    val geometry=runCatching { org.json.JSONObject(jsonText?:"null") }.getOrNull()
+    val view=nativeVideoView?:return@evaluateJavascript
+    if(geometry==null||!geometry.optBoolean("visible",false)){
+     view.visibility=android.view.View.GONE
+     setPipEligible(false)
+     return@evaluateJavascript
+    }
+    val miniHost=geometry.optString("host")=="videoMiniHost"
+    view.useController=!miniHost
+    view.controllerAutoShow=!miniHost
+    val density=geometry.optDouble("scale",resources.displayMetrics.density.toDouble()).coerceIn(0.5,5.0)
+    val rootPosition=IntArray(2)
+    val webPosition=IntArray(2)
+    rootLayout.getLocationOnScreen(rootPosition)
+    webView.getLocationOnScreen(webPosition)
+    val left=webPosition[0]-rootPosition[0]+(geometry.optDouble("left")*density).toInt()
+    val top=webPosition[1]-rootPosition[1]+(geometry.optDouble("top")*density).toInt()
+    val width=(geometry.optDouble("width")*density).toInt().coerceAtLeast(1)
+    val height=(geometry.optDouble("height")*density).toInt().coerceAtLeast(1)
+    view.layoutParams=android.widget.FrameLayout.LayoutParams(width,height).apply {
+     gravity=android.view.Gravity.TOP or android.view.Gravity.START
+     leftMargin=left
+     topMargin=top
+    }
+    view.visibility=android.view.View.VISIBLE
+    view.bringToFront()
+    view.requestLayout()
+    setPipEligible(true)
    }
   }
  }
@@ -283,6 +317,8 @@ class MainActivity:ComponentActivity(){
   rootLayout.addView(webView,android.widget.FrameLayout.LayoutParams(
    android.widget.FrameLayout.LayoutParams.MATCH_PARENT,android.widget.FrameLayout.LayoutParams.MATCH_PARENT))
   webView.setOnScrollChangeListener { _,_,_,_,_-> updateNativeVideoPosition() }
+  webView.addOnLayoutChangeListener { _,_,_,_,_,_,_,_,_-> if(nativeVideoRequested)updateNativeVideoPosition() }
+  rootLayout.addOnLayoutChangeListener { _,_,_,_,_,_,_,_,_-> if(nativeVideoRequested)updateNativeVideoPosition() }
   setContentView(rootLayout)
   androidx.core.view.ViewCompat.requestApplyInsets(rootLayout)
   val html=assets.open("rush.html").bufferedReader().use{it.readText()}
@@ -505,8 +541,7 @@ private fun persistPickMetadata(prefs:android.content.SharedPreferences,pick:Pic
   if(channels.isEmpty()){uploads=emptyList();status="Follow channels to build your latest uploads feed."}
   else {
    status="Refreshing your feed…"
-   try { uploads=withContext(Dispatchers.IO){channels.flatMap{channel->runCatching{LiveYouTubeSearch.latestUploads(channel.id)}.getOrDefault(emptyList())}.distinctBy{it.videoId}.take(30)};status="${uploads.size} latest uploads" }
-   catch(e:Exception){status=playbackErrorMessage(e,"Could not refresh the feed.")}
+   try { uploads=withContext(Dispatchers.IO){channels.flatMap{channel->runCatching{LiveYouTubeSearch.latestUploads(channel.id)}.getOrDefault(emptyList())}.distinctBy{it.videoId}.take(30)};status="${uploads.size} latest uploads" } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch (e: Exception) {status=playbackErrorMessage(e,"Could not refresh the feed.")}
   }
  }
  LazyColumn(contentPadding=PaddingValues(bottom=20.dp),verticalArrangement=Arrangement.spacedBy(9.dp)){
@@ -575,8 +610,7 @@ private fun persistPickMetadata(prefs:android.content.SharedPreferences,pick:Pic
        val page=withContext(Dispatchers.IO){LiveYouTubeSearch.searchPage(query,filter=="Music",filter=="Channels",filter=="Playlists")}
        results=page.items;continuation=page.continuation
        status="${results.size} results"
-      }
-      catch(e:Exception){results=emptyList();continuation=null;status=e.localizedMessage?: "Search failed."}
+      } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch (e: Exception) {results=emptyList();continuation=null;status=e.localizedMessage?: "Search failed."}
       finally {loading=false}
      }
     }) { Text(if(loading)"…" else "Search") }
@@ -603,7 +637,7 @@ private fun persistPickMetadata(prefs:android.content.SharedPreferences,pick:Pic
          val resolved=withContext(Dispatchers.IO){resolvePlaybackMedia(result.videoId,result.isMusic)}
          withContext(Dispatchers.IO){OfflineDownloads.enqueue(context,result.videoId,result.title,result.creator,result.isMusic,resolved)}
          status="Download queued: "+result.title
-        }catch(e:Exception){status=playbackErrorMessage(e,"Could not queue this download.")}
+        } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch (e: Exception) {status=playbackErrorMessage(e,"Could not queue this download.")}
        }
       }.padding(4.dp));Text("Play",color=magenta,fontSize=12.sp)}
      }
@@ -617,7 +651,7 @@ private fun persistPickMetadata(prefs:android.content.SharedPreferences,pick:Pic
         val page=withContext(Dispatchers.IO){LiveYouTubeSearch.continueSearch(token,filter=="Music",filter=="Channels",filter=="Playlists")}
         val merged=(results+page.items).distinctBy{result->when{result.isChannel->"channel:"+result.channelId;result.isCollection->"collection:"+result.collectionId;else->result.videoId}}
         results=merged;continuation=page.continuation;status="${results.size} results"
-       }catch(e:Exception){status=playbackErrorMessage(e,"Could not load more results.")}
+       } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch (e: Exception) {status=playbackErrorMessage(e,"Could not load more results.")}
        finally{loadingMore=false}
       }
      },modifier=Modifier.fillMaxWidth(),colors=ButtonDefaults.buttonColors(containerColor=raised)){
@@ -674,8 +708,7 @@ private fun persistPickMetadata(prefs:android.content.SharedPreferences,pick:Pic
    details=loaded
    uploads=withContext(Dispatchers.IO){LiveYouTubeSearch.latestUploads(loaded.channelId)}
    status=if(uploads.isEmpty())"No public uploads were found." else "${uploads.size} latest uploads"
-  }
-  catch(e:Exception){status=playbackErrorMessage(e,"Could not load channel details or uploads.")}
+  } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch (e: Exception) {status=playbackErrorMessage(e,"Could not load channel details or uploads.")}
   finally {loading=false}
  }
  Column(Modifier.fillMaxSize().padding(16.dp)) {
@@ -709,7 +742,7 @@ private suspend fun queueVideoDownloads(context:Context,tracks:List<YouTubeSearc
    val media=withContext(Dispatchers.IO){resolvePlaybackMedia(track.videoId,false)}
    withContext(Dispatchers.IO){OfflineDownloads.enqueue(context,track.videoId,track.title,track.creator,false,media)}
    queued++
-  }catch(_:Exception){}
+  } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch (_: Exception) {}
  }
  return queued
 }
@@ -721,7 +754,7 @@ private suspend fun queueMusicDownloads(context:Context,tracks:List<YouTubeSearc
    val media=withContext(Dispatchers.IO){resolvePlaybackMedia(track.videoId,true)}
    withContext(Dispatchers.IO){OfflineDownloads.enqueue(context,track.videoId,track.title,track.creator,true,media,transcodeToMp3=mp3)}
    queued++
-  }catch(_:Exception){}
+  } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch (_: Exception) {}
  }
  return queued
 }
@@ -733,7 +766,7 @@ private suspend fun queueLocalPickMp3Downloads(context:Context,tracks:List<Pick>
    val media=withContext(Dispatchers.IO){resolvePlaybackMedia(track.id,true)}
    withContext(Dispatchers.IO){OfflineDownloads.enqueue(context,track.id,track.title,track.creator,true,media,transcodeToMp3=true)}
    queued++
-  }catch(_:Exception){}
+  } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch (_: Exception) {}
  }
  return queued
 }
@@ -764,7 +797,7 @@ private suspend fun queueLocalPickMp3Downloads(context:Context,tracks:List<Pick>
     else LiveYouTubeSearch.browseVideoPlaylist(collection.collectionId)
    }
    status=if(tracks.isEmpty())"No playable items were found in this playlist." else "${tracks.size} items"
-  }catch(e:Exception){status=playbackErrorMessage(e,"Could not load this music collection.")}
+  } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch (e: Exception) {status=playbackErrorMessage(e,"Could not load this music collection.")}
   finally{loading=false}
  }
  Column(Modifier.fillMaxSize().padding(16.dp)){
@@ -842,7 +875,7 @@ private suspend fun queueLocalPickMp3Downloads(context:Context,tracks:List<Pick>
   try {
    uploads=withContext(Dispatchers.IO){channels.flatMap{channel->runCatching{LiveYouTubeSearch.latestUploads(channel.id)}.getOrDefault(emptyList())}.distinctBy{it.videoId}.take(60)}
    status=if(uploads.isEmpty())"No recent public uploads found." else "${uploads.size} recent uploads"
-  } catch(e:Exception){status=playbackErrorMessage(e,"Could not refresh subscriptions.")}
+  } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch (e: Exception) {status=playbackErrorMessage(e,"Could not refresh subscriptions.")}
   finally{loading=false}
  }
  LazyColumn(contentPadding=PaddingValues(16.dp),verticalArrangement=Arrangement.spacedBy(9.dp)){
@@ -930,7 +963,7 @@ private suspend fun queueLocalPickMp3Downloads(context:Context,tracks:List<Pick>
     Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){
      if(media.complete) Button(onClick={play(media)},colors=ButtonDefaults.buttonColors(containerColor=magenta)){Text("Play offline")}
      else if(active) OutlinedButton(onClick={OfflineDownloads.cancel(context,media.id)}){Text("Cancel")}
-     else Button(onClick={scope.launch{resumeMessage="Refreshing stream and resuming download…";try{OfflineDownloads.resume(context,media);resumeMessage="Download resumed."}catch(e:Exception){resumeMessage=e.localizedMessage?:"Could not refresh this download. Try downloading it again."}}},colors=ButtonDefaults.buttonColors(containerColor=magenta)){Text("Resume")}
+     else Button(onClick={scope.launch{resumeMessage="Refreshing stream and resuming download…";try{OfflineDownloads.resume(context,media);resumeMessage="Download resumed."} catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch (e: Exception) {resumeMessage=e.localizedMessage?:"Could not refresh this download. Try downloading it again."}}},colors=ButtonDefaults.buttonColors(containerColor=magenta)){Text("Resume")}
      TextButton(onClick={scope.launch{OfflineDownloads.delete(context,media)}}){Text("Delete",color=muted)}
     }
    }
@@ -989,7 +1022,7 @@ private suspend fun queueLocalPickMp3Downloads(context:Context,tracks:List<Pick>
          val resolved=withContext(Dispatchers.IO){resolvePlaybackMedia(track.id,track.music)}
          withContext(Dispatchers.IO){OfflineDownloads.enqueue(context=context,id=track.id,title=track.title,creator=track.creator,isAudio=track.music,media=resolved)}
          queued++
-        }catch(_:Exception){}
+        } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch (_: Exception) {}
        }
        playlistMessage="Queued $queued of ${playlist.itemIds.size} playlist downloads."
       }
@@ -1003,7 +1036,7 @@ private suspend fun queueLocalPickMp3Downloads(context:Context,tracks:List<Pick>
          val resolved=withContext(Dispatchers.IO){resolvePlaybackMedia(track.id,true)}
          withContext(Dispatchers.IO){OfflineDownloads.enqueue(context,track.id,track.title,track.creator,true,resolved,transcodeToMp3=true)}
          queuedMp3++
-        }catch(_:Exception){}
+        } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch (_: Exception) {}
        }
        playlistMessage="Queued $queuedMp3 MP3 conversion downloads."
       }
@@ -1183,7 +1216,7 @@ private fun RushPlayer(item:Pick,light:Boolean,back:()->Unit,queue:List<Pick>,on
    activePlayer.prepare()
    activePlayer.play()
    status=if(localFileAvailable)"Playing offline" else "Playing · $resolvedQuality"
-  }catch(e:Exception){
+  } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch (e: Exception) {
    status=playbackErrorMessage(e,"Could not start playback automatically. Use Load and play to retry.")
   }
  }
@@ -1260,7 +1293,7 @@ private fun RushPlayer(item:Pick,light:Boolean,back:()->Unit,queue:List<Pick>,on
    status="Playing · ${resolved.qualityLabel}"
   }catch(cancelled:kotlinx.coroutines.CancellationException){
    throw cancelled
-  }catch(e:Exception){
+  } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch (e: Exception) {
    status=playbackErrorMessage(e,"Could not change playback quality.")
   }
  }
@@ -1314,8 +1347,7 @@ private fun RushPlayer(item:Pick,light:Boolean,back:()->Unit,queue:List<Pick>,on
     while(nextQueueIndex<queue.size&&firstItems.size<1){
      val queued=queue[nextQueueIndex++]
      try{firstItems+=prepareQueueItem(queued)}
-     catch(cancelled:kotlinx.coroutines.CancellationException){throw cancelled}
-     catch(_:Exception){skipped++}
+     catch(cancelled:kotlinx.coroutines.CancellationException){throw cancelled} catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch (_: Exception) {skipped++}
     }
     if(firstItems.isEmpty()){
      status="No tracks in this queue could be resolved."
@@ -1329,12 +1361,10 @@ private fun RushPlayer(item:Pick,light:Boolean,back:()->Unit,queue:List<Pick>,on
     status="Playing queue · preparing ${queue.size-nextQueueIndex} more"
     for(queued in queue.drop(nextQueueIndex)){
      try{activeController.addMediaItem(prepareQueueItem(queued))}
-     catch(cancelled:kotlinx.coroutines.CancellationException){throw cancelled}
-     catch(_:Exception){skipped++}
+     catch(cancelled:kotlinx.coroutines.CancellationException){throw cancelled} catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch (_: Exception) {skipped++}
     }
     status="Queue ready · ${queue.size-skipped} of ${queue.size} tracks"+if(skipped>0)" · $skipped unavailable" else ""
-   }catch(cancelled:kotlinx.coroutines.CancellationException){throw cancelled}
-   catch(e:Exception){status=playbackErrorMessage(e,"Could not prepare this playlist queue.")}
+   }catch(cancelled:kotlinx.coroutines.CancellationException){throw cancelled} catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch (e: Exception) {status=playbackErrorMessage(e,"Could not prepare this playlist queue.")}
   }
  }
  val ink=if(light)Color(0xFF241B32)else paper;val muted=if(light)Color(0xFF70677D)else mutedDark;val surface=if(light)Color.White else panelDark
@@ -1353,7 +1383,14 @@ private fun RushPlayer(item:Pick,light:Boolean,back:()->Unit,queue:List<Pick>,on
    if(!audio&&controller?.currentMediaItem!=null&&android.os.Build.VERSION.SDK_INT>=26)TextButton(onClick={(context.activityOrNull() as? MainActivity)?.enterPlayerPip()}){Text("Picture-in-Picture",color=magenta)}
   }
   Spacer(Modifier.height(8.dp))
-  androidx.compose.ui.viewinterop.AndroidView(factory={ctx->androidx.media3.ui.PlayerView(ctx).prepareForPlayback(controller,isPlaying&&!audio)},update={it.prepareForPlayback(controller,isPlaying&&!audio)},modifier=Modifier.fillMaxWidth().height(videoPlayerHeight))
+  Box(Modifier.fillMaxWidth().height(videoPlayerHeight)) {
+   androidx.compose.ui.viewinterop.AndroidView(factory={ctx->androidx.media3.ui.PlayerView(ctx).prepareForPlayback(controller,isPlaying&&!audio)},update={it.prepareForPlayback(controller,isPlaying&&!audio)},modifier=Modifier.fillMaxSize())
+   if(isBuffering) CircularProgressIndicator(
+    modifier=Modifier.align(Alignment.Center).size(42.dp),
+    color=magenta,
+    strokeWidth=3.dp
+   )
+  }
   Text(if(isBuffering)"Buffering…" else recoveryMessage?:status,color=muted,fontSize=11.sp)
   Text(playingTitle,color=ink,fontSize=22.sp,fontWeight=FontWeight.Bold);Text(playingCreator,color=muted)
   if(!localFileAvailable) {
@@ -1441,7 +1478,7 @@ private fun RushPlayer(item:Pick,light:Boolean,back:()->Unit,queue:List<Pick>,on
      val savedPosition=PlaybackProgress.resumePositionMs(context,playingPick.id)
      if(savedPosition>0)activePlayer.seekTo(savedPosition)
      activePlayer.prepare();activePlayer.play();status=if(localFileAvailable)"Playing offline" else "Playing · $resolvedQuality"
-    }catch(e:Exception){status=playbackErrorMessage(e,"Unable to load this stream.")}
+    } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch (e: Exception) {status=playbackErrorMessage(e,"Unable to load this stream.")}
    }
   },enabled=controller!=null,modifier=Modifier.fillMaxWidth(),colors=ButtonDefaults.buttonColors(containerColor=magenta)){Text(if(localFileAvailable)"Play offline" else "Load and play",color=Color.White)}
   Button(
@@ -1460,7 +1497,7 @@ private fun RushPlayer(item:Pick,light:Boolean,back:()->Unit,queue:List<Pick>,on
     val media=withContext(Dispatchers.IO){resolvePlaybackMedia(url,audio,if(audio)null else quality.takeIf{it>0},if(audio)quality.takeIf{it>0} else null,!audio&&mp4Format)}
     withContext(Dispatchers.IO){OfflineDownloads.enqueue(context,playingPick.id,playingPick.title,playingPick.creator,audio,media,if(audio)null else quality.takeIf{it>0},if(audio)quality.takeIf{it>0} else null,audio&&mp3Format,!audio&&mp4Format)}
     status="Download queued · ${media.qualityLabel} · .${media.extension}"
-   }catch(e:Exception){status=playbackErrorMessage(e,"Could not start download.")}
+   } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch (e: Exception) {status=playbackErrorMessage(e,"Could not start download.")}
   }},modifier=Modifier.fillMaxWidth(),colors=ButtonDefaults.buttonColors(containerColor=raised)){Text(when{audio&&mp3Format->"Download MP3";!audio&&mp4Format->"Download MP4";else->"Download offline"},color=ink)}
 
   Text("Use offline downloads only where permitted. Formats and quality depend on the source.",color=muted,fontSize=10.sp)

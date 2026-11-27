@@ -144,7 +144,8 @@ object OfflineDownloads {
                 media.isAudio,
                 media.maxHeight,
                 media.maxAudioBitrate,
-                media.preferMp4
+                media.preferMp4,
+                forceRefresh = true
             )
         }
         return enqueue(
@@ -248,6 +249,7 @@ class OfflineDownloadWorker(
         var cancellationHandle: kotlinx.coroutines.DisposableHandle? = null
         try {
         if (url.startsWith("rush-sabr://")) {
+            if (metadataDetails?.optBoolean("isAudio", false) != true) return@withContext Result.failure()
             if (!downloadSabrAudio(id, title, extension, metadata, partial, destination)) {
                 return@withContext Result.retry()
             }
@@ -282,7 +284,8 @@ class OfflineDownloadWorker(
                     details.optBoolean("isAudio"),
                     details.optInt("maxHeight", 0).takeIf { it > 0 },
                     details.optInt("maxAudioBitrate", 0).takeIf { it > 0 },
-                    details.optBoolean("preferMp4")
+                    details.optBoolean("preferMp4"),
+                    forceRefresh = true
                 )
                 if (refreshed.extension != extension) return@withContext Result.failure()
                 details.put("sourceUrl", refreshed.url).put("quality", refreshed.qualityLabel)
@@ -412,7 +415,7 @@ class OfflineDownloadWorker(
             ?: sourceId
         var manifest = com.github.libretube.player.manifest.SabrManifestStore.get(videoId)
         if (manifest == null) {
-            val refreshed = RushPlaybackEngine.resolveMedia(sourceId, true, maxAudioBitrate = maxBitrate)
+            val refreshed = RushPlaybackEngine.resolveMedia(sourceId, true, maxAudioBitrate = maxBitrate, forceRefresh = true)
             if (!refreshed.url.startsWith("rush-sabr://") || refreshed.extension != extension) {
                 details.put("sourceUrl", refreshed.url)
                     .put("extension", refreshed.extension)
