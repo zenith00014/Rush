@@ -129,6 +129,8 @@ class RushPlaybackService : MediaSessionService() {
         player.pauseAtEndOfMediaItems = !getSharedPreferences("rush_prefs", MODE_PRIVATE)
             .getBoolean("autoplay_video", true)
         player.setPreloadConfiguration(ExoPlayer.PreloadConfiguration(5_000_000L))
+        player.setPlaybackSpeed(getSharedPreferences("rush_prefs", MODE_PRIVATE)
+            .getFloat("playback_speed", 1.0f))
         player.addListener(object : androidx.media3.common.Player.Listener {
             override fun onMediaItemTransition(
                 mediaItem: androidx.media3.common.MediaItem?,
