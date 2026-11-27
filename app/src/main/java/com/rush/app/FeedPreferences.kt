@@ -210,23 +210,11 @@ object FeedPreferences {
         writeSources(prefs, updated)
     }
 
-    private fun resolveCatalogTopic(raw: String): String {
-        val clean = cleanTopic(raw)
-        require(clean.length >= 2) { "Enter a valid topic." }
-        val normalized = clean.lowercase(Locale.ROOT)
-        val alias = topicAliases.firstOrNull { (aliases, _) ->
-            aliases.any { normalized.contains(it) }
-        }?.second
-        if (alias != null) return alias
-        return topicCatalog.firstOrNull { it.equals(clean, ignoreCase = true) }
-            ?: throw IllegalArgumentException("Choose a topic from the catalog or add a custom topic.")
-    }
-
     fun saveTopics(prefs: SharedPreferences, raw: String): List<String> {
         val array = JSONArray(raw)
         val selected = (0 until array.length())
             .mapNotNull { array.optString(it).trim().takeIf(String::isNotBlank) }
-            .map(::resolveCatalogTopic)
+            .map(::resolveTopic)
             .distinct().take(100)
         require(selected.isNotEmpty()) { "Add at least one topic." }
         prefs.edit().putString(TOPICS_KEY, JSONArray(selected).toString()).apply()
