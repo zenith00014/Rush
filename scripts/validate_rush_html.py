@@ -280,6 +280,8 @@ def main():
         fail("Exiting native fullscreen must collapse the video surface cleanly")
     if "RushNative.updateVideoPosition()" not in js or "nativeVideoPositionPending" in js:
         fail("The native inline video surface must follow the WebView player host")
+    if "mobileScrollContainer.addEventListener('scroll',mobileSyncPlayer" not in js or "window.addEventListener('resize',mobileSyncPlayer" not in js:
+        fail("Inline video placement must follow the mobile scroll container and screen resizing")
 
     with tempfile.NamedTemporaryFile("w", suffix=".js", encoding="utf-8") as handle:
         handle.write(js)

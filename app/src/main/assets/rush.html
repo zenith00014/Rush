@@ -2007,7 +2007,14 @@ function updateMobileNavigation(){
  navPosition();
 }
 
-function mobileSyncPlayer(){if(window.RushNative&&mediaState.isVideo)window.RushNative.updateVideoPosition()}
+let mobilePlayerPositionFrame=0;
+function mobileSyncPlayer(){
+ if(!window.RushNative||!mediaState.isVideo||mobilePlayerPositionFrame)return;
+ mobilePlayerPositionFrame=requestAnimationFrame(()=>{mobilePlayerPositionFrame=0;if(window.RushNative&&mediaState.isVideo)window.RushNative.updateVideoPosition()});
+}
+const mobileScrollContainer=$('#sc');
+if(mobileScrollContainer)mobileScrollContainer.addEventListener('scroll',mobileSyncPlayer,{passive:true});
+window.addEventListener('resize',mobileSyncPlayer,{passive:true});
 function mobileLoadPrefs(){
  try{if(window.RushNative){const raw=RushNative.getFeedPreferences();if(raw)prefs=JSON.parse(raw)}}catch(e){}
 }

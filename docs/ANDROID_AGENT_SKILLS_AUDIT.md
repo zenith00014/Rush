@@ -224,4 +224,4 @@ The CI run after these corrections is the verification gate. No APK is considere
 - Remaining validation is the Android CI build and device-level playback/download checks; YouTube availability and source restrictions remain external dependencies.
 
 - Playback format is independent of the MP4 offline-download preference. Direct play, single-video queueing, autoplay queueing, library queues and service recovery all request adaptive video formats; MP4 selection remains confined to downloads.
-
+- Inline video positioning is also coalesced to the next animation frame and follows the app's internal scroll container and screen resizing; WebView scroll callbacks alone do not fire for the app's nested feed scroller.
