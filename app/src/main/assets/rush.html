@@ -1735,7 +1735,7 @@ let videoQuality=0;
 let unifiedPending=0;
 let unifiedPendingKeys=new Set();
 let searchHistory=[];
-let libraryView='overview';
+libraryView='overview';
 try{searchHistory=JSON.parse(localStorage.getItem('rush_search_history')||'[]').filter(x=>typeof x==='string').slice(0,8)}catch(e){}
 try{autoplayEnabled=window.RushNative?RushNative.getAutoplayEnabled():true}catch(e){}
 function loadPlaybackOptions(){
