@@ -506,7 +506,7 @@ function pageTop(title,kicker){
 function homeCreatorStrip(){
  const creators=(prefs.sources||[]).filter(s=>['channel','artist','musician'].includes(String(s.kind||'').toLowerCase())).slice(0,12);
  const bubbles=creators.map((source,index)=>{
-  const initials=String(source.name||'Creator').trim().split(/\\s+/).slice(0,2).map(part=>part[0]||'').join('').toUpperCase();
+  const initials=String(source.name||'Creator').trim().split(/\s+/).slice(0,2).map(part=>part[0]||'').join('').toUpperCase();
   return '<div class="creator-bubble"><span class="creator-avatar" style="--creator-color:'+PAL[index%PAL.length]+'">'+esc(initials||'•')+'</span><span class="creator-name">'+esc(source.name||'Creator')+'</span></div>';
  }).join('');
  return '<section class="creator-strip" aria-label="Followed creators"><div class="creator-strip-head"><span>YOUR CREATORS</span><button class="chip" data-open-search>DISCOVER</button></div>'+(bubbles?'<div class="creator-strip-row">'+bubbles+'</div>':'<p class="creator-empty">Follow educators and creators to build this row.</p>')+'</section>';
