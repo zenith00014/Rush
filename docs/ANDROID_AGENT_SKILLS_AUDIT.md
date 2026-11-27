@@ -110,6 +110,44 @@ Source: https://github.com/santimattius/performance-compose-skills
 **Not measured**
 - Compose recomposition tracing and Macrobenchmark require a running device/emulator and a profileable/release build. Those measurements were not available here.
 
+## Second implementation pass — local profile, downloads and quality
+
+This follow-up keeps all eight supplied source collections and Ponytail rules active.
+
+**Local profile and onboarding**
+- First launch offers an optional display name and interest selection, then opens Home.
+- The Profile screen edits the display name, interests, snoozed topics and default video-quality cap.
+- Profile setup state and display name are saved in the existing app-private SharedPreferences store. No email, password, identity provider, cloud database or sync service was added.
+- The top profile shortcut opens the local Profile screen; feed-interest controls remain separate.
+
+**Video downloads and quality**
+- Mobile video cards, the watch screen, the action sheet and saved-video rows expose a Download action.
+- Quality options now include Auto, 360p, 720p, 1080p, 1440p, 4K Ultra HD (2160p cap) and 8K (4320p cap).
+- New video downloads resolve a direct progressive stream rather than storing an HLS/DASH manifest as though it were a playable offline file.
+- The resolver chooses the best available direct format at or below the selected cap. If no format is below the cap, it falls back to the lowest available direct format. The Downloads shelf reports the resolved quality.
+- The Downloads shelf shows state and progress, disables Play until a file is complete, and exposes Cancel or Resume for unfinished work.
+- The selected quality cap is applied when Media3 starts. Saving a quality preference does not start an otherwise idle playback service.
+
+**High-quality download limitation**
+- The current offline path downloads a directly playable progressive stream. A 4K/8K cap does not guarantee that the source provides a directly downloadable 4K/8K file.
+- Separately downloading a video-only stream plus audio and muxing them into one offline file is not implemented. The UI reports the actual resolved quality and explains that the source may provide a lower maximum.
+
+**Additional fixes in this pass**
+- Removed redundant consecutive CancellationException handlers while preserving cancellation propagation.
+- Removed the duplicate mobile video-search error callback that overwrote the callback responsible for clearing pending/loading state.
+- Added a visible player buffering spinner with a reduced-motion fallback; native Media3 buffering indicators remain enabled.
+- Added unit tests for selecting the best direct format at or below a quality cap and falling back when a requested Ultra HD height is unavailable.
+
+**How the eight source collections informed this pass**
+1. Google Android Skills: retained native Media3 playback, applies the saved track-height cap at player creation, keeps visible buffering feedback and extends automated validation.
+2. JetBrains Kotlin Agent Skills: preserves the existing Gradle Android project; Kotlin Toolchain and KMP/AGP migration instructions remain out of scope.
+3. almasumdev Kotlin/Android skills: keeps personal profile data local, preserves cancellation, performs stream resolution/download work off the UI thread and adds focused tests.
+4. new-silvermoon Android skills: adds labeled onboarding/profile controls, explicit selected states, download progress, and cancel/resume affordances.
+5. javiercamarenatriguero Android skills: adds behavior-focused resolver tests and avoids imposing a Compose/MVI migration on the WebView-first UI.
+6. haidrrrry Compose/Kotlin skills: keeps the legacy Compose player path intact and uses native player surfaces rather than rebuilding the feed as Compose.
+7. anhvt52 modern Compose skills: preserves existing Compose player conventions without introducing a parallel Compose navigation architecture.
+8. santimattius performance Compose skills: keeps buffering feedback separate from feed rebuilding and retains the native PlayerView video surface; device profiling remains outstanding.
+
 ## Behavior changes covered by this update
 
 - For You feed candidates are now searched from selected topics, not only followed channels.
