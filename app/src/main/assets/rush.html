@@ -1748,6 +1748,7 @@ function loadPlaybackOptions(){
 }
 function mobileThumb(item){return safeUrl(item&&item.thumbnail)||''}
 function mobileInitials(name){return esc(String(name||'Rush').trim().split(/\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase()||'R')}
+function refreshProfileShortcut(){const button=$('#profileShortcut');if(!button)return;const profile=refreshLocalProfile();button.textContent=mobileInitials(profile.displayName||'Rush');button.setAttribute('aria-label',profile.displayName?'Local profile: '+profile.displayName:'Local profile')}
 function mobileAvatar(item){
  const image=safeUrl(item&&(item.avatar||item.channelAvatar));
  return '<span class="yt-avatar">'+(image?'<img src="'+esc(image)+'" alt="" loading="lazy" onerror="this.remove()">':mobileInitials(item&&(item.artist||item.creator||item.name)))+'</span>';
@@ -1975,8 +1976,12 @@ updateCurrentPlayback=function(data){rushOriginalUpdatePlayback(data);updateMobi
 const rushOriginalGo=go;
 go=function(){
  loadPlaybackOptions();
+ const localProfile=refreshLocalProfile();
+ if(!localProfile.setupComplete&&location.hash!=='#onboarding'){location.replace('#onboarding');return}
+ if(localProfile.setupComplete&&location.hash==='#onboarding'){location.replace('#home');return}
  rushOriginalGo();
  updateMobileNavigation();
+ refreshProfileShortcut();
  updateMobileMini();
  mobileSyncPlayer();
  if(page==='home')showSkeleton($('#homeFeedResults'),4);
@@ -1991,7 +1996,7 @@ go=function(){
 };
 const rushOriginalLoadFeedPreferences=loadFeedPreferences;
 loadFeedPreferences=function(){mobileLoadPrefs();if(page==='topics'||page==='snooze')go()};
-R.home=renderHome;R.subs=renderSubsPage;R.search=renderSearchPage;R.videos=renderVideoPage;R.library=renderLibraryPage;R.music=renderMusicPage;R.topics=renderTopicsPage;R.snooze=renderSnoozePage;delete R.explore;delete R.news;
+R.home=renderHome;R.subs=renderSubsPage;R.search=renderSearchPage;R.videos=renderVideoPage;R.library=renderLibraryPage;R.music=renderMusicPage;R.topics=renderTopicsPage;R.snooze=renderSnoozePage;R.profile=renderProfilePage;R.onboarding=renderOnboardingPage;delete R.explore;delete R.news;
 libraryView='overview';
 const mobileNav=[['home','Home','home'],['search','Search','search'],['subs','Subs','follow'],['library','Library','library']];
 $('#nav').innerHTML='<i class="pill"></i>'+mobileNav.map(([key,label,icon])=>'<a href="#'+key+'" data-k="'+key+'">'+ic(icon)+'<span>'+label+'</span></a>').join('');
@@ -2017,6 +2022,7 @@ document.addEventListener('click',e=>{
  if(target.hasAttribute('data-open-snooze')){e.preventDefault();location.hash='#snooze';return}
  if(target.hasAttribute('data-open-music')){e.preventDefault();location.hash='#music';return}
  if(target.hasAttribute('data-refresh-feed')){e.preventDefault();const mode=page==='subs'||homeTab==='fo'?'following':'forYou';showSkeleton($(page==='subs'?'#subsFeedResults':'#homeFeedResults'),4);if(window.RushNative)RushNative.refreshHomeFeed(mode);const status=$(page==='subs'?'#subsFeedStatus':'#homeFeedStatus');if(status)status.textContent='Refreshing recommendations…';return}
+ if(target.hasAttribute('data-onboarding-topic')){target.setAttribute('aria-pressed',String(target.getAttribute('aria-pressed')!=='true'));return}
  if(target.hasAttribute('data-home-topic')){homeTopicFilter=target.dataset.homeTopic;document.querySelectorAll('[data-home-topic]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.homeTopic===homeTopicFilter)));renderFeedResults(homeFeedCache);return}
  if(target.hasAttribute('data-clear-search-history')){searchHistory=[];try{localStorage.removeItem('rush_search_history')}catch(e){}renderSearchHistory();return}
  if(target.hasAttribute('data-search-history')){const input=$('#q');if(input){input.value=target.dataset.searchHistory;runUnifiedSearch()}return}
@@ -2045,6 +2051,8 @@ document.addEventListener('click',e=>{
  if(target.hasAttribute('data-search-filter')){unifiedMode=target.dataset.searchFilter;document.querySelectorAll('[data-search-filter]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.searchFilter===unifiedMode)));renderSearchResults();return}
 },true);
 document.addEventListener('submit',e=>{
+ if(e.target.id==='onboardingForm'){e.preventDefault();const topics=[...document.querySelectorAll('[data-onboarding-topic][aria-pressed="true"]')].map(b=>b.dataset.onboardingTopic);const status=$('#onboardingStatus');if(!topics.length){if(status)status.textContent='Select at least one interest to continue.';return}if(window.RushNative)RushNative.completeLocalProfile($('#onboardingName')?.value||'',JSON.stringify(topics));return}
+ if(e.target.id==='profileForm'){e.preventDefault();if(window.RushNative)RushNative.saveLocalProfile($('#profileDisplayName')?.value||'');return}
  if(e.target.id==='mobileSearchForm'){e.preventDefault();runUnifiedSearch();return}
  if(e.target.id==='topicAddForm'){e.preventDefault();const input=$('#topicInput'),value=input&&input.value.trim();if(value&&window.RushNative){RushNative.addFeedTopic(value);input.value=''}return}
  if(e.target.id==='mobileMusicForm'){
@@ -2057,6 +2065,9 @@ document.addEventListener('change',e=>{
  if(e.target&&e.target.id==='autoplayToggle'){autoplayEnabled=!!e.target.checked;if(window.RushNative)RushNative.setAutoplayEnabled(autoplayEnabled);return}
  if(e.target&&e.target.id==='captionsToggle'){captionsEnabled=!!e.target.checked;if(window.RushNative)RushNative.setCaptionsEnabled(captionsEnabled);return}
 });
+window.rushLocalProfileSaved=data=>{localProfileData=data||refreshLocalProfile();refreshProfileShortcut();if(page==='onboarding'){location.hash='#home';return}if(page==='profile')$('#v').innerHTML=R.profile();mobileToast('Profile saved on this device.')};
+window.rushLocalProfileError=error=>{const status=$('#onboardingStatus')||$('#profileStatus');if(status)status.textContent=error.message||'Could not save your local profile.';mobileToast(error.message||'Could not save your local profile.')};
+window.rushDownloadAction=state=>{if(state&&state.state==='error')mobileToast(state.message||'Download failed.');else if(state&&state.state==='queued')mobileToast((state.title||'Video')+' added to Downloads.');if(page==='library'&&window.RushNative){if(libraryView==='downloads')RushNative.loadDownloads();else RushNative.loadLibrary()}};
 window.rushHomeFeedLoading=state=>{
  if(state&&state.mode==='following'&&page==='subs')showSkeleton($('#subsFeedResults'),4);
  else if(page==='home')showSkeleton($('#homeFeedResults'),4);
@@ -2084,7 +2095,7 @@ window.rushMusicSuggestionResults=data=>{const root=$('#musicSuggestions');if(ro
 window.rushMusicHistory=items=>{const root=$('#musicRecent');if(root)root.innerHTML=(items||[]).slice(0,8).map(mobileMusicCard).join('')||'<p class="yt-feed-empty">No recent tracks.</p>'};
 window.rushVideoPlaybackState=state=>{
  const status=$('#videoPlaybackStatus');
- if(status){status.textContent=state.state==='playing'?'Starting video…':state.message||state.state;status.hidden=false}
+ if(status){status.textContent=state.state==='playing'?'Starting video…':state.message||state.state;status.hidden=false;status.classList.toggle('is-buffering',state.state==='loading')}
  if(state.state==='playing'&&window.RushNative){
   RushNative.loadCurrentPlayback();
   const currentId=mobileCurrentVideo&&mobileCurrentVideo.id||mediaState.mediaId;
@@ -2103,7 +2114,7 @@ window.rushCurrentPlayback=data=>updateCurrentPlayback(data);
 window.rushPlaybackBufferingState=data=>{
  if(!data||!data.isVideo||String(data.mediaId)!==String(mediaState.mediaId||''))return;
  const status=$('#videoPlaybackStatus');
- if(status){status.hidden=false;status.textContent=data.state==='buffering'?'Buffering video…':data.state==='ready'?(data.isPlaying?'Playing':'Ready'):'Connecting to video…'}
+ if(status){status.hidden=false;status.classList.toggle('is-buffering',!!data.isBuffering||data.state==='buffering');status.textContent=data.state==='buffering'?'Buffering video…':data.state==='ready'?(data.isPlaying?'Playing':'Ready'):'Connecting to video…'}
 };
 window.rushAutoplayState=data=>{autoplayEnabled=!!data.enabled;const input=$('#autoplayToggle');if(input)input.checked=autoplayEnabled};
 window.rushSleepTimerState=data=>{const status=$('#sleepTimerStatus');if(status)status.textContent=data.message||'';mobileToast(data.message||'Sleep timer updated.')};
