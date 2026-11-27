@@ -163,3 +163,31 @@ This follow-up keeps all eight supplied source collections and Ponytail rules ac
 ## Verification status
 
 The repository workflow validates the WebView/bridge contract, runs Android lint, runs unit tests, assembles the debug APK, and uploads the APK artifact. Final verification is considered complete only when the workflow for the latest code commit passes. Device-only PiP, soft-keyboard, TalkBack, and real-network buffering checks remain separate physical-device acceptance tests.
+
+
+## Follow-up — first-run profile completion and visual system
+
+**First-run issue found and fixed**
+- The onboarding picker included default interests such as `Culture` and `Language`, while `saveTopics` used a stricter catalog-only resolver. Those existing defaults were rejected during profile setup, so the native bridge never set `rush_profile_setup_complete` and the route guard sent the user back to onboarding.
+- Reused the existing local `resolveTopic` function for onboarding interest persistence. Known aliases are normalized and unknown user-selected phrases remain local custom interests.
+- Added tests that save the full default interest list and a mixed selection including `Culture`, `Language`, a custom phrase and the machine-learning alias.
+- Onboarding now shows a saving state, disables repeat submission and restores the form if persistence fails. It navigates to Home only after the native callback confirms `setupComplete=true`; a failed or incomplete save remains on the form with an error message.
+- Missing native profile storage now fails closed instead of pretending setup is complete.
+
+**Uploaded design reference audit**
+- Read the uploaded `awesome-design-md-main.zip` and inspected its Apple, Linear, Raycast and Spotify `DESIGN.md` references.
+- Adapted the media-first dark surface ladder and pill/circle controls from Spotify; restrained typography and 4/8/12/17/24/32px spacing rhythm from Apple; low-noise dark surfaces, hairline dividers and single-accent discipline from Linear; and compact dark utility controls from Raycast.
+- Rush keeps its own coral accent, existing system-font stack and feed layout. Brand colors, fonts, logos, marketing-page layouts and decorative effects from those references were not copied.
+- Added root `DESIGN.md` with Rush tokens, touch-target rules, icon rules, motion/accessibility rules and component guidance.
+
+**UI icon and navigation changes**
+- Replaced the mobile header, search/history, feed utilities, topics, overflow, drawer and action-sheet text glyphs with one inline SVG icon map. Icons share a 24px viewBox, rounded outline geometry, decorative/hidden SVG semantics and consistent sizing.
+- Increased header icon/profile hit areas to 44px and retained 48px targets where the mobile layout already allows them.
+- Wired menu open/close/scrim, drawer routes, library shortcuts and the subscriptions shortcut.
+- The mobile top bar was previously hidden by a broad CSS rule, which made its controls unreachable. The final mobile style now explicitly keeps the redesigned top bar visible.
+- Added visible focus states and explicit labels for icon-only controls.
+
+**Regression checks added**
+- The WebView validation script now checks onboarding default/custom topic support, submit/error recovery, SVG icon usage, drawer control wiring and presence of the design guide.
+- It verifies that the mobile top bar and its menu/search/profile controls remain visible.
+- CI validation and unit tests for this final commit are still required before calling the update complete. Real-device keyboard, TalkBack, visual layout and onboarding persistence checks remain outstanding.
