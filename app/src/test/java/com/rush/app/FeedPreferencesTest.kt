@@ -68,6 +68,17 @@ class FeedPreferencesTest {
     }
 
     @Test
+    fun onboardingRejectsCustomInterestUntilItIsSavedLocally() {
+        var rejected = false
+        try {
+            FeedPreferences.saveOnboardingTopics(prefs, """["not-a-topic"]""")
+        } catch (_: IllegalArgumentException) {
+            rejected = true
+        }
+        assertTrue("Onboarding must not accept arbitrary unsaved phrases", rejected)
+    }
+
+    @Test
     fun freeformTopicAssistMapsAliasesAndKeepsCustomTopics() {
         assertEquals("AI and machine learning", FeedPreferences.addTopic(prefs, "videos about large language models"))
         assertEquals("Urban sketching", FeedPreferences.addTopic(prefs, "urban sketching"))
