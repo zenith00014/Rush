@@ -15,6 +15,8 @@ HTML_PATH = ROOT / "app/src/main/assets/rush.html"
 BRIDGE_PATH = ROOT / "app/src/main/java/com/rush/app/RushWebBridge.kt"
 ACTIVITY_PATH = ROOT / "app/src/main/java/com/rush/app/MainActivity.kt"
 SERVICE_PATH = ROOT / "app/src/main/java/com/rush/app/RushPlaybackService.kt"
+OFFLINE_PATH = ROOT / "app/src/main/java/com/rush/app/OfflineDownloads.kt"
+SEARCH_PATH = ROOT / "app/src/main/java/com/rush/app/LiveYouTubeSearch.kt"
 GRADLE_PATH = ROOT / "app/build.gradle.kts"
 
 
@@ -63,6 +65,8 @@ def main():
         fail(f"Missing Android activity: {ACTIVITY_PATH}")
     if not SERVICE_PATH.is_file():
         fail(f"Missing playback service: {SERVICE_PATH}")
+    if not OFFLINE_PATH.is_file() or not SEARCH_PATH.is_file():
+        fail("Missing offline download worker or YouTube search metadata")
     if not GRADLE_PATH.is_file():
         fail(f"Missing app Gradle configuration: {GRADLE_PATH}")
 
@@ -70,6 +74,8 @@ def main():
     bridge = BRIDGE_PATH.read_text(encoding="utf-8")
     activity = ACTIVITY_PATH.read_text(encoding="utf-8")
     service = SERVICE_PATH.read_text(encoding="utf-8")
+    offline = OFFLINE_PATH.read_text(encoding="utf-8")
+    search = SEARCH_PATH.read_text(encoding="utf-8")
     gradle = GRADLE_PATH.read_text(encoding="utf-8")
     parser = RushHtmlParser()
     parser.feed(html)
@@ -158,7 +164,7 @@ def main():
         "background Activity releases its controller": "rushWebBridge.release()" in activity and "override fun onStop()" in activity,
         "playback re-sync does not start an idle service": "activeInstance?.hasCurrentMediaItem()==true" in activity and "fun hasCurrentMediaItem()" in service,
         "lyrics are inside player": 'id="playerLyricsPanel"' in html and 'id="lyricsPanel"' not in html,
-        "mobile header keeps its SVG navigation controls visible": ".app .top.yt-topbar{display:flex!important}" in html and 'id="menuShortcut"' in html and 'id="searchShortcut"' in html and 'id="profileShortcut"' in html,
+        "mobile top navigation is removed while bottom tabs remain": '<header class="top yt-topbar">' not in html and 'id="menuShortcut"' not in html and "const mobileNav=[['home','Home','home'],['search','Search','search'],['subs','Subs','follow'],['library','Library','library']]" in js,
         "mobile Explore and News routes removed": "delete R.explore;delete R.news;" in js,
         "home feed has topic-derived sources": "topicQueries" in bridge and '"$topic explained"' in bridge,
         "feed preference API supports custom topics and snoozing": "fun addFeedTopic(" in bridge and "fun snoozeFeedTopic(" in bridge and "snoozedTopics" in prefs,
@@ -183,13 +189,18 @@ def main():
         "edge-to-edge root uses dark surface": "setBackgroundColor(android.graphics.Color.rgb(11,16,20))" in activity,
         "onboarding accepts defaults and existing custom interests without weakening normal validation": "FeedPreferences.saveOnboardingTopics" in bridge and "fun saveOnboardingTopics(" in prefs and "map(::resolveCatalogTopic)" in prefs and "onboardingCanSaveTheDefaultLocalInterestSelection" in feed_preferences_tests and "onboardingAcceptsDefaultTopicsAndPreviouslySavedCustomInterests" in feed_preferences_tests and "regularTopicSaveStillRejectsUnknownPhrases" in feed_preferences_tests and "onboardingRejectsCustomInterestUntilItIsSavedLocally" in feed_preferences_tests,
         "onboarding shows a saving state and restores the action after failure": "form.setAttribute('aria-busy','true')" in js and "window.rushLocalProfileError" in js and "submit.disabled=false" in js,
-        "mobile header and drawer use literal SVG markup": 'id="menuShortcut"' in html and 'id="mobileDrawer"' in html and '<svg class="ic" viewBox="0 0 24 24"' in html and "'+ic('menu')+'" not in html.split("<script>", 1)[0],
+        "topic picker uses the same selectable chips as Home": "yt-topic-picker-grid" in html and "data-save-topics" in html and "RushNative.saveSelectedFeedTopics" in js and "fun saveSelectedFeedTopics(" in bridge,
+        "home topic rail has an All reset and filters by feed tags": 'data-home-topic="all"' in js and "item.topicTags" in js and '.put("topicTags", JSONArray(candidate.topicTags.sorted()))' in bridge,
+        "video cards receive channel avatar metadata": "channelAvatarUrl" in search and '.put("avatar", item.channelAvatarUrl)' in bridge and "item.channelAvatarUrl" in js,
+        "watch screen keeps the bottom navigation visible": ".app.video-detail .nav{display:grid!important}" in html,
         "dynamic mobile controls use the shared SVG helper": "const IC={" in js and "ic('refresh')" in js and "ic('search')" in js,
-        "drawer destinations are interactive": "target.hasAttribute('data-drawer-route')" in mobile_js and "target.hasAttribute('data-drawer-library')" in mobile_js and "target.id==='notificationsShortcut'" in mobile_js,
+        "mobile tabs remain interactive without a top drawer": "updateMobileNavigation()" in mobile_js and 'data-mobile-route="profile"' in html,
         "design system documents the adapted source guidance": "Source basis" in design and "Consistent iconography" in design and "prefers-reduced-motion" in design,
     }
     if "preferDash = false" not in download_function or "allowDashFallback = false" not in download_function:
         fail("Offline video downloads must resolve a direct playable stream, not a DASH/HLS manifest")
+    if "forceRefresh = true" not in download_function or offline.count("forceRefresh = true") < 3:
+        fail("Download recovery must refresh expired stream URLs instead of reusing cached URLs")
     if "selectVideoHeight" not in playback_engine or "Ultra HD" not in html:
         fail("High-quality selection must fall back to available downloadable formats")
     if "setMaxVideoSize(Int.MAX_VALUE, qualityCap)" not in service:
@@ -251,8 +262,8 @@ def main():
         fail("Player transport controls must start disabled before the first track is loaded")
     if "window._rushLyrics=[]" not in js or "root.replaceChildren()" not in js:
         fail("A new lyrics request must clear the previous track's lyrics")
-    if "getElementById('videoPlayerHost')" not in activity:
-        fail("Native video positioning must follow the watch screen player host")
+    if "getElementById('videoPlayerHost')" not in activity or "window.devicePixelRatio" not in activity:
+        fail("Native video positioning must use the watch host and WebView pixel scale")
     if "nativeVideoView?.visibility=android.view.View.GONE" not in activity:
         fail("Exiting native fullscreen must collapse the video surface cleanly")
     if "RushNative.updateVideoPosition()" not in js or "nativeVideoPositionPending" in js:

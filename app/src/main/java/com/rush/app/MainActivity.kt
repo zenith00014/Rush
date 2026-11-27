@@ -127,7 +127,7 @@ class MainActivity:ComponentActivity(){
    view.player=player
    if(view.parent==null)rootLayout.addView(view,android.widget.FrameLayout.LayoutParams(1,1))
    setPipEligible(false)
-   if(fullscreen)setNativeVideoFullscreen(true) else updateNativeVideoPosition()
+   if(fullscreen)setNativeVideoFullscreen(true) else webView.post { updateNativeVideoPosition() }
   }
  }
  private var nativeVideoPositionRequest=0
@@ -136,7 +136,7 @@ class MainActivity:ComponentActivity(){
   runOnUiThread {
    if(!nativeVideoRequested||nativeVideoFullscreen)return@runOnUiThread
    val request=++nativeVideoPositionRequest
-   val script="""(function(){const watch=document.getElementById('videoPlayerHost');const mini=document.getElementById('videoMiniHost');const visible=e=>{if(!e)return false;const r=e.getBoundingClientRect();const s=getComputedStyle(e);return s.display!=='none'&&s.visibility!=='hidden'&&r.width>35&&r.height>30&&r.bottom>0&&r.top<innerHeight};const e=visible(watch)?watch:(visible(mini)?mini:null);if(!e)return 'null';const r=e.getBoundingClientRect();return JSON.stringify({host:e.id,left:r.left,top:r.top,width:r.width,height:r.height,visible:true});})()"""
+   val script="""(function(){const watch=document.getElementById('videoPlayerHost');const mini=document.getElementById('videoMiniHost');const scale=window.devicePixelRatio||1;const visible=e=>{if(!e)return false;const r=e.getBoundingClientRect();const s=getComputedStyle(e);return s.display!=='none'&&s.visibility!=='hidden'&&r.width>35&&r.height>30&&r.right>0&&r.bottom>0&&r.left<innerWidth&&r.top<innerHeight};const e=visible(watch)?watch:(visible(mini)?mini:null);if(!e)return 'null';const r=e.getBoundingClientRect();return JSON.stringify({host:e.id,left:r.left,top:r.top,width:r.width,height:r.height,scale:scale,visible:true});})()"""
    webView.evaluateJavascript(script){raw->
     if(request!=nativeVideoPositionRequest||!nativeVideoRequested||nativeVideoFullscreen)return@evaluateJavascript
     val jsonText=runCatching { org.json.JSONTokener(raw?:"null").nextValue() as? String }.getOrNull()
@@ -150,7 +150,7 @@ class MainActivity:ComponentActivity(){
     val miniHost=geometry.optString("host")=="videoMiniHost"
     view.useController=!miniHost
     view.controllerAutoShow=!miniHost
-    val density=resources.displayMetrics.density
+    val density=geometry.optDouble("scale",resources.displayMetrics.density.toDouble()).coerceIn(0.5,5.0)
     val rootPosition=IntArray(2)
     val webPosition=IntArray(2)
     rootLayout.getLocationOnScreen(rootPosition)
@@ -317,6 +317,8 @@ class MainActivity:ComponentActivity(){
   rootLayout.addView(webView,android.widget.FrameLayout.LayoutParams(
    android.widget.FrameLayout.LayoutParams.MATCH_PARENT,android.widget.FrameLayout.LayoutParams.MATCH_PARENT))
   webView.setOnScrollChangeListener { _,_,_,_,_-> updateNativeVideoPosition() }
+  webView.addOnLayoutChangeListener { _,_,_,_,_,_,_,_,_-> if(nativeVideoRequested)updateNativeVideoPosition() }
+  rootLayout.addOnLayoutChangeListener { _,_,_,_,_,_,_,_,_-> if(nativeVideoRequested)updateNativeVideoPosition() }
   setContentView(rootLayout)
   androidx.core.view.ViewCompat.requestApplyInsets(rootLayout)
   val html=assets.open("rush.html").bufferedReader().use{it.readText()}

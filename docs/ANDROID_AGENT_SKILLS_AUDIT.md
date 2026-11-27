@@ -212,3 +212,14 @@ The earlier first-run fix had made the shared `saveTopics` method accept arbitra
 - Updated WebView validation so future CI checks both API paths and their intended contracts.
 
 The CI run after these corrections is the verification gate. No APK is considered ready until Android lint, all unit tests, APK output verification and artifact upload complete successfully.
+
+## 2026-11 mobile reference and playback repair
+
+- Removed the mobile top header and its unused drawer markup; the four bottom destinations remain available on every screen, including video watch.
+- Rebuilt topic personalisation as a selectable chip catalogue that mirrors the Home topic rail. Existing custom topics remain selectable; the native bridge validates the saved set against the built-in catalogue and locally stored topics.
+- Home now includes an explicit All topic reset and uses serialized feed topic tags before text matching.
+- YouTube search/feed results preserve channel avatar URLs from the video renderer and merge them into extractor results.
+- Native inline video positioning now uses the WebView device-pixel ratio and repositions after WebView/root layout changes.
+- Download creation and worker recovery force-refresh cached stream metadata after URL expiry. Adaptive SABR audio is no longer mislabeled as a video download.
+- Remaining validation is the Android CI build and device-level playback/download checks; YouTube availability and source restrictions remain external dependencies.
+

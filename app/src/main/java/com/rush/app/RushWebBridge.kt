@@ -105,6 +105,14 @@ class RushWebBridge(
     }
 
     @JavascriptInterface
+    fun saveSelectedFeedTopics(topicsJson: String) {
+        val prefs = activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)
+        runCatching { FeedPreferences.saveOnboardingTopics(prefs, topicsJson) }
+            .onSuccess { publish("rushFeedPreferences", FeedPreferences.asJson(prefs).toString()) }
+            .onFailure { publish("rushFeedPreferencesError", JSONObject().put("message", it.message ?: "Could not save topics.").toString()) }
+    }
+
+    @JavascriptInterface
     fun addFeedTopic(topic: String) {
         val prefs = activity.getSharedPreferences("rush_prefs", android.content.Context.MODE_PRIVATE)
         runCatching { FeedPreferences.addTopic(prefs, topic) }
@@ -362,7 +370,7 @@ class RushWebBridge(
                 profile.showMoreTopics.sorted().joinToString("|") + "|" +
                 sources.joinToString("|") { "${it.kind}:${it.id}:${it.name}" } + "|" +
                 prefs.getString("rush_video_feedback", "{}")
-            val cacheKey = "rush_home_feed_v5_${feedMode}_${Integer.toHexString(cacheSignature.hashCode())}"
+            val cacheKey = "rush_home_feed_v6_${feedMode}_${Integer.toHexString(cacheSignature.hashCode())}"
             val cached = prefs.getString(cacheKey, null)?.let { runCatching { JSONObject(it) }.getOrNull() }
             val cachedAt = cached?.optLong("fetchedAt", 0L) ?: 0L
             if (cached != null && cachedAt > 0L) {
@@ -454,6 +462,9 @@ class RushWebBridge(
                             .put("thumbnail", thumbnailFor(item.videoId, item.thumbnailUrl))
                             .put("sourceId", source?.id?.takeIf { it.isNotBlank() } ?: item.channelId)
                             .put("sourceName", source?.name?.takeIf { it.isNotBlank() } ?: item.creator)
+                            .put("avatar", item.channelAvatarUrl)
+                            .put("channelId", item.channelId)
+                            .put("topicTags", JSONArray(candidate.topicTags.sorted()))
                             .put("description", item.description)
                         val score = RushDiscoveryEngine.scoreFeed(candidate, profile)
                         val previous = videoHits[item.videoId]
@@ -970,7 +981,9 @@ class RushWebBridge(
                         put(JSONObject().put("id", item.videoId).put("title", item.title)
                             .put("artist", item.creator).put("duration", item.duration)
                             .put("thumbnail", thumbnailFor(item.videoId, item.thumbnailUrl))
-                            .put("channelId", item.channelId).put("description", item.description))
+                            .put("channelId", item.channelId)
+                            .put("avatar", item.channelAvatarUrl)
+                            .put("description", item.description))
                     }
                 }
                 publish("rushVideoSearchResults", payload.toString())
@@ -1810,7 +1823,8 @@ class RushWebBridge(
                         maxAudioBitrate = maxAudioBitrate,
                         preferMp4 = preferMp4,
                         preferDash = false,
-                        allowDashFallback = false
+                        allowDashFallback = false,
+                        forceRefresh = true
                     )
                 }
                 val workId = withContext(Dispatchers.IO) {

@@ -33,7 +33,8 @@ data class YouTubeSearchResult(
     val collectionId: String = "",
     val description: String = "",
     val videoCount: String = "",
-    val thumbnailUrl: String = ""
+    val thumbnailUrl: String = "",
+    val channelAvatarUrl: String = ""
 )
 
 object LiveYouTubeSearch {
@@ -75,7 +76,15 @@ object LiveYouTubeSearch {
         val primary = runCatching { executeSearch(body, music, channels, playlists) }.getOrNull()
         val merged = LinkedHashMap<String, YouTubeSearchResult>()
         extractorPage?.items.orEmpty().forEach { merged.putIfAbsent(resultKey(it), it) }
-        primary?.items.orEmpty().forEach { merged.putIfAbsent(resultKey(it), it) }
+        primary?.items.orEmpty().forEach { incoming ->
+            val key = resultKey(incoming)
+            val existing = merged[key]
+            merged[key] = if (existing == null) incoming else existing.copy(
+                channelId = existing.channelId.ifBlank { incoming.channelId },
+                channelAvatarUrl = existing.channelAvatarUrl.ifBlank { incoming.channelAvatarUrl },
+                description = existing.description.ifBlank { incoming.description }
+            )
+        }
         val primaryContinuation = primary?.continuation ?: extractorPage?.continuation
         if (music || merged.size >= 8) {
             if (merged.isEmpty()) throw IOException("YouTube returned no search results.")
@@ -210,7 +219,8 @@ object LiveYouTubeSearch {
             creator = formatCount(info.subscriberCount),
             channelId = canonicalId,
             description = info.description.orEmpty(),
-            thumbnailUrl = info.avatars.lastOrNull()?.url?.ifBlank { channel.thumbnailUrl } ?: channel.thumbnailUrl
+            thumbnailUrl = info.avatars.lastOrNull()?.url?.ifBlank { channel.thumbnailUrl } ?: channel.thumbnailUrl,
+            channelAvatarUrl = info.avatars.lastOrNull()?.url.orEmpty()
         )
     }
 
@@ -330,7 +340,20 @@ object LiveYouTubeSearch {
         if (id.isBlank() || title.isBlank()) return
         val owner = text(item.optJSONObject("ownerText")).ifBlank { text(item.optJSONObject("shortBylineText")) }.ifBlank { "YouTube creator" }
         val duration = text(item.optJSONObject("lengthText"))
-        out.putIfAbsent(id, YouTubeSearchResult(id, title, owner, duration, music, thumbnailUrl = thumbnailUrl(item)))
+        val avatar = item.optJSONObject("channelThumbnailSupportedRenderers")
+            ?.optJSONObject("channelThumbnailWithLinkRenderer")
+            ?.optJSONObject("thumbnail")
+            ?.let(::thumbnailUrl)
+            .orEmpty()
+        out.putIfAbsent(
+            id,
+            YouTubeSearchResult(
+                id, title, owner, duration, music,
+                channelId = item.optString("channelId"),
+                thumbnailUrl = thumbnailUrl(item),
+                channelAvatarUrl = avatar
+            )
+        )
     }
 
     private fun addChannel(item: JSONObject, out: MutableMap<String, YouTubeSearchResult>) {
