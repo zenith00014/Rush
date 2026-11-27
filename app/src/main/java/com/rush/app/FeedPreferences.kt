@@ -163,6 +163,41 @@ object FeedPreferences {
         .replace(Regex("\\s+"), " ")
         .take(64)
 
+    private fun resolveCatalogTopic(raw: String): String {
+        val clean = cleanTopic(raw)
+        require(clean.length >= 2) { "Enter a valid topic." }
+        val normalized = clean.lowercase(Locale.ROOT)
+        topicAliases.firstOrNull { (aliases, _) ->
+            aliases.any { normalized.contains(it) }
+        }?.second?.let { alias ->
+            return (topicCatalog + defaultTopics).firstOrNull { it.equals(alias, ignoreCase = true) }
+                ?: alias
+        }
+        return (topicCatalog + defaultTopics).firstOrNull { it.equals(clean, ignoreCase = true) }
+            ?: throw IllegalArgumentException("Choose a topic from the catalog or add it first.")
+    }
+
+    /**
+     * Onboarding may re-submit existing local custom interests, but may not introduce
+     * arbitrary phrases. New custom interests are added through Topic Assist first.
+     */
+    fun saveOnboardingTopics(prefs: SharedPreferences, raw: String): List<String> {
+        val array = JSONArray(raw)
+        val allowed = (topicCatalog + defaultTopics + allTopics(prefs)).toSet()
+        val selected = (0 until array.length())
+            .mapNotNull { array.optString(it).trim().takeIf(String::isNotBlank) }
+            .map { rawTopic ->
+                val resolved = resolveTopic(rawTopic)
+                require(resolved in allowed) { "Choose an available interest." }
+                resolved
+            }
+            .distinct()
+            .take(100)
+        require(selected.isNotEmpty()) { "Add at least one topic." }
+        prefs.edit().putString(TOPICS_KEY, JSONArray(selected).toString()).apply()
+        return selected
+    }
+
     /** Every followed YouTube channel may supply For You candidates; productivity only affects ranking. */
     fun forYouChannels(sources: List<FeedSource>): List<FeedSource> =
         sources.filter { it.kind == "channel" }
@@ -214,7 +249,7 @@ object FeedPreferences {
         val array = JSONArray(raw)
         val selected = (0 until array.length())
             .mapNotNull { array.optString(it).trim().takeIf(String::isNotBlank) }
-            .map(::resolveTopic)
+            .map(::resolveCatalogTopic)
             .distinct().take(100)
         require(selected.isNotEmpty()) { "Add at least one topic." }
         prefs.edit().putString(TOPICS_KEY, JSONArray(selected).toString()).apply()
