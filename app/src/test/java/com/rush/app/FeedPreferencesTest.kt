@@ -34,9 +34,30 @@ class FeedPreferencesTest {
     }
 
     @Test
-    fun selectedTopicsComeFromApprovedCatalog() {
+    fun selectedTopicsAcceptUserDefinedPhrases() {
         val selected = FeedPreferences.saveTopics(prefs, """["Science","Memes","Technology"]""")
         assertEquals(listOf("Science", "Memes", "Technology"), selected)
-        assertTrue(FeedPreferences.topicCatalog.containsAll(selected))
+        assertTrue(selected.contains("Memes"))
+    }
+
+    @Test
+    fun freeformTopicAssistMapsAliasesAndKeepsCustomTopics() {
+        assertEquals("AI and machine learning", FeedPreferences.addTopic(prefs, "videos about large language models"))
+        assertEquals("Urban sketching", FeedPreferences.addTopic(prefs, "urban sketching"))
+        assertTrue(FeedPreferences.allTopics(prefs).contains("Urban sketching"))
+    }
+
+    @Test
+    fun topicModesAndOneDaySnoozeAffectActiveFeedTopics() {
+        FeedPreferences.saveTopics(prefs, """["Science","Technology"]""")
+        FeedPreferences.setTopicMode(prefs, "Science", "more")
+        FeedPreferences.setTopicMode(prefs, "Technology", "hide")
+        assertEquals("more", FeedPreferences.topicModes(prefs)["Science"])
+        assertTrue("Technology" !in FeedPreferences.topics(prefs))
+        val until = FeedPreferences.snoozeTopic(prefs, "Science")
+        assertTrue(until - System.currentTimeMillis() in (23L * 60 * 60 * 1000)..(24L * 60 * 60 * 1000))
+        assertTrue("Science" !in FeedPreferences.topics(prefs))
+        FeedPreferences.unsnoozeTopic(prefs, "Science")
+        assertTrue("Science" in FeedPreferences.topics(prefs))
     }
 }
