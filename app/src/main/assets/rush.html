@@ -1684,7 +1684,15 @@ document.addEventListener('click',e=>{
  if(target.hasAttribute('data-explore-topic')){pendingSearchQuery=target.dataset.exploreTopic;location.hash='#search';return}
  if(target.hasAttribute('data-video-id')){
   mobileCurrentVideo={id:target.dataset.videoId,title:target.dataset.title||'Video',artist:target.dataset.creator||'YouTube',creator:target.dataset.creator||'YouTube',thumbnail:target.dataset.thumbnail||'',description:''};
-  if(page!=='videos')location.hash='#videos';
+  if(page==='videos'){$('#v').innerHTML=R.videos();mobileSyncPlayer()}else location.hash='#videos';
+ }
+ if(target.hasAttribute('data-play-library-item')){
+  const item=libraryData.items&&libraryData.items[target.dataset.id];
+  if(item&&!item.music){mobileCurrentVideo={id:item.sourceId||target.dataset.id,title:item.title||'Video',artist:item.creator||'YouTube',creator:item.creator||'YouTube',thumbnail:item.thumbnail||''};location.hash='#videos'}
+ }
+ if(target.hasAttribute('data-play-downloaded')){
+  const item=(downloadData.items||[]).find(x=>String(x.id)===String(target.dataset.downloadId));
+  if(item&&!item.isAudio&&!item.isMusic){mobileCurrentVideo={id:item.sourceId||item.videoId||'',title:item.title||'Video',artist:item.creator||'YouTube',creator:item.creator||'YouTube',thumbnail:item.thumbnail||''};location.hash='#videos'}
  }
  if(target.closest('.yt-action-sheet')&&(target.hasAttribute('data-save-item')||target.hasAttribute('data-queue-item')))closeMobileSheet();
 },true);
