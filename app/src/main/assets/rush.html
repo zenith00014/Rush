@@ -1735,7 +1735,7 @@ function mobileLibraryItem(id,kind){
  const item=libraryData.items&&libraryData.items[id];if(!item)return '';
  const music=!!item.music,thumb=safeUrl(item.thumbnail),title=item.title||'Saved media',creator=item.creator||'YouTube';
  const play='<button class="chip" data-play-library-item data-id="'+esc(id)+'" data-music="'+music+'">Play</button>';
- const save=kind==='saved'?'<button class="chip" data-unsave-item data-id="'+esc(id)+'">Remove</button>':'<button class="chip" data-save-item data-id="'+esc(id)+'" data-title="'+esc(title)+'" data-creator="'+esc(creator)+'" data-music="'+music+'" data-thumbnail="'+esc(thumb)+'">Save</button>';
+ const save=kind==='saved'?'<button class="chip" data-unsave-item data-id="'+esc(id)+'">Remove</button>':kind==='liked'?'<button class="chip" data-rate-video="0" data-id="'+esc(id)+'" data-title="'+esc(title)+'" data-creator="'+esc(creator)+'">Unlike</button>':'<button class="chip" data-save-item data-id="'+esc(id)+'" data-title="'+esc(title)+'" data-creator="'+esc(creator)+'" data-music="'+music+'" data-thumbnail="'+esc(thumb)+'">Save</button>';
  return '<article class="yt-library-item"><button class="yt-library-thumb" data-play-library-item data-id="'+esc(id)+'" data-music="'+music+'">'+(thumb?'<img src="'+esc(thumb)+'" alt="" loading="lazy">':'')+'</button><div class="yt-library-copy"><b>'+esc(title)+'</b><span>'+esc(creator)+' · '+(music?'Music':'Video')+'</span><div class="yt-library-actions">'+play+save+'</div></div></article>';
 }
 function libraryShelf(title,key,ids,empty){
@@ -1892,6 +1892,16 @@ document.addEventListener('click',e=>{
   mobileCurrentVideo={id:target.dataset.videoId,title:target.dataset.title||'Video',artist:target.dataset.creator||'YouTube',creator:target.dataset.creator||'YouTube',thumbnail:target.dataset.thumbnail||''};
   if(page==='videos'){$('#v').innerHTML=R.videos();mobileSyncPlayer()}else location.hash='#videos';
  }
+ if(target.hasAttribute('data-play-library-item')){
+  const item=libraryData.items&&libraryData.items[target.dataset.id];
+  if(item&&item.music)location.hash='#player';
+  else if(item){mobileCurrentVideo={id:item.sourceId||target.dataset.id,title:item.title||'Video',artist:item.creator||'YouTube',creator:item.creator||'YouTube',thumbnail:item.thumbnail||''};location.hash='#videos'}
+ }
+ if(target.hasAttribute('data-play-downloaded')){
+  const item=(downloadData.items||[]).find(x=>String(x.id)===String(target.dataset.downloadId));
+  if(item&&(item.isAudio||item.isMusic))location.hash='#player';
+  else if(item){mobileCurrentVideo={id:item.sourceId||item.videoId||'',title:item.title||'Video',artist:item.creator||'YouTube',creator:item.creator||'YouTube',thumbnail:item.thumbnail||''};location.hash='#videos'}
+ }
  if(target.closest('#videoMiniHost')){location.hash='#videos';return}
  if(target.hasAttribute('data-mobile-route')){e.preventDefault();location.hash='#'+target.dataset.mobileRoute;return}
  if(target.hasAttribute('data-open-topics')){e.preventDefault();location.hash='#topics';return}
@@ -1910,7 +1920,8 @@ document.addEventListener('click',e=>{
  if(target.hasAttribute('data-video-next')){
   const current=mobileCurrentVideo&&mobileCurrentVideo.id||mediaState.mediaId;
   const pool=(homeFeedCache.videos||[]).concat(unifiedData.videos||[]);
-  const seen=new Set();const next=pool.find(item=>item&&item.id!==current&&!seen.has(item.id)&&seen.add(item.id));
+  const currentIndex=pool.findIndex(item=>String(item.id)===String(current));
+  const next=currentIndex>=0?pool.slice(currentIndex+1).find(item=>item&&String(item.id)!==String(current)):pool.find(item=>item&&String(item.id)!==String(current));
   if(next&&window.RushNative){mobileCurrentVideo=next;RushNative.playVideo(next.id,next.title||'',next.artist||next.creator||'',mobileThumb(next));$('#v').innerHTML=R.videos();mobileSyncPlayer()}
   else if(window.RushNative)RushNative.skipNext();
   return
