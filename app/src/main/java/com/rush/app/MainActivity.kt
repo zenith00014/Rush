@@ -128,12 +128,41 @@ class MainActivity:ComponentActivity(){
    if(fullscreen)setNativeVideoFullscreen(true) else updateNativeVideoPosition()
   }
  }
+ private var nativeVideoPositionRequest=0
  fun updateNativeVideoPosition() {
-  if(!nativeVideoRequested||nativeVideoFullscreen)return
+  if(!nativeVideoRequested||nativeVideoFullscreen||!::webView.isInitialized)return
   runOnUiThread {
-   if(!nativeVideoFullscreen){
-    nativeVideoView?.visibility=android.view.View.GONE
-    setPipEligible(false)
+   if(!nativeVideoRequested||nativeVideoFullscreen)return@runOnUiThread
+   val request=++nativeVideoPositionRequest
+   val script="""(function(){const e=document.getElementById('videoPlayerHost');if(!e)return 'null';const r=e.getBoundingClientRect();const s=getComputedStyle(e);return JSON.stringify({left:r.left,top:r.top,width:r.width,height:r.height,visible:s.display!=='none'&&s.visibility!=='hidden'&&r.width>100&&r.height>70&&r.bottom>0&&r.top<innerHeight});})()"""
+   webView.evaluateJavascript(script){raw->
+    if(request!=nativeVideoPositionRequest||!nativeVideoRequested||nativeVideoFullscreen)return@evaluateJavascript
+    val jsonText=runCatching { org.json.JSONTokener(raw?:"null").nextValue() as? String }.getOrNull()
+    val geometry=runCatching { org.json.JSONObject(jsonText?:"null") }.getOrNull()
+    val view=nativeVideoView?:return@evaluateJavascript
+    if(geometry==null||!geometry.optBoolean("visible",false)){
+     view.visibility=android.view.View.GONE
+     setPipEligible(false)
+     return@evaluateJavascript
+    }
+    val density=resources.displayMetrics.density
+    val rootPosition=IntArray(2)
+    val webPosition=IntArray(2)
+    rootLayout.getLocationOnScreen(rootPosition)
+    webView.getLocationOnScreen(webPosition)
+    val left=webPosition[0]-rootPosition[0]+(geometry.optDouble("left")*density).toInt()
+    val top=webPosition[1]-rootPosition[1]+(geometry.optDouble("top")*density).toInt()
+    val width=(geometry.optDouble("width")*density).toInt().coerceAtLeast(1)
+    val height=(geometry.optDouble("height")*density).toInt().coerceAtLeast(1)
+    view.layoutParams=android.widget.FrameLayout.LayoutParams(width,height).apply {
+     gravity=android.view.Gravity.TOP or android.view.Gravity.START
+     leftMargin=left
+     topMargin=top
+    }
+    view.visibility=android.view.View.VISIBLE
+    view.bringToFront()
+    view.requestLayout()
+    setPipEligible(true)
    }
   }
  }
