@@ -158,7 +158,7 @@ def main():
         "background Activity releases its controller": "rushWebBridge.release()" in activity and "override fun onStop()" in activity,
         "playback re-sync does not start an idle service": "activeInstance?.hasCurrentMediaItem()==true" in activity and "fun hasCurrentMediaItem()" in service,
         "lyrics are inside player": 'id="playerLyricsPanel"' in html and 'id="lyricsPanel"' not in html,
-        "mobile UI hides full top header": ".app .top{display:none!important}" in html and "#sc{padding-top:0!important}" in html,
+        "mobile header keeps its SVG navigation controls visible": ".app .top.yt-topbar{display:flex!important}" in html and 'id="menuShortcut"' in html and 'id="searchShortcut"' in html and 'id="profileShortcut"' in html,
         "mobile Explore and News routes removed": "delete R.explore;delete R.news;" in js,
         "home feed has topic-derived sources": "topicQueries" in bridge and '"$topic explained"' in bridge,
         "feed preference API supports custom topics and snoozing": "fun addFeedTopic(" in bridge and "fun snoozeFeedTopic(" in bridge and "snoozedTopics" in prefs,
