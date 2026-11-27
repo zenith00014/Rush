@@ -130,9 +130,8 @@ object FeedPreferences {
         val normalized = clean.lowercase(Locale.ROOT)
         topicAliases.firstOrNull { (aliases, _) -> aliases.any { normalized.contains(it) } }?.let { return it.second }
         topicCatalog.firstOrNull { it.equals(clean, true) }?.let { return it }
-        return clean.replace(Regex("\\s+"), " ").split(" ").joinToString(" ") { word ->
-            word.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString() }
-        }
+        return clean.replace(Regex("\\s+"), " ")
+            .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString() }
     }
 
     fun addTopic(prefs: SharedPreferences, raw: String): String {
