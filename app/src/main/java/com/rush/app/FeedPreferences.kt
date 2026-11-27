@@ -171,7 +171,7 @@ object FeedPreferences {
             aliases.any { normalized.contains(it) }
         }?.second?.let { alias ->
             return (topicCatalog + defaultTopics).firstOrNull { it.equals(alias, ignoreCase = true) }
-                ?: alias
+                ?: throw IllegalArgumentException("Unsupported topic alias.")
         }
         return (topicCatalog + defaultTopics).firstOrNull { it.equals(clean, ignoreCase = true) }
             ?: throw IllegalArgumentException("Choose a topic from the catalog or add it first.")
