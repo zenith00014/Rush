@@ -732,7 +732,21 @@ button{min-height:42px;min-width:42px}.btn,.ib,.chip{border:0;border-radius:24px
  .yt-toast.show{opacity:1;visibility:visible;transform:translate(-50%,0)}
 }
 @media(prefers-reduced-motion:reduce){.yt-toast{transition:none!important}.nav .pill{transition:none!important}}
-</style><style id="rush-desktop-chrome-removal">@media(min-width:900px){.d-topbar{display:none!important}.desktop-app{grid-template-rows:0 minmax(0,1fr)!important}.d-sidebar{grid-row:2}.d-main{grid-row:2}}</style></head>
+</style><style id="rush-desktop-chrome-removal">@media(min-width:900px){.d-topbar{display:none!important}.desktop-app{grid-template-rows:0 minmax(0,1fr)!important}.d-sidebar{grid-row:2}.d-main{grid-row:2}}</style><style id="rush-mobile-loading">
+@media(max-width:899px){
+ .yt-skeleton-list{display:flex;flex-direction:column;gap:24px;padding-bottom:18px}
+ .yt-skeleton-card{padding-bottom:5px}
+ .yt-skeleton-thumb{width:calc(100% - 40px);margin:0 20px;aspect-ratio:16/9;border-radius:16px;background:linear-gradient(100deg,#222 20%,#303030 38%,#222 58%);background-size:220% 100%;animation:yt-shimmer 1.35s ease-in-out infinite}
+ .yt-skeleton-row{display:flex;gap:12px;align-items:flex-start;padding:12px 20px}
+ .yt-skeleton-avatar{width:42px;height:42px;flex:none;border-radius:50%;background:#292929}
+ .yt-skeleton-copy{flex:1;display:flex;flex-direction:column;gap:8px;padding-top:3px}
+ .yt-skeleton-copy i{display:block;height:11px;border-radius:8px;background:linear-gradient(100deg,#252525 20%,#333 38%,#252525 58%);background-size:220% 100%;animation:yt-shimmer 1.35s ease-in-out infinite}
+ .yt-skeleton-copy i:first-child{width:92%}.yt-skeleton-copy i:nth-child(2){width:66%}.yt-skeleton-copy i:nth-child(3){width:38%;height:8px}
+ .yt-search-results .yt-skeleton-list{padding-top:4px}
+ @keyframes yt-shimmer{to{background-position-x:-220%}}
+}
+@media(prefers-reduced-motion:reduce){.yt-skeleton-thumb,.yt-skeleton-copy i{animation:none!important;background:#292929}}
+</style></head>
 <body>
 <div class="app">
 
@@ -1701,6 +1715,8 @@ let mobileCurrentVideo=null;
 let homeTopicFilter='all';
 let autoplayEnabled=true;
 let captionsEnabled=true;
+let unifiedPending=0;
+let unifiedPendingKeys=new Set();
 let searchHistory=[];
 let libraryView='overview';
 try{searchHistory=JSON.parse(localStorage.getItem('rush_search_history')||'[]').filter(x=>typeof x==='string').slice(0,8)}catch(e){}
@@ -1732,6 +1748,15 @@ function renderHome(){
 function renderSubsPage(){
  const channels=(prefs.sources||[]).filter(s=>s.kind==='channel');
  return '<section class="yt-subs-page"><div class="yt-page-heading"><div><span class="yt-eyebrow">YOUR CHANNELS</span><h1>Subscriptions</h1></div><button class="yt-icon-action" data-open-search aria-label="Find channels">⌕</button></div><div class="yt-subscription-list">'+(channels.length?channels.map(s=>'<article class="yt-subscription-row">'+mobileAvatar({name:s.name})+'<div class="yt-source-copy"><b>'+esc(s.name)+'</b><span>Subscribed channel</span></div><button class="chip" data-unfollow-kind="channel" data-source-id="'+esc(s.id)+'">Following</button></article>').join(''):'<p class="yt-feed-empty">No channels followed yet. Search for a channel and follow it to see new uploads here.</p>')+'</div><div class="yt-subs-feed-head"><h2>Latest uploads</h2><button class="yt-refresh-wide" data-refresh-feed>Refresh ↻</button></div><p class="yt-feed-status" id="subsFeedStatus" aria-live="polite">Loading uploads from your channels…</p><div id="subsFeedResults" class="yt-feed"></div></section>';
+}
+function skeletonCards(count=3){
+ return Array.from({length:count},()=>'<article class="yt-skeleton-card" aria-hidden="true"><div class="yt-skeleton-thumb"></div><div class="yt-skeleton-row"><div class="yt-skeleton-avatar"></div><div class="yt-skeleton-copy"><i></i><i></i><i></i></div></div></article>').join('');
+}
+function showSkeleton(root,count=3){
+ if(root)root.innerHTML='<div class="yt-skeleton-list" aria-label="Loading content">'+skeletonCards(count)+'</div>';
+}
+function markSearchFinished(key){
+ if(unifiedPendingKeys.has(key)){unifiedPendingKeys.delete(key);unifiedPending=Math.max(0,unifiedPending-1)}
 }
 function searchHistoryHtml(){
  return searchHistory.length?'<section class="yt-search-history"><div class="yt-section-head"><h2>Recent searches</h2><button class="yt-text-action" data-clear-search-history>Clear</button></div>'+searchHistory.map(q=>'<button class="yt-history-query" data-search-history="'+esc(q)+'"><span>◷</span><b>'+esc(q)+'</b><span>↗</span></button>').join('')+'</section>':'';
@@ -1827,6 +1852,7 @@ function renderFeedResults(data){
 function renderSearchResults(){
  const root=$('#unifiedResults');if(!root||page!=='search')return;
  const groups={videos:unifiedData.videos||[],music:unifiedData.music||[],channels:unifiedData.channels||[],playlists:unifiedData.playlists||[]};
+ if(unifiedPending>0&&!Object.values(groups).some(items=>items.length)){showSkeleton(root,4);const status=$('#unifiedStatus');if(status)status.textContent='Searching…';return}
  const renderers={
   videos:items=>items.map(mobileVideoCard).join(''),
   music:items=>items.map(mobileMusicCard).join(''),
@@ -1849,7 +1875,9 @@ function runUnifiedSearch(){
  const panel=$('#searchResultPanel');if(panel)panel.hidden=false;
  const status=$('#unifiedStatus');if(status)status.textContent='Searching…';
  unifiedData.videos=[];unifiedData.music=[];unifiedData.channels=[];unifiedData.playlists=[];
- const root=$('#unifiedResults');if(root)root.innerHTML='<p class="yt-feed-status">Searching YouTube…</p>';
+ unifiedPendingKeys=new Set(['videos','music','channels','playlists']);unifiedPending=unifiedPendingKeys.size;
+ const root=$('#unifiedResults');showSkeleton(root,4);
+ const status=$('#unifiedStatus');if(status)status.textContent='Searching YouTube…';
  if(window.RushNative){
   RushNative.searchVideos(query);
   RushNative.searchMusic(query);
@@ -1871,7 +1899,7 @@ function queueRecommendations(currentId){
  const pool=(homeFeedCache.videos||[]).concat(unifiedData.videos||[]);
  const seen=new Set([currentId]);
  const items=pool.filter(item=>item&&item.id&&!seen.has(item.id)&&!seen.has(String(item.id))&&seen.add(String(item.id)))
-  .slice(0,8).map(item=>({id:item.id,title:item.title||'',creator:item.artist||item.creator||'',thumbnail:mobileThumb(item)}));
+  .slice(0,3).map(item=>({id:item.id,title:item.title||'',creator:item.artist||item.creator||'',thumbnail:mobileThumb(item)}));
  if(items.length)RushNative.queueVideos(JSON.stringify(items));
 }
 function updateMobileMini(){
@@ -1899,9 +1927,11 @@ go=function(){
  updateMobileNavigation();
  updateMobileMini();
  mobileSyncPlayer();
+ if(page==='home')showSkeleton($('#homeFeedResults'),4);
+ if(page==='subs')showSkeleton($('#subsFeedResults'),4);
  if(page==='search'){
   const input=$('#q');
-  if(input){input.focus();input.setSelectionRange(input.value.length,input.value.length)}
+  if(input){input.focus();input.setSelectionRange(input.value.length,input.value.length);if(window.RushNative)RushNative.showSearchKeyboard()}
   renderSearchHistory();
  }
  if(page==='topics'||page==='snooze')renderSources();
@@ -1934,7 +1964,7 @@ document.addEventListener('click',e=>{
  if(target.hasAttribute('data-open-topics')){e.preventDefault();location.hash='#topics';return}
  if(target.hasAttribute('data-open-snooze')){e.preventDefault();location.hash='#snooze';return}
  if(target.hasAttribute('data-open-music')){e.preventDefault();location.hash='#music';return}
- if(target.hasAttribute('data-refresh-feed')){e.preventDefault();const mode=page==='subs'||homeTab==='fo'?'following':'forYou';if(window.RushNative)RushNative.refreshHomeFeed(mode);const status=$(page==='subs'?'#subsFeedStatus':'#homeFeedStatus');if(status)status.textContent='Refreshing recommendations…';return}
+ if(target.hasAttribute('data-refresh-feed')){e.preventDefault();const mode=page==='subs'||homeTab==='fo'?'following':'forYou';showSkeleton($(page==='subs'?'#subsFeedResults':'#homeFeedResults'),4);if(window.RushNative)RushNative.refreshHomeFeed(mode);const status=$(page==='subs'?'#subsFeedStatus':'#homeFeedStatus');if(status)status.textContent='Refreshing recommendations…';return}
  if(target.hasAttribute('data-home-topic')){homeTopicFilter=target.dataset.homeTopic;document.querySelectorAll('[data-home-topic]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.homeTopic===homeTopicFilter)));renderFeedResults(homeFeedCache);return}
  if(target.hasAttribute('data-clear-search-history')){searchHistory=[];try{localStorage.removeItem('rush_search_history')}catch(e){}renderSearchHistory();return}
  if(target.hasAttribute('data-search-history')){const input=$('#q');if(input){input.value=target.dataset.searchHistory;runUnifiedSearch()}return}
@@ -1944,6 +1974,7 @@ document.addEventListener('click',e=>{
  if(target.hasAttribute('data-snooze-topic')){if(window.RushNative)RushNative.snoozeFeedTopic(target.dataset.snoozeTopic);return}
  if(target.hasAttribute('data-unsnooze-topic')){if(window.RushNative)RushNative.unsnoozeFeedTopic(target.dataset.unsnoozeTopic);return}
  if(target.hasAttribute('data-rate-video')){const id=target.dataset.id,rating=Number(target.dataset.rateVideo),current=(()=>{try{return RushNative.getVideoRating(id)}catch(e){return 0}})();if(window.RushNative)RushNative.rateVideo(id,target.dataset.title||'',target.dataset.creator||'',current===rating?0:rating);return}
+ if(target.hasAttribute('data-video-retry')){const item=mobileCurrentVideo;if(item&&window.RushNative)RushNative.playVideo(item.id,item.title||'',item.creator||item.artist||'',mobileThumb(item));return}
  if(target.hasAttribute('data-video-next')){
   const current=mobileCurrentVideo&&mobileCurrentVideo.id||mediaState.mediaId;
   const pool=(homeFeedCache.videos||[]).concat(unifiedData.videos||[]);
@@ -1970,6 +2001,10 @@ document.addEventListener('change',e=>{
  if(e.target&&e.target.id==='autoplayToggle'){autoplayEnabled=!!e.target.checked;if(window.RushNative)RushNative.setAutoplayEnabled(autoplayEnabled);return}
  if(e.target&&e.target.id==='captionsToggle'){captionsEnabled=!!e.target.checked;if(window.RushNative)RushNative.setCaptionsEnabled(captionsEnabled);return}
 });
+window.rushHomeFeedLoading=state=>{
+ if(state&&state.mode==='following'&&page==='subs')showSkeleton($('#subsFeedResults'),4);
+ else if(page==='home')showSkeleton($('#homeFeedResults'),4);
+};
 window.rushHomeFeedResults=renderFeedResults;
 window.rushFeedPreferences=data=>{
  if(data)prefs=data;
@@ -1980,22 +2015,34 @@ window.rushFeedPreferences=data=>{
  if(page==='library')renderLibraryContent()
 };
 window.rushFeedPreferencesError=error=>mobileToast(error.message||'Could not update preferences.');
-window.rushVideoSearchResults=items=>{unifiedData.videos=items||[];const panel=$('#searchResultPanel');if(panel)panel.hidden=false;renderSearchResults()};
+window.rushVideoSearchResults=items=>{unifiedData.videos=items||[];markSearchFinished('videos');const panel=$('#searchResultPanel');if(panel)panel.hidden=false;renderSearchResults()};
+window.rushVideoSearchError=error=>{unifiedData.videos=[];markSearchFinished('videos');renderSearchResults();mobileToast(error.message||'Video search failed.')}
 window.rushVideoSearchError=error=>{const root=$('#unifiedResults');if(root)root.innerHTML='<p class="yt-feed-empty">'+esc(error.message||'Video search failed.')+'</p>'};
-window.rushMusicSearchResults=items=>{unifiedData.music=items||[];renderSearchResults();const root=$('#musicResults');if(root)root.innerHTML=(items||[]).map(mobileMusicCard).join('')||'<p class="yt-feed-empty">No tracks found.</p>'};
-window.rushMusicSearchError=error=>mobileToast(error.message||'Music search failed.');
-window.rushChannelSearchResults=items=>{unifiedData.channels=items||[];renderSearchResults()};
-window.rushPlaylistSearchResults=items=>{unifiedData.playlists=items||[];renderSearchResults()};
+window.rushMusicSearchResults=items=>{unifiedData.music=items||[];markSearchFinished('music');renderSearchResults();const root=$('#musicResults');if(root)root.innerHTML=(items||[]).map(mobileMusicCard).join('')||'<p class="yt-feed-empty">No tracks found.</p>'};
+window.rushMusicSearchError=error=>{unifiedData.music=[];markSearchFinished('music');renderSearchResults();mobileToast(error.message||'Music search failed.')};
+window.rushChannelSearchResults=items=>{unifiedData.channels=items||[];markSearchFinished('channels');renderSearchResults()};
+window.rushChannelSearchError=error=>{unifiedData.channels=[];markSearchFinished('channels');renderSearchResults()};
+window.rushPlaylistSearchResults=items=>{unifiedData.playlists=items||[];markSearchFinished('playlists');renderSearchResults()};
+window.rushPlaylistSearchError=error=>{unifiedData.playlists=[];markSearchFinished('playlists');renderSearchResults()}
 window.rushMusicSuggestionResults=data=>{const root=$('#musicSuggestions');if(root)root.innerHTML=(data.items||[]).map(mobileMusicCard).join('')||'<p class="yt-feed-empty">'+esc(data.message||'Play a few tracks to build music suggestions.')+'</p>'};
 window.rushMusicHistory=items=>{const root=$('#musicRecent');if(root)root.innerHTML=(items||[]).slice(0,8).map(mobileMusicCard).join('')||'<p class="yt-feed-empty">No recent tracks.</p>'};
 window.rushVideoPlaybackState=state=>{
- const status=$('#videoPlaybackStatus');if(status){status.textContent=state.state==='playing'?'NOW PLAYING · '+(state.title||'Video'):state.message||state.state;status.hidden=false}
+ const status=$('#videoPlaybackStatus');
+ if(status){status.textContent=state.state==='playing'?'Starting video…':state.message||state.state;status.hidden=false}
  if(state.state==='playing'&&window.RushNative){RushNative.loadCurrentPlayback();queueRecommendations(mobileCurrentVideo&&mobileCurrentVideo.id||mediaState.mediaId)}
- if(state.state==='error')mobileToast(state.message||'Video playback failed.');
+ if(state.state==='error'){
+  if(status)status.innerHTML=esc(state.message||'Could not play this video.')+' <button class="chip" data-video-retry>Retry</button>';
+  mobileToast(state.message||'Video playback failed.');
+ }
 };
 window.rushVideoQueueError=error=>mobileToast(error.message||'Could not prepare the next videos.');
 window.rushPlayerOptionError=error=>mobileToast(error.message||'Player option unavailable.');
 window.rushCurrentPlayback=data=>updateCurrentPlayback(data);
+window.rushPlaybackBufferingState=data=>{
+ if(!data||!data.isVideo||String(data.mediaId)!==String(mediaState.mediaId||''))return;
+ const status=$('#videoPlaybackStatus');
+ if(status){status.hidden=false;status.textContent=data.state==='buffering'?'Buffering video…':data.state==='ready'?(data.isPlaying?'Playing':'Ready'):'Connecting to video…'}
+};
 window.rushAutoplayState=data=>{autoplayEnabled=!!data.enabled;const input=$('#autoplayToggle');if(input)input.checked=autoplayEnabled};
 window.rushSleepTimerState=data=>{const status=$('#sleepTimerStatus');if(status)status.textContent=data.message||'';mobileToast(data.message||'Sleep timer updated.')};
 window.rushVideoRatingState=data=>{if(page==='videos'&&mobileCurrentVideo&&mobileCurrentVideo.id===data.id){const root=$('#v');if(root)root.innerHTML=renderVideoPage()}};
