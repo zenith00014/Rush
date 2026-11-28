@@ -1,0 +1,207 @@
+package com.rush.app.ui.screens.player
+
+import android.content.Context
+import com.rush.app.data.comments.CommentsPager
+import com.rush.app.data.comments.CommentsPlaybackState
+import com.rush.app.data.engagement.VideoEngagementUseCase
+import com.rush.app.data.local.HomeFeedCacheRepository
+import com.rush.app.data.local.PlayerPreferences
+import com.rush.app.data.local.ViewHistory
+import com.rush.app.data.localmedia.LocalSubtitles
+import com.rush.app.data.model.Video
+import com.rush.app.data.recommendation.FeedExclusions
+import com.rush.app.data.repository.LiveChatRepository
+import com.rush.app.data.repository.SponsorBlockRepository
+import com.rush.app.data.repository.YouTubeRepository
+import com.rush.app.data.stats.VideoStatsRecorder
+import com.rush.app.data.transcript.TranscriptRepository
+import com.rush.app.data.video.OfflineSubtitleStore
+import com.rush.app.data.video.VideoDownloadManager
+import com.rush.app.innertube.models.response.ChatReplaySeed
+import com.rush.app.player.EnhancedPlayerManager
+import com.rush.app.player.stream.UpcomingPremiereProbe
+import com.rush.app.ui.screens.player.state.VideoPlayerUiState
+import com.rush.app.ui.screens.player.state.richVideoFor
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
+
+/**
+ * Builds the collaborators one player screen runs on, in the order they depend on each other, and
+ * holds them for the ViewModel that owns their lifetime.
+ *
+ * Construction only: nothing here reads, fetches, collects or prepares anything. The scope, the
+ * state flow and the player manager are the ViewModel's own — this class creates no second one of
+ * anything, and every collaborator it builds is built exactly once.
+ */
+internal class PlayerCollaborators(
+    context: Context,
+    repository: YouTubeRepository,
+    transcriptRepository: TranscriptRepository,
+    viewHistory: ViewHistory,
+    engagement: VideoEngagementUseCase,
+    playerPreferences: PlayerPreferences,
+    videoDownloadManager: VideoDownloadManager,
+    offlineSubtitleStore: OfflineSubtitleStore,
+    localSubtitles: LocalSubtitles,
+    sponsorBlockRepository: SponsorBlockRepository,
+    liveChatRepository: LiveChatRepository,
+    homeFeedCacheRepository: HomeFeedCacheRepository,
+    playerManager: EnhancedPlayerManager,
+    upcomingPremiereProbe: UpcomingPremiereProbe,
+    private val videoStats: VideoStatsRecorder,
+    private val uiState: MutableStateFlow<VideoPlayerUiState>,
+    scope: CoroutineScope,
+    networkDispatcher: CoroutineDispatcher,
+    ioDispatcher: CoroutineDispatcher,
+    isLoadCurrent: (Long) -> Boolean,
+    currentLoadToken: () -> Long,
+    shortsEnabled: () -> Boolean,
+    originalTitles: () -> Boolean,
+    exclusions: () -> FeedExclusions,
+) {
+    val comments =
+        CommentsPager(
+            repository = repository,
+            scope = scope,
+            playbackState =
+                uiState.map {
+                    CommentsPlaybackState(
+                        isPlaybackLoading = it.isLoading,
+                        currentVideoId = it.cachedVideo?.id,
+                    )
+                },
+            isCurrentVideo = { videoId -> uiState.value.cachedVideo?.id == videoId },
+        )
+
+    val transcripts =
+        VideoTranscriptLoader(
+            repository = transcriptRepository,
+            scope = scope,
+            networkDispatcher = networkDispatcher,
+        )
+
+    val descriptions =
+        VideoDescriptionLoader(
+            repository = repository,
+            scope = scope,
+            networkDispatcher = networkDispatcher,
+        )
+
+    private val playbackPreparer =
+        PlaybackPreparer(
+            context = context,
+            playerManager = playerManager,
+            playerPreferences = playerPreferences,
+            offlineSubtitleStore = offlineSubtitleStore,
+            localSubtitles = localSubtitles,
+            cachedCategory = repository::cachedVideoCategory,
+        )
+
+    val secondaryMetadata =
+        PlayerSecondaryMetadataLoader(
+            repository = repository,
+            playerManager = playerManager,
+            playerPreferences = playerPreferences,
+            scope = scope,
+            networkDispatcher = networkDispatcher,
+            currentState = { uiState.value },
+            relatedVideosFor = ::relatedVideosFor,
+            shortsEnabled = shortsEnabled,
+            exclusions = exclusions,
+            isPlaybackCurrent = isLoadCurrent,
+            onResult = { result -> sessionApplier.applySecondary(result) },
+        )
+
+    val watchSessions =
+        WatchSessionTracker(
+            context = context,
+            viewHistory = viewHistory,
+            repository = repository,
+            homeFeedCacheRepository = homeFeedCacheRepository,
+            videoStats = videoStats,
+            scope = scope,
+            networkDispatcher = networkDispatcher,
+            shortsEnabled = shortsEnabled,
+            relatedVideosFor = ::relatedVideosFor,
+            richVideoFor = { videoId -> uiState.value.richVideoFor(videoId) },
+        )
+
+    val liveChat =
+        LiveChatController(
+            repository = liveChatRepository,
+            scope = scope,
+            dispatcher = networkDispatcher,
+            replay =
+                ChatReplayController(
+                    repository = liveChatRepository,
+                    playback =
+                        object : ChatReplayPlayback {
+                            override fun isPlaying(videoId: String): Flow<Boolean> =
+                                playerManager.playerState
+                                    .map { it.isPlaying && it.currentVideoId == videoId }
+                                    .distinctUntilChanged()
+
+                            override suspend fun positionMs(): Long = withContext(Dispatchers.Main) { playerManager.getCurrentPosition() }
+                        },
+                    seed = { videoId -> repository.watchNextResponse(videoId)?.let(ChatReplaySeed::token) },
+                ),
+        )
+
+    val engagementState =
+        PlayerEngagementController(
+            engagement = engagement,
+            scope = scope,
+            state = uiState,
+            richVideoFor = { videoId -> uiState.value.richVideoFor(videoId) },
+        )
+
+    val upcomingPremiere =
+        UpcomingPremiereController(
+            context = context,
+            uiState = uiState,
+            playerPreferences = playerPreferences,
+            probe = upcomingPremiereProbe,
+            scope = scope,
+            isLoadCurrent = isLoadCurrent,
+            // A countdown the video's own metadata enters skips the load, so it arms what a load would.
+            armMetadata = { videoId ->
+                sessionApplier.armCountdownMetadata(LoadContext(videoId, currentLoadToken()), emptyList())
+            },
+        )
+
+    val sessionApplier: PlaybackSessionApplier =
+        PlaybackSessionApplier(
+            context = context,
+            uiState = uiState,
+            isLoadCurrent = isLoadCurrent,
+            playbackPreparer = playbackPreparer,
+            streamPreparer = PlaybackStreamPreparer(originalText = originalTitles),
+            secondaryMetadata = secondaryMetadata,
+            liveChat = liveChat,
+            repository = repository,
+            viewHistory = viewHistory,
+            playerPreferences = playerPreferences,
+            sponsorBlockRepository = sponsorBlockRepository,
+            videoDownloadManager = videoDownloadManager,
+            offlineSubtitleStore = offlineSubtitleStore,
+            localSubtitles = localSubtitles,
+            playerManager = playerManager,
+            scope = scope,
+            networkDispatcher = networkDispatcher,
+            ioDispatcher = ioDispatcher,
+            enterUpcoming = upcomingPremiere::enterCountdown,
+            tryEnterUpcoming = upcomingPremiere::tryEnterCountdown,
+        )
+
+    private fun relatedVideosFor(videoId: String): List<Video> =
+        uiState.value
+            .takeIf { it.cachedVideo?.id == videoId }
+            ?.relatedVideos
+            .orEmpty()
+}

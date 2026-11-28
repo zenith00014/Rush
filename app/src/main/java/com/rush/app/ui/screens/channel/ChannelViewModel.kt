@@ -1,0 +1,438 @@
+package com.rush.app.ui.screens.channel
+
+import android.content.Context
+import android.util.Log
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import com.rush.app.R
+import com.rush.app.data.community.PostCommentsLoader
+import com.rush.app.data.contentfilter.aislist.AiListRepository
+import com.rush.app.data.contentfilter.aislist.AiVerdict
+import com.rush.app.data.contentfilter.aislist.AllowedAiChannel
+import com.rush.app.data.local.ChannelSubscription
+import com.rush.app.data.local.PlayerPreferences
+import com.rush.app.data.local.SubscriptionRepository
+import com.rush.app.data.model.Video
+import com.rush.app.data.model.distinctByNonBlankKey
+import com.rush.app.data.notes.NoteKind
+import com.rush.app.data.notes.NotesRepository
+import com.rush.app.data.shorts.withoutShorts
+import com.rush.app.data.subscriptions.markChannelSeen
+import com.rush.app.innertube.YouTube
+import com.rush.app.innertube.pages.channel.ChannelTabKind
+import com.rush.app.innertube.pages.renderer.FeedItemOwner
+import com.rush.app.ui.youtubeChannelBrowseId
+import com.rush.app.ui.youtubeChannelUrl
+import com.rush.app.utils.PerformanceDispatcher
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+
+@HiltViewModel
+class ChannelViewModel
+    @Inject
+    constructor(
+        @ApplicationContext private val appContext: Context,
+        private val subscriptionRepository: SubscriptionRepository,
+        private val notesRepository: NotesRepository,
+        private val playerPreferences: PlayerPreferences,
+        private val aiList: AiListRepository,
+    ) : ViewModel() {
+        /** Which channels the user follows, so a featured-channel row can show its real state. */
+        val subscribedChannelIds: StateFlow<Set<String>> =
+            subscriptionRepository
+                .getAllSubscriptions()
+                .map { subscriptions -> subscriptions.map { it.channelId }.toSet() }
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(GROUPS_SUBSCRIPTION_TIMEOUT_MS), emptySet())
+
+        val notifyingChannelIds: StateFlow<Set<String>> =
+            subscriptionRepository
+                .notifyingChannelIds()
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(GROUPS_SUBSCRIPTION_TIMEOUT_MS), emptySet())
+
+        fun setChannelNotifications(
+            channelId: String,
+            enabled: Boolean,
+        ) {
+            viewModelScope.launch(PerformanceDispatcher.diskIO) {
+                subscriptionRepository.updateNotificationState(channelId, enabled)
+            }
+        }
+
+        fun setChannelSubscription(
+            channel: com.rush.app.data.model.Channel,
+            subscribed: Boolean,
+        ) {
+            viewModelScope.launch(PerformanceDispatcher.diskIO) {
+                if (subscribed) {
+                    subscriptionRepository.subscribe(
+                        ChannelSubscription(
+                            channelId = channel.id,
+                            channelName = channel.name,
+                            channelThumbnail = channel.thumbnailUrl,
+                            subscribedAt = System.currentTimeMillis(),
+                        ),
+                    )
+                } else {
+                    subscriptionRepository.unsubscribe(channel.id)
+                }
+            }
+        }
+
+        val notesEnabled: StateFlow<Boolean> =
+            playerPreferences.effectiveChannelNotesEnabled
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(GROUPS_SUBSCRIPTION_TIMEOUT_MS), false)
+
+        val showShortsTab: StateFlow<Boolean> =
+            playerPreferences.effectiveChannelShortsTabEnabled
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(GROUPS_SUBSCRIPTION_TIMEOUT_MS), true)
+
+        private val _channelNote = MutableStateFlow<String?>(null)
+        val channelNote: StateFlow<String?> = _channelNote.asStateFlow()
+
+        private var noteJob: Job? = null
+
+        private fun observeNote(channelId: String) {
+            noteJob?.cancel()
+            noteJob =
+                viewModelScope.launch(PerformanceDispatcher.diskIO) {
+                    notesRepository.observe(NoteKind.Channel, channelId).collect { note ->
+                        _channelNote.value = note?.text
+                    }
+                }
+        }
+
+        private val _uiState = MutableStateFlow(ChannelUiState())
+        val uiState: StateFlow<ChannelUiState> = _uiState.asStateFlow()
+
+        /** Whether this channel is on the AI list, for the banner under its name. */
+        val aiVerdict: StateFlow<AiVerdict> =
+            combine(_uiState.map { it.header }.distinctUntilChanged(), aiList.matcher) { header, matcher ->
+                header?.let {
+                    matcher.learn(it.id, it.handle)
+                    matcher.verdict(it.id, it.handle)
+                } ?: AiVerdict.NONE
+            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(GROUPS_SUBSCRIPTION_TIMEOUT_MS), AiVerdict.NONE)
+
+        /** Shows this channel's videos again despite the AI list; Hidden from you can undo it. */
+        fun showAiChannel() {
+            val header = _uiState.value.header ?: return
+            viewModelScope.launch { aiList.allow(AllowedAiChannel(id = header.id, name = header.title, handle = header.handle)) }
+        }
+
+        private val communityController = ChannelCommunityController(viewModelScope)
+        private var requestedChannelUrl: String? = null
+        internal val communityUiState: StateFlow<ChannelCommunityUiState> = communityController.state
+        val postComments = PostCommentsLoader(viewModelScope)
+
+        private val tabController = ChannelTabController(viewModelScope)
+        internal val tabStates: StateFlow<Map<ChannelTabKind, ChannelTabState>> =
+            combine(tabController.states, playerPreferences.shortsContentEnabled) { states, shortsEnabled ->
+                if (shortsEnabled) states else states.mapValues { (_, state) -> state.copy(sections = state.sections.withoutShorts()) }
+            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(GROUPS_SUBSCRIPTION_TIMEOUT_MS), emptyMap())
+
+        private fun channelOwner(): FeedItemOwner {
+            val state = _uiState.value
+            return FeedItemOwner(
+                id = state.channelId.orEmpty(),
+                name = state.header?.title.orEmpty(),
+                avatarUrl = state.header?.avatarUrl.orEmpty(),
+            )
+        }
+
+        fun selectTabFilter(
+            kind: ChannelTabKind,
+            groupIndex: Int,
+            optionIndex: Int,
+        ) = tabController.selectFilter(kind, _uiState.value.tabParams(kind), groupIndex, optionIndex)
+
+        var listScrollIndex: Int = 0
+            private set
+        var listScrollOffset: Int = 0
+            private set
+
+        fun saveScrollPosition(
+            index: Int,
+            offset: Int,
+        ) {
+            listScrollIndex = index
+            listScrollOffset = offset
+        }
+
+        companion object {
+            private const val TAG = "ChannelViewModel"
+            private const val CHANNEL_SEARCH_DEBOUNCE_MS = 400L
+            private const val GROUPS_SUBSCRIPTION_TIMEOUT_MS = 5_000L
+        }
+
+        /**
+         *  PERFORMANCE OPTIMIZED: Load channel with timeout protection
+         */
+        fun loadChannel(channelUrl: String) {
+            if (!shouldLoadChannel(_uiState.value, requestedChannelUrl, channelUrl)) return
+            requestedChannelUrl = channelUrl
+            val directId = youtubeChannelBrowseId(channelUrl)
+            val vanityUrl = youtubeChannelUrl(channelUrl)
+            if (directId == null && vanityUrl == null) {
+                _uiState.update { it.copy(error = appContext.getString(R.string.error_invalid_channel_url), isLoading = false) }
+                return
+            }
+
+            _uiState.update { it.copy(isLoading = true, error = null) }
+            viewModelScope.launch(PerformanceDispatcher.networkIO) {
+                val browseId =
+                    directId ?: YouTube.resolveChannelId(checkNotNull(vanityUrl)).getOrElse { error ->
+                        Log.e(TAG, "Failed to resolve $vanityUrl", error)
+                        _uiState.update { it.copy(error = appContext.getString(R.string.error_channel_link_not_found), isLoading = false) }
+                        return@launch
+                    }
+
+                YouTube.channel(browseId).fold(
+                    onSuccess = { page ->
+                        val header = page.header
+                        val channelId = header.id.ifBlank { browseId }
+                        _uiState.update {
+                            it.copy(
+                                channelId = channelId,
+                                header = header,
+                                tabs = page.tabs,
+                                isLoading = false,
+                            )
+                        }
+                        communityController.reset(channelId, header.title, header.avatarUrl)
+                        postComments.close()
+                        loadSubscriptionState(channelId)
+                        observeNote(channelId)
+                        markSeen(channelId)
+                        onTabsResolved()
+                    },
+                    onFailure = { error ->
+                        Log.e(TAG, "Failed to load channel", error)
+                        _uiState.update {
+                            it.copy(
+                                error = error.message ?: appContext.getString(R.string.error_failed_to_load_channel),
+                                isLoading = false,
+                            )
+                        }
+                    },
+                )
+            }
+        }
+
+        /** Clears the channel's Quick access dot: opening its page counts as seeing its new videos (#1755). */
+        private suspend fun markSeen(channelId: String) {
+            val subscribed = subscriptionRepository.getAllSubscriptions().first().mapTo(HashSet()) { it.channelId }
+            if (channelId !in subscribed) return
+            val now = System.currentTimeMillis()
+            playerPreferences.updateSubscriptionChannelSeenAt { stored -> markChannelSeen(stored, channelId, now, subscribed) }
+        }
+
+        private fun onTabsResolved() {
+            val state = _uiState.value
+            val channelId = state.channelId ?: return
+            tabController.reset(channelId, channelOwner())
+            val first = state.selectedTab ?: state.tabs.firstOrNull()?.kind ?: return
+            _uiState.update { it.copy(selectedTab = first) }
+            ensureTabLoaded(first)
+        }
+
+        private fun ensureTabLoaded(kind: ChannelTabKind) {
+            if (kind == ChannelTabKind.Posts) {
+                communityController.ensurePostsLoaded()
+                return
+            }
+            if (kind == ChannelTabKind.Shorts) {
+                // Read at load time, not once per channel, so turning the tab on while a channel is open still loads it.
+                viewModelScope.launch {
+                    if (playerPreferences.effectiveChannelShortsTabEnabled.first()) {
+                        tabController.ensureLoaded(kind, _uiState.value.tabParams(kind))
+                    }
+                }
+                return
+            }
+            tabController.ensureLoaded(kind, _uiState.value.tabParams(kind))
+        }
+
+        private fun loadSubscriptionState(channelId: String) {
+            viewModelScope.launch(PerformanceDispatcher.diskIO) {
+                subscriptionRepository.getSubscription(channelId).collect { subscription ->
+                    _uiState.update {
+                        it.copy(
+                            isSubscribed = subscription != null,
+                            isNotificationsEnabled = subscription?.isNotificationEnabled ?: false,
+                        )
+                    }
+                }
+            }
+        }
+
+        fun toggleSubscription() {
+            viewModelScope.launch(PerformanceDispatcher.diskIO) {
+                val state = _uiState.value
+                val channelId = state.channelId ?: return@launch
+                val header = state.header ?: return@launch
+                val channelName = header.title
+                val channelThumbnail = header.avatarUrl
+
+                if (state.isSubscribed) {
+                    // Unsubscribe
+                    subscriptionRepository.unsubscribe(channelId)
+                } else {
+                    // Subscribe
+                    val subscription =
+                        ChannelSubscription(
+                            channelId = channelId,
+                            channelName = channelName,
+                            channelThumbnail = channelThumbnail,
+                            subscribedAt = System.currentTimeMillis(),
+                        )
+                    subscriptionRepository.subscribe(subscription)
+                }
+            }
+        }
+
+        fun unsubscribe() {
+            viewModelScope.launch(PerformanceDispatcher.diskIO) {
+                val state = _uiState.value
+                val channelId = state.channelId ?: return@launch
+                subscriptionRepository.unsubscribe(channelId)
+            }
+        }
+
+        fun setNotificationState(enabled: Boolean) {
+            viewModelScope.launch(PerformanceDispatcher.diskIO) {
+                val state = _uiState.value
+                val channelId = state.channelId ?: return@launch
+                subscriptionRepository.updateNotificationState(channelId, enabled)
+            }
+        }
+
+        fun selectTab(kind: ChannelTabKind) {
+            _uiState.update { it.copy(selectedTab = kind) }
+            ensureTabLoaded(kind)
+        }
+
+        fun retryCommunityPosts() = communityController.retryPosts()
+
+        fun loadMoreCommunityPosts() = communityController.loadMorePosts()
+
+        // ── Channel search ────────────────────────────────────────────────────────
+
+        fun setSearchActive(active: Boolean) {
+            if (!active) searchJob?.cancel()
+            _uiState.update {
+                it.copy(
+                    searchActive = active,
+                    searchQuery = if (!active) "" else it.searchQuery,
+                    searchResults = if (!active) emptyList() else it.searchResults,
+                    searchErrorLog = null,
+                )
+            }
+        }
+
+        private var searchJob: Job? = null
+
+        /** Search as you type: each change replaces the search before it, so a slower, older answer never lands last. */
+        fun searchInChannel(query: String) {
+            searchJob?.cancel()
+            val channelId = _uiState.value.channelId ?: return
+            val header = _uiState.value.header ?: return
+            val trimmed = query.trim()
+
+            _uiState.update {
+                it.copy(
+                    searchQuery = query,
+                    searchErrorLog = null,
+                )
+            }
+
+            if (trimmed.isBlank()) {
+                _uiState.update { it.copy(searchResults = emptyList(), isSearching = false) }
+                return
+            }
+
+            searchJob =
+                viewModelScope.launch(PerformanceDispatcher.networkIO) {
+                    _uiState.update { it.copy(isSearching = true) }
+                    delay(CHANNEL_SEARCH_DEBOUNCE_MS)
+                    runChannelSearch(channelId, header.title, header.avatarUrl, trimmed)
+                }
+        }
+
+        private suspend fun runChannelSearch(
+            channelId: String,
+            channelName: String,
+            channelThumbnailUrl: String,
+            trimmed: String,
+        ) {
+            try {
+                val result =
+                    YouTube.channelSearch(
+                        channelId = channelId,
+                        channelName = channelName,
+                        channelThumbnailUrl = channelThumbnailUrl,
+                        query = trimmed,
+                    )
+                currentCoroutineContext().ensureActive()
+                result.fold(
+                    onSuccess = { page ->
+                        _uiState.update {
+                            it.copy(
+                                searchResults = page.videos.distinctByNonBlankKey(Video::id),
+                                searchContinuation = page.continuation,
+                                isSearching = false,
+                                searchErrorLog = null,
+                            )
+                        }
+                    },
+                    onFailure = { e ->
+                        Log.e(TAG, "Channel search failed", e)
+                        _uiState.update {
+                            it.copy(
+                                isSearching = false,
+                                searchErrorLog =
+                                    buildChannelRequestErrorLog(
+                                        operation = "channel_search",
+                                        channelId = channelId,
+                                        query = trimmed,
+                                        error = e,
+                                    ),
+                            )
+                        }
+                    },
+                )
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.e(TAG, "Channel search error", e)
+                _uiState.update {
+                    it.copy(
+                        isSearching = false,
+                        searchErrorLog =
+                            buildChannelRequestErrorLog(
+                                operation = "channel_search",
+                                channelId = channelId,
+                                query = trimmed,
+                                error = e,
+                            ),
+                    )
+                }
+            }
+        }
+    }

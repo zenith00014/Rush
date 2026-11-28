@@ -1,59 +1,15 @@
 # Third-party notices
 
-## LibreTube
+## Flow Android Client
 
-Rush's YouTube playback integration adapts the extraction and stream-resolution approach used by **LibreTube**.
+- Project: https://github.com/Flow-Tube/Flow
+- License: GNU General Public License version 3 (GPL-3.0)
+- Rush is a modified derivative of the Flow Android Client source tree.
+- Required recommendation-engine attribution: **Flow Android Client**.
+- Rush's scoring integration is modified in data/recommendation/NeuroScoring.kt and data/recommendation/RushRankingMixer.kt.
 
-- Project: https://github.com/Libre-tube/LibreTube
-- License: GNU General Public License v3 or later (GPL-3.0-or-later)
-- Upstream files informing this adaptation:
-  - `app/src/main/java/com/github/libretube/helpers/NewPipeExtractorInstance.kt`
-  - `app/src/main/java/com/github/libretube/util/NewPipeDownloaderImpl.kt`
-  - `app/src/main/java/com/github/libretube/api/NewPipeMediaServiceRepository.kt`
-  - `app/src/main/java/com/github/libretube/api/obj/PipedStream.kt`
+Upstream copyright headers and source attribution are retained. See LICENSE for the full GPL-3.0 terms.
 
-Rush also adapts LibreTube's BotGuard WebView proof-of-origin token implementation in:
-- `app/src/main/java/com/rush/app/potoken/PoTokenGenerator.kt`
-- `app/src/main/java/com/rush/app/potoken/PoTokenWebView.kt`
-- `app/src/main/java/com/rush/app/potoken/JavaScriptUtil.kt`
-- `app/src/main/assets/po_token.html`
+## Additional dependencies
 
-The playback adapter in `app/src/main/java/com/rush/app/RushPlaybackEngine.kt` resolves streams for Rush's active WebView interface and native Media3 playback service (and is also used by the retained Compose UI code). Token generation is attempted when the WebView provider is available; extraction continues without a token if BotGuard initialization fails. It uses NewPipeExtractor to resolve YouTube audio and video streams, then Media3 to play the resolved URL.
-
-The NewPipeExtractor dependency is provided by the LibreTube project's NewPipeExtractor fork.
-
-- Maven coordinate: `com.github.libre-tube:NewPipeExtractor:894ae973d29b7c26502c72834bad636a72e345ca`
-- Pinned upstream commit: `894ae973d29b7c26502c72834bad636a72e345ca` (2026-09-22)
-- Source: https://github.com/libre-tube/NewPipeExtractor/tree/894ae973d29b7c26502c72834bad636a72e345ca
-- License: GPL-3.0-or-later
-
-This fork contains upstream NewPipeExtractor changes used by LibreTube. Keep the included GPL license and corresponding notices when redistributing.
-
-LibreTube and NewPipeExtractor are not affiliated with or endorsed by YouTube or Google.
-
-The complete GPL-3.0-or-later license text is included at `LICENSES/LibreTube-GPL-3.0-or-later.txt`.
-
-
-## FFmpegKit maintained audio package
-
-Rush uses the community-maintained Android FFmpegKit-compatible audio package to convert offline audio downloads to MP3 on-device.
-
-- Maven artifact: `dev.ffmpegkit-maintained:ffmpeg-kit-audio:8.1.7`
-- Project: https://github.com/ffmpegkit-maintained/ffmpeg
-- License: GNU Lesser General Public License v3.0 (LGPL-3.0)
-- The audio package includes the LAME MP3 encoder and other audio codecs.
-- The complete LGPL-3.0 license text is included at `LICENSES/FFmpegKit-Maintained-LGPL-3.0.txt`.
-
-The package is an independent community-maintained continuation, not affiliated with the original FFmpegKit author. See the upstream project for its build, component and licensing details.
-
-
-## LibreTube SABR playback source
-
-Rush includes a port of the LibreTube SABR / UMP adaptive media source and its protobuf schemas from the pinned LibreTube commit:
-
-- Upstream: https://github.com/Libre-tube/LibreTube/tree/b9a486e27670da6ddce310523f00701516b7d1d8
-- Copied player source: `app/src/main/java/com/github/libretube/player/`
-- Protocol definitions: `app/src/main/proto/`
-- License: GPL-3.0-or-later; the complete GPL license is included in `LICENSES/LibreTube-GPL-3.0-or-later.txt`.
-
-The app-specific code adapts NewPipeExtractor metadata to the SABR manifest and routes those media items through Media3. The offline audio segment downloader is adapted from LibreTube's `SabrDownloadProvider.kt` and `DownloadProvider.kt`. Keep these notices and corresponding source available when redistributing.
+Flow's Gradle files and bundled license/notice files remain the source of truth for dependencies used by this build. Preserve their license texts and copyright notices when redistributing Rush.

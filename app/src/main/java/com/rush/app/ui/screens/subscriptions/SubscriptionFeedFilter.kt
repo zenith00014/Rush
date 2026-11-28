@@ -1,0 +1,74 @@
+package com.rush.app.ui.screens.subscriptions
+
+import com.rush.app.data.model.Video
+import com.rush.app.data.recommendation.FeedExclusions
+import com.rush.app.data.subscriptions.withRelativeUploadDates
+import com.rush.app.data.subscriptions.withStableUploadSortKeys
+
+/** Everything that decides which cached feed rows the Subscriptions screen shows. */
+internal data class SubscriptionFeedFilters(
+    val showVideos: Boolean = true,
+    val showShorts: Boolean = false,
+    val showLive: Boolean = true,
+    val showUpcoming: Boolean = true,
+    val watchedVideoIds: Set<String> = emptySet(),
+    val watchedShortIds: Set<String> = emptySet(),
+    val unplayableVideoIds: Set<String> = emptySet(),
+    /** The selected group's channels; null when no group is selected. */
+    val allowedChannelIds: Set<String>? = null,
+    val excludedShortsChannelIds: Set<String> = emptySet(),
+    val exclusions: FeedExclusions = FeedExclusions.NONE,
+)
+
+/** Whether the type switches, the unplayable list and the blocks let [video] through, before the watched and group filters. */
+internal fun SubscriptionFeedFilters.admits(video: Video): Boolean =
+    video.id !in unplayableVideoIds &&
+        !exclusions.hides(video) &&
+        when {
+            video.isUpcoming -> showUpcoming
+            video.isShort -> showShorts && video.channelId !in excludedShortsChannelIds
+            video.isLive -> showLive
+            else -> showVideos
+        }
+
+internal data class SubscriptionFeedSections(
+    val recentVideos: List<Video>,
+    val shorts: List<Video>,
+)
+
+/**
+ * Splits the cached feed into the long-form list and the one-reel-per-channel Shorts shelf.
+ *
+ * A video marked not interested and every upload of a blocked channel stay out even though the
+ * viewer subscribed (owner decision D5); the engine-inferred suppressions do not apply here.
+ */
+internal fun subscriptionFeedSections(
+    videos: List<Video>,
+    filters: SubscriptionFeedFilters,
+    now: Long,
+): SubscriptionFeedSections {
+    val visible = videos.filter(filters::admits).withStableUploadSortKeys(now)
+    val (shorts, regular) = visible.partition { it.isShort }
+    val latestShortPerChannel =
+        shorts
+            .groupBy { it.channelId }
+            .flatMap { (_, channelShorts) -> channelShorts.withStableUploadSortKeys(now).take(1) }
+            .withStableUploadSortKeys(now)
+
+    // A collaboration someone else uploaded belongs to the group of the collaborator it came through.
+    fun Video.inSelectedGroup() =
+        filters.allowedChannelIds == null ||
+            channelId in filters.allowedChannelIds ||
+            collaborators.any { it.channelId in filters.allowedChannelIds }
+
+    return SubscriptionFeedSections(
+        recentVideos =
+            regular
+                .filter { it.id !in filters.watchedVideoIds && it.inSelectedGroup() }
+                .withRelativeUploadDates(now),
+        shorts =
+            latestShortPerChannel
+                .filter { it.id !in filters.watchedShortIds && it.inSelectedGroup() }
+                .withRelativeUploadDates(now),
+    )
+}

@@ -1,0 +1,175 @@
+package com.rush.app.ui.screens.player.state
+
+import android.content.Context
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import com.rush.app.data.local.DEFAULT_SPEED_SWIPE_STEP
+import com.rush.app.data.local.DEFAULT_SPHERICAL_DRAG_SPEED
+import com.rush.app.data.local.DoubleTapSeekZone
+import com.rush.app.data.local.FullscreenSidePanelWidth
+import com.rush.app.data.local.GestureOverlayStyle
+import com.rush.app.data.local.HomeFeedColumns
+import com.rush.app.data.local.PlayerPreferences
+import com.rush.app.data.local.PlayerRelatedCardStyle
+import com.rush.app.data.local.SpeedSwipeSide
+import com.rush.app.data.local.SponsorBlockSkipButtonStyle
+import com.rush.app.player.stream.CaptionTrackResolver
+import com.rush.app.ui.components.videoplayer.subtitle.SubtitleStyle
+
+/**
+ * One snapshot of every [PlayerPreferences] flow the video player overlay reads, plus the store
+ * itself for the handful of writes the overlay performs. A fresh instance per composition keeps
+ * the identity semantics of the individual `by collectAsState()` locals it replaced.
+ */
+@Stable
+internal class VideoPlayerPreferencesState(
+    val preferences: PlayerPreferences,
+    val brightnessSwipeGesturesEnabled: Boolean,
+    val rememberBrightnessEnabled: Boolean,
+    val rememberedBrightnessLevel: Float,
+    val volumeSwipeGesturesEnabled: Boolean,
+    val seekSwipeGesturesEnabled: Boolean,
+    val moreVideosSwipeEnabled: Boolean,
+    val chapterSkipGestureEnabled: Boolean,
+    val allowVolumeBoost: Boolean,
+    val gestureOverlayStyle: GestureOverlayStyle,
+    val sbSubmitEnabled: Boolean,
+    val sbSkipNoticeEnabled: Boolean,
+    val sbSkipButtonStyle: SponsorBlockSkipButtonStyle,
+    val sponsorBlockEnabled: Boolean,
+    val doubleTapSeekSeconds: Int,
+    val doubleTapSeekZone: DoubleTapSeekZone,
+    val longPressPlaybackSpeed: Float,
+    val speedSwipeSide: SpeedSwipeSide,
+    val speedSwipeStep: Float,
+    val disableShortsPlayer: Boolean,
+    val showShortsPlayerPrompt: Boolean,
+    val savedSubtitleStyle: SubtitleStyle,
+    val rememberPlaybackSpeed: Boolean,
+    val ambientModeEnabled: Boolean,
+    val sphericalMotionEnabled: Boolean,
+    val sphericalDragSpeed: Float,
+    val ambientGlowEnabled: Boolean,
+    val ambientImmersiveEnabled: Boolean,
+    val ambientImmersiveScrollDim: Boolean,
+    val ambientGlowInBatterySaver: Boolean,
+    val adaptivePlayerSizeEnabled: Boolean,
+    val playerScrollAwayEnabled: Boolean,
+    val groupedQualitySelectorEnabled: Boolean,
+    val lockModeEnabled: Boolean,
+    val commentsEnabled: Boolean,
+    val preferredSubtitleLanguage: String,
+    val transcriptLanguage: String,
+    val commentsPreviewEnabled: Boolean,
+    val showRelatedVideos: Boolean,
+    val relatedCardStyle: PlayerRelatedCardStyle,
+    val feedColumns: HomeFeedColumns,
+    val deArrowEnabled: Boolean,
+    val tiltFullscreenRotationLocked: Boolean,
+    val fullscreenSidePanelWidth: FullscreenSidePanelWidth,
+    val fullscreenZoomToFill: Boolean,
+)
+
+@Composable
+internal fun rememberVideoPlayerPreferences(context: Context): VideoPlayerPreferencesState {
+    val playerPreferences = remember { PlayerPreferences(context) }
+    val brightnessSwipeGesturesEnabled by playerPreferences.brightnessSwipeGesturesEnabled.collectAsState(initial = true)
+    val rememberBrightnessEnabled by playerPreferences.rememberBrightnessEnabled.collectAsState(initial = false)
+    val rememberedBrightnessLevel by playerPreferences.rememberedBrightnessLevel.collectAsState(initial = -1f)
+    val volumeSwipeGesturesEnabled by playerPreferences.volumeSwipeGesturesEnabled.collectAsState(initial = true)
+    val seekSwipeGesturesEnabled by playerPreferences.seekSwipeGesturesEnabled.collectAsState(initial = true)
+    val moreVideosSwipeEnabled by playerPreferences.moreVideosSwipeEnabled.collectAsState(initial = true)
+    val chapterSkipGestureEnabled by playerPreferences.chapterSkipGestureEnabled.collectAsState(initial = true)
+    val allowVolumeBoost by playerPreferences.allowVolumeBoost.collectAsState(initial = false)
+    val gestureOverlayStyle by
+        playerPreferences.gestureOverlayStyle.collectAsState(initial = GestureOverlayStyle.CIRCULAR)
+    val sbSubmitEnabled by playerPreferences.sbSubmitEnabled.collectAsState(initial = false)
+    val sbSkipNoticeEnabled by playerPreferences.sbSkipNoticeEnabled.collectAsState(initial = true)
+    val sbSkipButtonStyle by playerPreferences.sbSkipButtonStyle.collectAsState(initial = SponsorBlockSkipButtonStyle.FULL)
+    val sponsorBlockEnabled by playerPreferences.sponsorBlockEnabled.collectAsState(initial = false)
+    val doubleTapSeekSeconds by playerPreferences.doubleTapSeekSeconds.collectAsState(initial = 10)
+    val doubleTapSeekZone by playerPreferences.doubleTapSeekZone.collectAsState(initial = DoubleTapSeekZone.NORMAL)
+    val longPressPlaybackSpeed by playerPreferences.longPressPlaybackSpeed.collectAsState(initial = 2.0f)
+    val speedSwipeSide by playerPreferences.speedSwipeSide.collectAsState(initial = SpeedSwipeSide.OFF)
+    val speedSwipeStep by playerPreferences.speedSwipeStep.collectAsState(initial = DEFAULT_SPEED_SWIPE_STEP)
+    val disableShortsPlayer by playerPreferences.effectiveDisableShortsPlayer.collectAsState(initial = false)
+    val showShortsPlayerPrompt by playerPreferences.showShortsPlayerPrompt.collectAsState(initial = true)
+    val savedSubtitleStyle by playerPreferences.subtitleStyle.collectAsState(initial = SubtitleStyle())
+    val rememberPlaybackSpeed by playerPreferences.rememberPlaybackSpeed.collectAsState(initial = false)
+    val ambientModeEnabled by playerPreferences.videoAmbientModeEnabled.collectAsState(initial = false)
+    val sphericalMotionEnabled by playerPreferences.sphericalMotionEnabled.collectAsState(initial = true)
+    val sphericalDragSpeed by playerPreferences.sphericalDragSpeed.collectAsState(initial = DEFAULT_SPHERICAL_DRAG_SPEED)
+    val ambientGlowEnabled by playerPreferences.videoAmbientGlowEnabled.collectAsState(initial = false)
+    val ambientImmersiveEnabled by playerPreferences.videoAmbientImmersiveEnabled.collectAsState(initial = false)
+    val ambientImmersiveScrollDim by playerPreferences.videoAmbientImmersiveScrollDim.collectAsState(initial = true)
+    val ambientGlowInBatterySaver by playerPreferences.videoAmbientGlowInBatterySaver.collectAsState(initial = false)
+    val adaptivePlayerSizeEnabled by playerPreferences.adaptivePlayerSizeEnabled.collectAsState(initial = true)
+    val playerScrollAwayEnabled by playerPreferences.playerScrollAwayEnabled.collectAsState(initial = false)
+    val groupedQualitySelectorEnabled by playerPreferences.groupedQualitySelectorEnabled.collectAsState(initial = false)
+    val lockModeEnabled by playerPreferences.overlayLockModeEnabled.collectAsState(initial = false)
+    val commentsEnabled by playerPreferences.commentsEnabled.collectAsState(initial = true)
+    val preferredSubtitleLanguage by playerPreferences.preferredSubtitleLanguage
+        .collectAsState(initial = CaptionTrackResolver.NO_PREFERRED_LANGUAGE)
+    val transcriptLanguage by playerPreferences.transcriptLanguage
+        .collectAsState(initial = CaptionTrackResolver.NO_PREFERRED_LANGUAGE)
+    val commentsPreviewEnabled by playerPreferences.commentsPreviewEnabled.collectAsState(initial = true)
+    val showRelatedVideos by playerPreferences.showRelatedVideos.collectAsState(initial = true)
+    val relatedCardStyle by playerPreferences.playerRelatedCardStyle.collectAsState(initial = PlayerRelatedCardStyle.FULL_WIDTH)
+    val feedColumns by playerPreferences.homeFeedColumns.collectAsState(initial = HomeFeedColumns.AUTO)
+    val deArrowEnabled by playerPreferences.deArrowEnabled.collectAsState(initial = false)
+    val tiltFullscreenRotationLocked by playerPreferences.tiltFullscreenRotationLocked.collectAsState(initial = false)
+    val fullscreenSidePanelWidth by playerPreferences.fullscreenSidePanelWidth
+        .collectAsState(initial = FullscreenSidePanelWidth.DEFAULT)
+    val fullscreenZoomToFill by playerPreferences.fullscreenZoomToFill.collectAsState(initial = false)
+
+    return VideoPlayerPreferencesState(
+        preferences = playerPreferences,
+        brightnessSwipeGesturesEnabled = brightnessSwipeGesturesEnabled,
+        rememberBrightnessEnabled = rememberBrightnessEnabled,
+        rememberedBrightnessLevel = rememberedBrightnessLevel,
+        volumeSwipeGesturesEnabled = volumeSwipeGesturesEnabled,
+        seekSwipeGesturesEnabled = seekSwipeGesturesEnabled,
+        moreVideosSwipeEnabled = moreVideosSwipeEnabled,
+        chapterSkipGestureEnabled = chapterSkipGestureEnabled,
+        allowVolumeBoost = allowVolumeBoost,
+        gestureOverlayStyle = gestureOverlayStyle,
+        sbSubmitEnabled = sbSubmitEnabled,
+        sbSkipNoticeEnabled = sbSkipNoticeEnabled,
+        sbSkipButtonStyle = sbSkipButtonStyle,
+        sponsorBlockEnabled = sponsorBlockEnabled,
+        doubleTapSeekSeconds = doubleTapSeekSeconds,
+        doubleTapSeekZone = doubleTapSeekZone,
+        longPressPlaybackSpeed = longPressPlaybackSpeed,
+        speedSwipeSide = speedSwipeSide,
+        speedSwipeStep = speedSwipeStep,
+        disableShortsPlayer = disableShortsPlayer,
+        showShortsPlayerPrompt = showShortsPlayerPrompt,
+        savedSubtitleStyle = savedSubtitleStyle,
+        rememberPlaybackSpeed = rememberPlaybackSpeed,
+        ambientModeEnabled = ambientModeEnabled,
+        sphericalMotionEnabled = sphericalMotionEnabled,
+        sphericalDragSpeed = sphericalDragSpeed,
+        ambientGlowEnabled = ambientGlowEnabled,
+        ambientImmersiveEnabled = ambientImmersiveEnabled,
+        ambientImmersiveScrollDim = ambientImmersiveScrollDim,
+        ambientGlowInBatterySaver = ambientGlowInBatterySaver,
+        adaptivePlayerSizeEnabled = adaptivePlayerSizeEnabled,
+        playerScrollAwayEnabled = playerScrollAwayEnabled,
+        groupedQualitySelectorEnabled = groupedQualitySelectorEnabled,
+        lockModeEnabled = lockModeEnabled,
+        commentsEnabled = commentsEnabled,
+        preferredSubtitleLanguage = preferredSubtitleLanguage,
+        transcriptLanguage = transcriptLanguage,
+        commentsPreviewEnabled = commentsPreviewEnabled,
+        showRelatedVideos = showRelatedVideos,
+        relatedCardStyle = relatedCardStyle,
+        feedColumns = feedColumns,
+        deArrowEnabled = deArrowEnabled,
+        tiltFullscreenRotationLocked = tiltFullscreenRotationLocked,
+        fullscreenSidePanelWidth = fullscreenSidePanelWidth,
+        fullscreenZoomToFill = fullscreenZoomToFill,
+    )
+}
