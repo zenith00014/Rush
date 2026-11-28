@@ -1,0 +1,297 @@
+name: Port Flow Android client into Rush
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  import-and-build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/checkout@v4
+        with:
+          repository: Flow-Tube/Flow
+          ref: 765084b9ed2336f948582477707c3b189953c350
+          path: upstream-flow
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Import and adapt Flow for Rush
+        shell: bash
+        run: |
+          set -euo pipefail
+          rsync -a --delete --exclude='.git' --exclude='.github' upstream-flow/ ./
+          python3 - <<'PY'
+          from pathlib import Path
+          import re, shutil
+
+          root = Path(".")
+          suffixes = {".kt",".kts",".java",".xml",".gradle",".properties",".toml",".json",".pro",".md",".txt",".yml",".yaml",".proto",".sh",".html",".css",".js",".cfg",".conf"}
+          old, new = "io.github.aedev.flow", "com.rush.app"
+
+          # Relocate Kotlin/Java source trees into Rush's application package.
+          for base in (Path("app/src/main/java"),Path("app/src/test/java"),Path("app/src/androidTest/java"),Path("benchmark/src/main/java"),Path("benchmark/src/test/java"),Path("benchmark/src/androidTest/java")):
+              src, dst = base/"io/github/aedev/flow", base/"com/rush/app"
+              if src.exists():
+                  dst.parent.mkdir(parents=True,exist_ok=True)
+                  if dst.exists():
+                      shutil.copytree(src,dst,dirs_exist_ok=True); shutil.rmtree(src)
+                  else: shutil.move(str(src),str(dst))
+                  for parent in (src.parent,src.parent.parent,src.parent.parent.parent):
+                      try: parent.rmdir()
+                      except OSError: pass
+
+          # Rebrand package references, application ID, Gradle project and app labels.
+          for p in root.rglob("*"):
+              if not p.is_file() or p.suffix.lower() not in suffixes or ".git" in p.parts or "upstream-flow" in p.parts: continue
+              try: before=p.read_text(encoding="utf-8")
+              except (UnicodeDecodeError,OSError): continue
+              after=before.replace(old,new)
+              if p.name=="settings.gradle.kts": after=after.replace('rootProject.name = "Flow"','rootProject.name = "Rush"')
+              if p.name=="build.gradle.kts" and "app" in p.parts:
+                  after=after.replace('namespace = "io.github.aedev.flow"','namespace = "com.rush.app"').replace('applicationId = "io.github.aedev.flow"','applicationId = "com.rush.app"')
+                  after=after.replace("versionCode = 20","versionCode = 21").replace('versionName = "3.0.5"','versionName = "2.0.0"')
+              if p.suffix.lower()==".xml" and "res" in p.parts:
+                  after=re.sub(r'(<string\s+name="(?:app_name|app_launcher_name)"[^>]*>)Flow(</string>)',r'\1Rush\2',after)
+                  after=re.sub(r'>([^<]*)\bFlow\b([^<]*)<',r'>\1Rush\2<',after)
+                  after=re.sub(r'>([^<]*)FlowNeuro([^<]*)<',r'>\1Rush recommendations\2<',after)
+              if after!=before: p.write_text(after,encoding="utf-8")
+
+          for p in Path("app/src/main/res").rglob("strings.xml"):
+              s=p.read_text(encoding="utf-8")
+              s=re.sub(r'(<string\s+name="(?:app_name|app_launcher_name)"[^>]*>).*?(</string>)',r'\1Rush\2',s)
+              p.write_text(s,encoding="utf-8")
+
+          # Disable Shorts content and navigation defaults.
+          prefs=Path("app/src/main/java/com/rush/app/data/local/PlayerPreferences.kt")
+          s=prefs.read_text(encoding="utf-8")
+          for key in ("SHORTS_CONTENT_ENABLED","SHORTS_NAVIGATION_ENABLED","NOTIF_SHORTS_ENABLED","SUBSCRIPTION_SHOW_SHORTS"):
+              s=s.replace(f"preferences[Keys.{key}] ?: true",f"preferences[Keys.{key}] ?: false")
+          prefs.write_text(s,encoding="utf-8")
+
+          tabs=Path("app/src/main/java/com/rush/app/ui/components/layout/navigation/FlowTab.kt")
+          s=tabs.read_text(encoding="utf-8").replace("            if (visibility.shorts) add(FlowTab.Shorts)\n","            // Rush intentionally has no Shorts destination.\n").replace("val shorts: Boolean = true","val shorts: Boolean = false")
+          tabs.write_text(s,encoding="utf-8")
+
+          app=Path("app/src/main/java/com/rush/app/ui/FlowApp.kt")
+          s=app.read_text(encoding="utf-8")
+          s,n=re.subn(r"val isShortsNavigationEnabled by preferences\.effectiveShortsNavigationEnabled\.collectAsState\([^\n]*\)","val isShortsNavigationEnabled = false",s)
+          if n!=1: raise SystemExit(f"Expected one Shorts nav state; found {n}")
+          app.write_text(s,encoding="utf-8")
+
+          for p in Path("app/src/main/java/com/rush/app").rglob("*.kt"):
+              s=p.read_text(encoding="utf-8")
+              t=s.replace("showShorts: Boolean = true","showShorts: Boolean = false").replace("showShortsTab: Boolean = true","showShortsTab: Boolean = false")
+              if t!=s: p.write_text(t,encoding="utf-8")
+
+          # Remove Shorts-only settings from the visible settings registries.
+          p=Path("app/src/main/java/com/rush/app/ui/screens/settings/index/ContentIndex.kt")
+          s=p.read_text(encoding="utf-8")
+          for name in ("homeShortsShelf","subsShorts","subsShortsShelf","shortsContent","channelShortsTab","hideWatchedShorts"):
+              s=re.sub(rf"^\s*{name},\s*\n","",s,flags=re.MULTILINE)
+          p.write_text(s,encoding="utf-8")
+          p=Path("app/src/main/java/com/rush/app/ui/screens/settings/index/PlaybackShortsIndex.kt")
+          s=p.read_text(encoding="utf-8")
+          for name in ("disableShortsPlayer","shortsPlayerPrompt","shortsPlaybackMode","shortsBackgroundPlay","shortsPip","shortsContinueIntoFeed"):
+              s=re.sub(rf"^\s*{name},\s*\n","",s,flags=re.MULTILINE)
+          p.write_text(s,encoding="utf-8")
+
+          # Video cards open the standard player, not the vertical Shorts player.
+          p=Path("app/src/main/java/com/rush/app/ui/FlowNavigation.kt")
+          s=p.read_text(encoding="utf-8")
+          s=s.replace("""onVideoClick = { video ->
+                  navController.openVideoOrShorts(video, disableShortsPlayer) {
+                      playerViewModel.playVideo(it)
+                  }
+              },""","""onVideoClick = { video -> playerViewModel.playVideo(video) },""")
+          s=s.replace("""onShortClick = { source ->
+                  navController.openShortsOrPlayer(source, disableShortsPlayer)
+              }""","onShortClick = { _ -> }")
+          s=s.replace("""onOpenShortsFeed = {
+                  navController.openShorts(ShortsQueueSource.Feed)
+              }""","onOpenShortsFeed = {}")
+          s=s.replace("""onNavigateToSavedShorts = {
+                  navController.navigate("savedShorts")
+              }""","onNavigateToSavedShorts = {}")
+          p.write_text(s,encoding="utf-8")
+
+          # Rush ranking mixer: preference, discovery, source, quality, freshness and feedback stages.
+          mixer=Path("app/src/main/java/com/rush/app/data/recommendation/RushRankingMixer.kt")
+          mixer.parent.mkdir(parents=True,exist_ok=True)
+          mixer.write_text("""package com.rush.app.data.recommendation
+
+/**
+ * Rush's staged ranking pipeline. Flow's original signal calculators are retained and credited;
+ * this mixer changes how their outputs are grouped and combined for Rush.
+ */
+internal data class RushScoreLayers(
+    val topicFit: Double, val contextFit: Double, val noveltyFit: Double,
+    val affinityFit: Double, val sourceSignal: Double, val coWatchSignal: Double,
+    val formatSignal: Double, val serendipity: Double, val curiosity: Double,
+    val exploration: Double, val quality: Double, val recency: Double,
+    val session: Double, val category: Double, val interestGuard: Double,
+    val feedbackGuard: Double, val repeatGuard: Double, val watchGuard: Double,
+    val momentum: Double, val onboarding: Double,
+)
+
+internal object RushRankingMixer {
+    fun combine(layers: RushScoreLayers): Double {
+        val preference = (layers.topicFit * 0.60 + layers.contextFit * 0.25 +
+            layers.affinityFit * 0.15).coerceIn(0.0, 1.0)
+        val discovery = (layers.noveltyFit * 0.48 + layers.serendipity * 0.20 +
+            layers.curiosity * 0.12 + layers.exploration * 0.20).coerceIn(0.0, 1.0)
+        val relevance = preference * 0.72 + discovery * 0.28
+        val source = (layers.sourceSignal + layers.coWatchSignal).coerceIn(-0.20, 0.24)
+        val candidateQuality = (relevance + source + layers.formatSignal).coerceIn(0.0, 1.35)
+        val quality = layers.quality.coerceIn(0.20, 1.10)
+        val temporal = (layers.recency.coerceIn(0.05, 1.20) *
+            layers.session.coerceIn(0.05, 1.30)).coerceIn(0.02, 1.50)
+        val guardrails = (layers.interestGuard * layers.feedbackGuard *
+            layers.repeatGuard * layers.watchGuard).coerceIn(0.0, 1.0)
+        return (candidateQuality * quality * temporal *
+            layers.category.coerceIn(0.0, 1.25) * guardrails +
+            layers.momentum.coerceIn(-0.20, 0.20) +
+            layers.onboarding.coerceIn(0.0, 0.15)).coerceAtLeast(0.0)
+    }
+}
+""",encoding="utf-8")
+
+          scoring=Path("app/src/main/java/com/rush/app/data/recommendation/NeuroScoring.kt")
+          s=scoring.read_text(encoding="utf-8")
+          replacement="""    fun scoreCandidate(
+        video: Video,
+        videoVector: ContentVector,
+        p: ScoringParams,
+    ): Double {
+        val brain = p.brain
+        val topicFit = NeuroVectorMath.calculateCosineSimilarity(p.preparedTaste, videoVector)
+        val contextFit = NeuroVectorMath.calculateCosineSimilarity(p.preparedContext, videoVector)
+        val noveltyFit = if (p.isColdStart) 1.0 - topicFit else
+            smoothstep(NOVELTY_RELEVANCE_GATE, NOVELTY_RELEVANCE_GATE + 0.1, topicFit) * (1.0 - topicFit)
+
+        val isSubscription = p.userSubs.contains(video.channelId)
+        val affinity = if (brain.topicAffinities.isEmpty()) 0.0 else affinityBoost(videoVector, p)
+        val sourceSignal = calculateChannelSignal(video, brain, p.userSubs)
+        val coWatchSignal = (p.coWatchPrior[video.channelId] ?: 0.0) * FlowNeuroEngine.COWATCH_MAX_PRIOR
+        val formatSignal = NeuroFormats.scoreTerm(brain.formatAffinity, videoVector.formats)
+        val serendipity = (calculateSerendipity(noveltyFit, contextFit) / SERENDIPITY_BONUS).coerceIn(0.0, 1.0)
+        val curiosity = (calculateCuriosityBonus(topicFit, brain.globalVector.complexity, videoVector.complexity) /
+            CURIOSITY_GAP_BONUS).coerceIn(0.0, 1.0)
+        val exploration = (explorationBonus(videoVector, brain, p.exploreWeight) / EXPLORE_MAX_BONUS).coerceIn(0.0, 1.0)
+
+        val freshness = calculateFreshness(video, videoVector, topicFit, p.sessionTopics,
+            p.sessionVideoCount, p.impressions[video.id], p.now)
+        val ageMultiplier = TimeDecay.calculateMultiplier(video.uploadDate, video.isLive)
+        val ageFactor = if (isVideoClassic(video.viewCount) || isSubscription) (ageMultiplier + 1.0) / 2.0
+            else ageMultiplier
+
+        val interestGuard = calculateTopicProbationPenalty(videoVector, brain, p.lemmatizedPreferred) *
+            calculateAntiRecommendationPenalty(videoVector, video, brain) *
+            calculateRejectionPatternPenalty(videoVector, brain.rejectionPatterns, p.now) *
+            calculateRelevanceFloor(topicFit, brain.totalInteractions, isSubscription)
+        val category = categoryFactor(video, videoVector, p, isSubscription)
+        val repeatGuard = calculateFeedHistoryPenalty(video.id, brain.feedHistory, p.now, p.candidatePoolSize) *
+            calculateImplicitDisinterestPenalty(video.id, brain.feedHistory, p.watchHistory, p.now)
+        val watchGuard = calculateWatchedPenalty(video, p.watchHistory[video.id])
+        val quality = calculateEngagementQuality(video, p.isColdStart)
+        val popularity = if (p.isColdStart && video.viewCount > 0)
+            (log10(1.0 + video.viewCount.toDouble()) / 10.0 * 0.05).coerceIn(0.0, 0.05) else 0.0
+        val onboarding = if (p.isOnboarding && p.lemmatizedPreferred.any { videoVector.topics.containsKey(it) })
+            p.onboardingWarmup * ONBOARDING_MAX_BOOST else 0.0
+        val momentum = calculateMomentumBoost(videoVector, p.recentInteractions, topicFit)
+
+        return RushRankingMixer.combine(
+            RushScoreLayers(
+                topicFit = (topicFit * p.wPersonality).coerceIn(0.0, 1.0),
+                contextFit = (contextFit * p.wContext).coerceIn(0.0, 1.0),
+                noveltyFit = (noveltyFit * p.wNovelty + popularity).coerceIn(0.0, 1.0),
+                affinityFit = (affinity / AFFINITY_MAX_BOOST_PER_VIDEO).coerceIn(0.0, 1.0),
+                sourceSignal = sourceSignal, coWatchSignal = coWatchSignal, formatSignal = formatSignal,
+                serendipity = serendipity, curiosity = curiosity, exploration = exploration,
+                quality = quality, recency = ageFactor, session = freshness, category = category,
+                interestGuard = interestGuard, feedbackGuard = 1.0, repeatGuard = repeatGuard,
+                watchGuard = watchGuard, momentum = momentum, onboarding = onboarding,
+            ),
+        )
+    }"""
+          pattern=re.compile(r"(?s)    fun scoreCandidate\(\n.*?\n    \}(?=\n\})")
+          s,n=pattern.subn(lambda _:replacement,s,count=1)
+          if n!=1: raise SystemExit(f"Could not replace Flow scoreCandidate function: {n}")
+          scoring.write_text(s,encoding="utf-8")
+
+          if Path("License").exists(): shutil.copyfile("License","LICENSE")
+          Path("README.md").write_text("""# Rush for Android
+
+Rush is a modified Android client based on the Flow Android Client source tree. It uses Kotlin, Jetpack Compose, Material 3, Media3/ExoPlayer, Room, DataStore and upstream playback and discovery integrations.
+
+## Rush changes
+
+- Rebranded package and application ID: com.rush.app.
+- Replaced the previous Rush WebView shell with Flow's native Android application architecture.
+- Retained video playback, subscriptions, search, music, library, watch history, playlists, downloads and settings.
+- Disabled Shorts navigation, home shelves, channel tabs and Shorts-specific settings in the Rush UI.
+- Added RushRankingMixer, a staged recommendation combiner for relevance, discovery, source affinity, quality, freshness and feedback guardrails.
+
+## Attribution and license
+
+Rush is a modified derivative of Flow Android Client: https://github.com/Flow-Tube/Flow. The upstream source is licensed under GNU GPL version 3. This public repository keeps the GPL-3.0 license and makes the corresponding modified source available.
+
+The recommendation engine originates from FlowNeuro. Rush credits **Flow Android Client** and links to the original repository as required by the upstream source notice. Original source headers and copyright notices are retained.
+
+See LICENSE and THIRD_PARTY_NOTICES.md before redistributing builds.
+
+## Build
+
+Requirements: JDK 21, Android SDK and the included Gradle wrapper.
+
+    ./gradlew :app:assembleFossDebug
+    ./gradlew :app:testFossDebugUnitTest
+""",encoding="utf-8")
+          Path("THIRD_PARTY_NOTICES.md").write_text("""# Third-party notices
+
+## Flow Android Client
+
+- Project: https://github.com/Flow-Tube/Flow
+- License: GNU General Public License version 3 (GPL-3.0)
+- Rush is a modified derivative of the Flow Android Client source tree.
+- Required recommendation-engine attribution: **Flow Android Client**.
+- Rush's scoring integration is modified in data/recommendation/NeuroScoring.kt and data/recommendation/RushRankingMixer.kt.
+
+Upstream copyright headers and source attribution are retained. See LICENSE for the full GPL-3.0 terms.
+
+## Additional dependencies
+
+Flow's Gradle files and bundled license/notice files remain the source of truth for dependencies used by this build. Preserve their license texts and copyright notices when redistributing Rush.
+""",encoding="utf-8")
+          Path("docs").mkdir(exist_ok=True)
+          Path("docs/ALGORITHM_ARCHITECTURE.md").write_text("""# Rush recommendation pipeline
+
+1. Taste fit: candidate similarity to the viewer's learned preference vector.
+2. Context fit: similarity to current/session context.
+3. Discovery: novelty, serendipity, curiosity and uncertainty-based exploration.
+4. Source evidence: subscription/channel preference and co-watch affinity.
+5. Quality and time: engagement quality, upload freshness and session fatigue.
+6. Guardrails: topic probation, explicit rejection, anti-recommendation, repeat exposure and watch-history penalties.
+
+RushRankingMixer combines these stages separately from the upstream search implementation. Recommendation eligibility does not restrict general search.
+""",encoding="utf-8")
+          PY
+      - name: Build Rush APK
+        run: |
+          chmod +x ./gradlew
+          ./gradlew --no-daemon :app:assembleFossDebug --stacktrace
+      - name: Commit imported Rush code
+        run: |
+          rm -rf upstream-flow
+          rm -f .github/workflows/rush-flow-import.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Port Flow Android client into Rush"
+          git push origin HEAD:main
