@@ -47,6 +47,15 @@ jobs:
                       try: parent.rmdir()
                       except OSError: pass
 
+          # Room auto-migrations resolve schema history by the database's fully-qualified
+          # class name. Keep upstream history and mirror it under Rush's relocated package.
+          schema_root = Path("app/schemas")
+          for database in ("data.local.AppDatabase", "sync2.data.LinkedDatabase"):
+              src = schema_root / f"io.github.aedev.flow.{database}"
+              dst = schema_root / f"com.rush.app.{database}"
+              if src.is_dir():
+                  shutil.copytree(src, dst, dirs_exist_ok=True)
+
           # Rebrand package references, application ID, Gradle project and app labels.
           for p in root.rglob("*"):
               if not p.is_file() or p.suffix.lower() not in suffixes or ".git" in p.parts or "upstream-flow" in p.parts: continue
