@@ -56,6 +56,15 @@ jobs:
               if src.is_dir():
                   shutil.copytree(src, dst, dirs_exist_ok=True)
 
+          # Pin Kotlin to the latest stable 2.4 patch. The upstream tag's 2.4.10
+          # plugin marker fails to resolve in the GitHub Actions plugin repositories.
+          for p in root.rglob("*"):
+              if p.is_file() and p.suffix.lower() in suffixes and ".git" not in p.parts and "upstream-flow" not in p.parts:
+                  try: text=p.read_text(encoding="utf-8")
+                  except (UnicodeDecodeError,OSError): continue
+                  updated=text.replace("2.4.10","2.4.21")
+                  if updated!=text: p.write_text(updated,encoding="utf-8")
+
           # Rebrand package references, application ID, Gradle project and app labels.
           for p in root.rglob("*"):
               if not p.is_file() or p.suffix.lower() not in suffixes or ".git" in p.parts or "upstream-flow" in p.parts: continue
