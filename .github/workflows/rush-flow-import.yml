@@ -96,17 +96,11 @@ jobs:
               t=s.replace("showShorts: Boolean = true","showShorts: Boolean = false").replace("showShortsTab: Boolean = true","showShortsTab: Boolean = false")
               if t!=s: p.write_text(t,encoding="utf-8")
 
-          # Remove Shorts-only settings from the visible settings registries.
-          p=Path("app/src/main/java/com/rush/app/ui/screens/settings/index/ContentIndex.kt")
-          s=p.read_text(encoding="utf-8")
-          for name in ("homeShortsShelf","subsShorts","subsShortsShelf","shortsContent","channelShortsTab","hideWatchedShorts"):
-              s=re.sub(rf"^\s*{name},\s*\n","",s,flags=re.MULTILINE)
-          p.write_text(s,encoding="utf-8")
-          p=Path("app/src/main/java/com/rush/app/ui/screens/settings/index/PlaybackShortsIndex.kt")
-          s=p.read_text(encoding="utf-8")
-          for name in ("disableShortsPlayer","shortsPlayerPrompt","shortsPlaybackMode","shortsBackgroundPlay","shortsPip","shortsContinueIntoFeed"):
-              s=re.sub(rf"^\s*{name},\s*\n","",s,flags=re.MULTILINE)
-          p.write_text(s,encoding="utf-8")
+          # Keep upstream Shorts settings declarations intact for compilation, but omit
+          # their registry from the visible playback settings.
+          playback=Path("app/src/main/java/com/rush/app/ui/screens/settings/index/PlaybackIndex.kt")
+          ps=playback.read_text(encoding="utf-8").replace("PlaybackShortsIndex.all","emptyList()")
+          playback.write_text(ps,encoding="utf-8")
 
           # Video cards open the standard player, not the vertical Shorts player.
           p=Path("app/src/main/java/com/rush/app/ui/FlowNavigation.kt")
@@ -168,68 +162,9 @@ jobs:
           }
           """,encoding="utf-8")
 
-          scoring=Path("app/src/main/java/com/rush/app/data/recommendation/NeuroScoring.kt")
-          s=scoring.read_text(encoding="utf-8")
-          replacement="""    fun scoreCandidate(
-          video: Video,
-          videoVector: ContentVector,
-          p: ScoringParams,
-          ): Double {
-          val brain = p.brain
-          val topicFit = NeuroVectorMath.calculateCosineSimilarity(p.preparedTaste, videoVector)
-          val contextFit = NeuroVectorMath.calculateCosineSimilarity(p.preparedContext, videoVector)
-          val noveltyFit = if (p.isColdStart) 1.0 - topicFit else
-            smoothstep(NOVELTY_RELEVANCE_GATE, NOVELTY_RELEVANCE_GATE + 0.1, topicFit) * (1.0 - topicFit)
-
-          val isSubscription = p.userSubs.contains(video.channelId)
-          val affinity = if (brain.topicAffinities.isEmpty()) 0.0 else affinityBoost(videoVector, p)
-          val sourceSignal = calculateChannelSignal(video, brain, p.userSubs)
-          val coWatchSignal = (p.coWatchPrior[video.channelId] ?: 0.0) * FlowNeuroEngine.COWATCH_MAX_PRIOR
-          val formatSignal = NeuroFormats.scoreTerm(brain.formatAffinity, videoVector.formats)
-          val serendipity = (calculateSerendipity(noveltyFit, contextFit) / SERENDIPITY_BONUS).coerceIn(0.0, 1.0)
-          val curiosity = (calculateCuriosityBonus(topicFit, brain.globalVector.complexity, videoVector.complexity) /
-            CURIOSITY_GAP_BONUS).coerceIn(0.0, 1.0)
-          val exploration = (explorationBonus(videoVector, brain, p.exploreWeight) / EXPLORE_MAX_BONUS).coerceIn(0.0, 1.0)
-
-          val freshness = calculateFreshness(video, videoVector, topicFit, p.sessionTopics,
-            p.sessionVideoCount, p.impressions[video.id], p.now)
-          val ageMultiplier = TimeDecay.calculateMultiplier(video.uploadDate, video.isLive)
-          val ageFactor = if (isVideoClassic(video.viewCount) || isSubscription) (ageMultiplier + 1.0) / 2.0
-            else ageMultiplier
-
-          val interestGuard = calculateTopicProbationPenalty(videoVector, brain, p.lemmatizedPreferred) *
-            calculateAntiRecommendationPenalty(videoVector, video, brain) *
-            calculateRejectionPatternPenalty(videoVector, brain.rejectionPatterns, p.now) *
-            calculateRelevanceFloor(topicFit, brain.totalInteractions, isSubscription)
-          val category = categoryFactor(video, videoVector, p, isSubscription)
-          val repeatGuard = calculateFeedHistoryPenalty(video.id, brain.feedHistory, p.now, p.candidatePoolSize) *
-            calculateImplicitDisinterestPenalty(video.id, brain.feedHistory, p.watchHistory, p.now)
-          val watchGuard = calculateWatchedPenalty(video, p.watchHistory[video.id])
-          val quality = calculateEngagementQuality(video, p.isColdStart)
-          val popularity = if (p.isColdStart && video.viewCount > 0)
-            (log10(1.0 + video.viewCount.toDouble()) / 10.0 * 0.05).coerceIn(0.0, 0.05) else 0.0
-          val onboarding = if (p.isOnboarding && p.lemmatizedPreferred.any { videoVector.topics.containsKey(it) })
-            p.onboardingWarmup * ONBOARDING_MAX_BOOST else 0.0
-          val momentum = calculateMomentumBoost(videoVector, p.recentInteractions, topicFit)
-
-          return RushRankingMixer.combine(
-            RushScoreLayers(
-                topicFit = (topicFit * p.wPersonality).coerceIn(0.0, 1.0),
-                contextFit = (contextFit * p.wContext).coerceIn(0.0, 1.0),
-                noveltyFit = (noveltyFit * p.wNovelty + popularity).coerceIn(0.0, 1.0),
-                affinityFit = (affinity / AFFINITY_MAX_BOOST_PER_VIDEO).coerceIn(0.0, 1.0),
-                sourceSignal = sourceSignal, coWatchSignal = coWatchSignal, formatSignal = formatSignal,
-                serendipity = serendipity, curiosity = curiosity, exploration = exploration,
-                quality = quality, recency = ageFactor, session = freshness, category = category,
-                interestGuard = interestGuard, feedbackGuard = 1.0, repeatGuard = repeatGuard,
-                watchGuard = watchGuard, momentum = momentum, onboarding = onboarding,
-            ),
-          )
-          }"""
-          pattern=re.compile(r"(?s)    fun scoreCandidate\(\n.*?\n    \}(?=\n\})")
-          s,n=pattern.subn(lambda _:replacement,s,count=1)
-          if n!=1: raise SystemExit(f"Could not replace Flow scoreCandidate function: {n}")
-          scoring.write_text(s,encoding="utf-8")
+          # Keep Flow's complete, tested NeuroScoring implementation intact. The Rush
+          # ranking mixer is maintained as a separate module until it can be integrated
+          # against the full upstream scoring API without dropping helper functions.
 
           if Path("License").exists(): shutil.copyfile("License","LICENSE")
           Path("README.md").write_text("""# Rush for Android
