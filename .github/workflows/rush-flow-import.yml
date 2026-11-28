@@ -57,10 +57,7 @@ jobs:
               if p.name=="build.gradle.kts" and "app" in p.parts:
                   after=after.replace('namespace = "io.github.aedev.flow"','namespace = "com.rush.app"').replace('applicationId = "io.github.aedev.flow"','applicationId = "com.rush.app"')
                   after=after.replace("versionCode = 20","versionCode = 21").replace('versionName = "3.0.5"','versionName = "2.0.0"')
-              if p.suffix.lower()==".xml" and "res" in p.parts:
-                  after=re.sub(r'(<string\s+name="(?:app_name|app_launcher_name)"[^>]*>)Flow(</string>)',r'\1Rush\2',after)
-                  after=re.sub(r'>([^<]*)\bFlow\b([^<]*)<',r'>\1Rush\2<',after)
-                  after=re.sub(r'>([^<]*)FlowNeuro([^<]*)<',r'>\1Rush recommendations\2<',after)
+              # Do not rename XML style/resource identifiers; only app labels are rebranded below.
               if after!=before: p.write_text(after,encoding="utf-8")
 
           for p in Path("app/src/main/res").rglob("strings.xml"):
